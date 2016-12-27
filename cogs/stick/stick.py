@@ -119,6 +119,11 @@ class Stick:
                 await self.bot.whisper("Vous êtes trop récent pour avoir un top.")
         else:
             await self.bot.say("Vous n'avez pas de suivi.")
+            
+    @commands.command(pass_context=True, hidden=True)
+    async def info(self, ctx):
+        """Affiche des informations sur le module."""
+        await self.bot.say("Module créé par Acrown#4424.\nCe module permet de faire des stickers personnalisés pour votre serveur.\nAprès avoir créé vos stickers vous pouvez les invoquer de la même façon que les emoji.")
 
     @commands.group(pass_context=True) #STICKERS
     async def stk(self, ctx):
