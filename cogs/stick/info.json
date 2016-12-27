@@ -1,6 +1,8 @@
 {
-    "AUTHOR" : "Acrown - https://github.com/GitAcrown",
-    "DESCRIPTION" : "Permet l'utilisation des stickers personnalisés.",
+    "AUTHOR" : "Acrown",
+    "DESCRIPTION" : "Ce module est destin\u00e9 aux communaut\u00e9s avide de stickers et d'images marrantes.\nDe la m\u00eame fa\u00e7on que les Emoji, vous pouvez cr\u00e9er des stickers puis les invoquer de fa\u00e7on tr\u00e8s simple :nom_du_sticker: !",
     "DISABLED" : false,
-    "NAME" : "Stickers"
+    "INSTALL_MSG" : "Ce module vous permet d'ajouter des images personnalis\u00e9s sur votre bot.",
+    "NAME" : "stick",
+    "SHORT" : "Stickers personnalis\u00e9s pour votre serveur !"
 }
