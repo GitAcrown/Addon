@@ -1,7 +1,8 @@
 {
     "AUTHOR" : "Acrown",
-    "INSTALL_MSG" : "Ces modules sont toujours en développement et souvent mis à jour. Si vous avez besoin de support, contactez Acrown#4424 sur Discord.",
+    "DESCRIPTION" : "Vous retrouverez dans ce repo diff\u00e9rents modules permettant d'ajouter des fonctionnalit\u00e9s suppl\u00e9mentaire \u00e0 Plume.\nCe repo est officiel et directement compatible avec Plume.",
+    "DISABLED" : false,
+    "INSTALL_MSG" : "Merci d'avoir install\u00e9 ce repo.\nSi vous avez besoin d'un support pour l'un des module, contactez Acrown#4424.",
     "NAME" : "PlumX",
-    "SHORT" : "Modules divers et variés",
-    "DESCRIPTION" : "Merci d'avoir installé PlumX\nSi vous avez un problème avec l'un des modules, veuillez me contacter en MP avec de pseudo Acrown#4424."
+    "SHORT" : "Modules divers et vari\u00e9s"
 }
