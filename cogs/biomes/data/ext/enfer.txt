@@ -1,0 +1,40 @@
+EXT/http://i.imgur.com/387l22M.png
+AUT/Acrown
+LIE/un abri en montagne
+LIE/un endroit isolé
+LIE/un coin proche du Styx
+LIE/un temple de roches
+LIE/une grotte
+LIE/une des portes de l'enfer
+LIE/un refuges à âmes perdues
+LIE/un temple satanique
+FAU/un démon inférieur
+FAU/une âme égarée
+FAU/une âme décadente
+FAU/un minotaure
+FAU/un diablotin
+FAU/un enfant de Cerbère
+FAU/une chimère
+FLR/une ronce
+FLR/une pomme du jardin d'Eden
+FLR/un fruit défendu
+FLR/de l'essence de vie
+FLR/un fragment d'âme
+FLR/un roux
+OBO/une lance
+OBO/un trident
+OBO/une roche magmatique
+OBO/de l'eau bénite
+OBO/une croix
+OBO/une bible
+OBO/un pieux
+OBO/une épée
+OBO/un sceptre
+OBD/une bible
+OBD/une carcasse
+OBD/des tissus en lambaux
+OBD/un bouclier
+OBD/un enfant mort
+BNS/des hosties
+BNS/des bandages
+BNS/une pommade

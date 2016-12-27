@@ -1,0 +1,40 @@
+EXT/http://i.imgur.com/WwiPNji.png
+AUT/Acrown
+LIE/un vieux bunker
+LIE/une cabane
+LIE/une cabane dans les arbres
+LIE/une maison
+LIE/un petit village
+LIE/un camp
+LIE/un vieil arbre
+FAU/un cerf
+FAU/un lièvre
+FAU/un faisan
+FAU/un ours
+FAU/un loup
+FAU/un renard
+FAU/un sanglier
+FLR/des fraises
+FLR/des baies
+FLR/des framboises
+FLR/des mûres
+FLR/des groseilles
+FLR/des herbes médicinales
+OBO/un pistolet
+OBO/une vieille arme
+OBO/des grenades
+OBO/un piquet en métal
+OBO/une hâche
+OBO/des barbelés
+OBO/un morceau de métal rouillé
+OBD/un gilet
+OBD/un blouson
+OBD/une lacrymo
+OBD/une planche de bois
+OBD/un bouclier
+OBD/un parapluie
+OBD/un bouclier antiémeute
+BNS/des bandages
+BNS/une pommade
+BNS/un doliprane
+BNS/un pansement

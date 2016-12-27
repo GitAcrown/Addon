@@ -1,0 +1,40 @@
+EXT/http://i.imgur.com/Gdxj1XK.png
+AUT/Acrown
+LIE/un batiment abandonné
+LIE/des égouts
+LIE/un ancien hopital psychiatrique
+LIE/une centrale
+LIE/un magasin
+LIE/une école
+LIE/un poste de police
+LIE/la mairie de la ville
+LIE/une église
+FAU/un lapin
+FAU/un rat
+FAU/un chat sauvage
+FAU/un chien errant
+FAU/un pigeon
+FLR/un pissenlit
+FLR/une pomme
+FLR/une patate
+FLR/des baies
+FLR/des marrons
+FLR/des herbes médicinales
+OBO/un pistolet
+OBO/un couteau de cuisine
+OBO/un extincteur
+OBO/des poigs américains
+OBO/un marteau
+OBO/une scie
+OBO/un bâton
+OBO/une tronçonneuse
+OBD/un gilet pare-balle
+OBD/un gilet de moto
+OBD/un blouson en cuir
+OBD/une planche de bois
+OBD/un enfant cancéreux
+OBD/un spray anti-insectes
+BNS/des bandages
+BNS/une pommade
+BNS/un doliprane
+BNS/un pansement
