@@ -1,5 +1,5 @@
 # PlumX
-#### Modules pour Plume (Discord Bot)
+### Modules pour Plume (Discord Bot)
 
 **Pour faire fonctionner ces modules, vous devez posséder Plume disponible à cette adresse :
 https://github.com/GitAcrown/Plume**
