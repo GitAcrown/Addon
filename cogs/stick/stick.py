@@ -126,7 +126,7 @@ class Stick:
         if ctx.invoked_subcommand is None:
             await send_cmd_help(ctx)
             
-    @stk.command(pass_context=True)
+    @stk.command(pass_context=True, hidden=True)
     async def stkinfo(self, ctx):
         """Affiche des informations sur le module."""
         await self.bot.say("Module créé par Acrown#4424.\nCe module permet de faire des stickers personnalisés pour votre serveur.\nAprès avoir créé vos stickers vous pouvez les invoquer de la même façon que les emoji.")
