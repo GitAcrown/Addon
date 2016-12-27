@@ -1,6 +1,8 @@
 {
     "AUTHOR" : "Acrown",
-    "DESCRIPTION" : "Survivez dans différents environnement et soyez le dernier encore en vie ! [Nécéssite le module Economy.py]",
+    "DESCRIPTION" : "Ce jeu vous place dans une Map, sous forme d'extensions personnalisables.\nLe but ? Survivre durant les 12 prochaines heures.\nCe jeu n\u00e9c\u00e9ssite le module Economy.py pour fonctionner.",
     "DISABLED" : false,
-    "NAME" : "Survivez et gagnez de l'argent !"
+    "INSTALL_MSG" : "Ce module est un jeu de survie extraordinaire !",
+    "NAME" : "biomes",
+    "SHORT" : "Survivez durant les 12 heures et vous devenez gagnant !"
 }
