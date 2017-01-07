@@ -1,0 +1,8 @@
+{
+    "AUTHOR" : "Acrown",
+    "DESCRIPTION" : "Ensemble d'outils de mod\u00e9ration et de d\u00e9tection d'\u00e9venements.",
+    "DISABLED" : false,
+    "INSTALL_MSG" : "Merci d'avoir install\u00e9 ce module. Pour des informations utilisez [p]help.",
+    "NAME" : "astra",
+    "SHORT" : "Ce module permet un prolongement des outils de mod\u00e9ration."
+}
