@@ -332,23 +332,23 @@ class Astra:
                 await self.bot.say("Réponse invalide, le rôle est conservé.")
 
     @prs.command(pass_context=True)
-    async def act(self, ctx, user : discord.Member, temps: int = 5, mute = None):
+    async def mod(self, ctx, user : discord.Member, temps: int = 5, mute = None):
         """Ajoute/Enlève une personne en prison.
 
         Si l'utilisateur visé ne possède pas de casier, en crée un."""
-        if mute == None:
-            mute = True
-        else:
-            mute = bool(mute)
         server = ctx.message.server
         id = user.id
         role = self.sys["PRSROLE"]
         r = discord.utils.get(ctx.message.server.roles, name=role)
+        if mute == None:
+            mute = False
+        else:
+            mute = bool(mute)
         if id not in self.case:
             self.case[user.id] = {"ID" : user.id,
-                                 "LOGS_PSD" : "Pseudo original : {}".format(user.name),
-                                 "LOGS_MOD" : [],
-                                 "SORTIE_PRS" : None}
+                             "LOGS_PSD" : "Pseudo original : {}".format(user.name),
+                             "LOGS_MOD" : [],
+                             "SORTIE_PRS" : None}
             fileIO("data/astra/case.json", "save", self.case)
         if temps >= 1:
             sec = temps * 60 #Temps en secondes
@@ -361,7 +361,7 @@ class Astra:
                 else:
                     pass
                 await self.bot.say("**{}** est désormais en prison pour {} minute(s).".format(user.display_name, temps))
-                await self.bot.send_message(user, "Vous êtes désormais en prison pour {} minute(s).\n*Vous avez désormais l'accès au salon #prison pour toute contestation.*".format(temps))
+                await self.bot.send_message(user, "Vous êtes désormais en prison pour {} minute(s).\n*Vous avez désormais l'accès au salon #prison pour toute plainte*".format(temps))
                 self.case[user.id]["LOGS_MOD"].append("{} - Entrée en prison".format(time.strftime("%d/%m %H:%M")))
                 self.add_logs("MOD","{} a mis {} en prison pour {} minute(s).".format(ctx.message.author.name, user.display_name, temps))
                 self.case[user.id]["SORTIE_PRS"] = sortie
@@ -374,20 +374,11 @@ class Astra:
                         await self.bot.server_voice_state(user, mute=False)
                         await self.bot.say("**{}** est sorti de prison.".format(user.display_name))
                         await self.bot.send_message(user, "Vous êtes désormais libre.")
-                        self.case[id]["LOGS_MOD"].append("{} - Sortie de prison".format(time.strftime("%d/%m %H:%M")))
-                        self.case[id]["SORTIE_PRS"] = None
+                        self.case[user.id]["LOGS_MOD"].append("{} - Sortie de prison".format(time.strftime("%d/%m %H:%M")))
+                        self.case[user.id]["SORTIE_PRS"] = None
                         fileIO("data/astra/case.json", "save", self.case)
                     else:
-                        try:
-                            await self.bot.remove_roles(user, r)
-                            await self.bot.server_voice_state(user, mute=False)
-                            await self.bot.say("**{}** est sorti de prison.".format(user.display_name))
-                            await self.bot.send_message(user, "Vous êtes désormais libre.")
-                            self.case[id]["LOGS_MOD"].append("{} - Sortie de prison".format(time.strftime("%d/%m %H:%M")))
-                            self.case[id]["SORTIE_PRS"] = None
-                            fileIO("data/astra/case.json", "save", self.case)
-                        except:
-                            pass
+                        pass
                 else:
                     await self.bot.whisper("L'utilisateur {} était en prison mais a quitté le serveur avant la fin du temps.".format(user.display_name))
                     self.case[user.id]["LOGS_MOD"].append("{} - Sortie de prison (A quitté le serveur)".format(time.strftime("%d/%m %H:%M")))
@@ -397,23 +388,22 @@ class Astra:
                 await self.bot.server_voice_state(user, mute=False)
                 await self.bot.say("**{}** a été libéré de la prison.".format(user.display_name))
                 await self.bot.send_message(user, "Vous avez été libéré de la prison plus tôt que prévu.")
-                self.add_logs("MOD","{} a retiré {} de la prison".format(ctx.message.author.name, user.display_name))
-                self.case[user.id]["LOGS_MOD"].append("{} - Sortie de prison (Mod)".format(time.strftime("%d/%m %H:%M")))
+                self.add_logs("MOD","{} a retiré {} de la prison.".format(ctx.message.author.name, user.display_name))
+                self.case[user.id]["LOGS_MOD"].append("{} - Sortie de prison".format(time.strftime("%d/%m %H:%M")))
                 self.case[user.id]["SORTIE_PRS"] = None
                 fileIO("data/astra/case.json", "save", self.case)
         else:
             await self.bot.say("Le temps doit être de plus d'une minute.")
 
     @prs.command(pass_context=True)
-    async def visite(self, ctx, user : discord.Member):
-        """Permet de visiter la prison pendant 5 minute(s).
+    async def visite(self, ctx, user : discord.Member, temps: int = 5):
+        """Permet de visiter la prison pendant x minute(s).
 
         Il est possible de sortir l'utilisateur en utilisant la commande 'act' basique."""
         server = ctx.message.server
         id = user.id
         role = self.sys["PRSROLE"]
         r = discord.utils.get(ctx.message.server.roles, name=role)
-        temps = 5
         mute = False
         if id not in self.case:
             self.case[user.id] = {"ID" : user.id,
