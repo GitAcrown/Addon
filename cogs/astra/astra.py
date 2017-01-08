@@ -20,6 +20,13 @@ class Astra:
         self.logs = dataIO.load_json("data/astra/logs.json")
         self.ddb = dataIO.load_json("data/astra/ddb.json")
 
+    def compare_role(self, user, rolelist):
+            for role in rolelist:
+                if role in user.roles:
+                    return True
+            else:
+                return False
+
     @commands.command(pass_context=True)
     async def signal(self, ctx, user : discord.Member, *raison):
         """Permet de signaler (DDB) un utilisateur à la modération."""
