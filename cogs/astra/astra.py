@@ -3,12 +3,14 @@ from discord.ext import commands
 from .utils import checks
 import asyncio
 import os
+import operator
 import random
 from cogs.utils.dataIO import fileIO, dataIO
 from __main__ import send_cmd_help, settings
 import time
 
-defaut = {"PRSROLE" : None}
+defaut = {"PRSROLE" : None, "SONDAGE_OPEN" : False, "VOTE_OPEN" : False}
+defautsond = {"QUESTION" : None,"REPONSES" : [],"TEMPS" : 0,"CHAN_ID" : None,"ROLES" : [], "BLANCHE_LISTE": [], "VOTELIST" : [],"TREP" : {}}
 
 class Astra:
     """Collection d'outils."""
@@ -19,6 +21,7 @@ class Astra:
         self.sys = dataIO.load_json("data/astra/sys.json")
         self.logs = dataIO.load_json("data/astra/logs.json")
         self.ddb = dataIO.load_json("data/astra/ddb.json")
+        self.sond = dataIO.load_json("data/astra/sond.json")
 
     def compare_role(self, user, rolelist):
             for role in rolelist:
@@ -26,6 +29,318 @@ class Astra:
                     return True
             else:
                 return False
+
+    def sond_reset(self):
+        self.sond = defautsond
+        self.sys["SONDAGE_OPEN"] = False
+        self.sys["VOTE_OPEN"] = False
+        fileIO("data/astra/sond.json", "save", self.sond)
+        fileIO("data/astra/sys.json", "save", self.sys)
+        return True
+
+    @commands.group(pass_context=True)
+    async def snd(self, ctx):
+        """Gestion des Sondages"""
+        if ctx.invoked_subcommand is None:
+            await send_cmd_help(ctx)
+
+    @snd.command(pass_context=True, hidden=True)
+    async def initial(self, ctx):
+        """Réinitialise les données sondage."""
+        if self.sond_reset():
+            await self.bot.say("Reset effectué avec succès.")
+        else:
+            await self.bot.say("Une erreur s'est produite.")
+
+    @snd.command(pass_context=True)
+    async def vote(self, ctx):
+        """Permet de voter dans le sondage en cours.
+
+        Vous ne pouvez voter qu'une seule fois par personne."""
+        if ctx.message.server:
+            await self.bot.say("Vous ne pouvez voter qu'en MP !")
+            return
+        author = ctx.message.author
+        channel = ctx.message.channel
+        if self.sys["SONDAGE_OPEN"] is True:
+            if self.sys["VOTE_OPEN"] is True:
+                if author.id not in self.sond["VOTELIST"]:
+                    if self.sond["BLANCHE_LISTE"] != []:
+                        if author.id in self.sys["BLANCHE_LISTE"]:
+                            sondage = "**SONDAGE EN COURS** - *{}*\n".format(self.sond["QUESTION"])
+                            sondage += "Réponses :\n"
+                            nb = 1
+                            for rps in self.sond["REPONSES"]:
+                                tag = "#" + str(nb)
+                                sondage += "**{}** | *{}*\n".format(tag, rps)
+                                nb += 1
+                            sondage += "\n"
+                            sondage += "*Tapez le tag '#numéro' lié à votre réponse pour voter !*"
+                            await self.bot.send_message(author, sondage)
+                            verif = False
+                            while verif != True:
+                                rep = await self.bot.wait_for_message(author=author, channel=channel)
+                                rep = rep.content
+                                if rep.lower() == "stop":
+                                    await self.bot.say("*Ignoré.*")
+                                    verif = True
+                                for tag in self.sond["TREP"]:
+                                    if rep == self.sond["TREP"][tag]["TAG"]:
+                                        await self.bot.whisper("**Votre réponse à été enregistrée**")
+                                        self.sond["VOTELIST"].append(author.id)
+                                        self.sond["TREP"][tag]["NB"] += 1
+                                        fileIO("data/astra/sond.json", "save", self.sond)
+                                        verif = True
+                                        break
+                                    else:
+                                        pass
+                                else:
+                                    if rep.lower() == "stop":
+                                        await self.bot.say("*Ignoré.*")
+                                        verif = True
+                                    else:
+                                        await self.bot.say("*Incorrect* Le tag utilisé ne semble pas valide.\nRéessayez.")
+                            await asyncio.sleep(0.5)
+                            await self.bot.whisper("*Merci de votre participation !*")
+                        else:
+                            await self.bot.whisper("Vous n'êtes pas inscrit dans la liste blanche pour ce sondage !")
+                    else:
+                        sondage = "**SONDAGE EN COURS** - *{}*\n".format(self.sond["QUESTION"])
+                        sondage += "Réponses :\n"
+                        nb = 1
+                        for rps in self.sond["REPONSES"]:
+                            tag = "#" + str(nb)
+                            sondage += "**{}** | *{}*\n".format(tag, rps)
+                            nb += 1
+                        sondage += "\n"
+                        sondage += "*Tapez le tag '#numéro' lié à votre réponse pour voter !*"
+                        await self.bot.send_message(author, sondage)
+                        verif = False
+                        while verif != True:
+                            rep = await self.bot.wait_for_message(author=author, channel=channel)
+                            rep = rep.content
+                            if rep.lower() == "stop":
+                                await self.bot.say("*Ignoré.*")
+                                verif = True
+                            for tag in self.sond["TREP"]:
+                                if rep == self.sond["TREP"][tag]["TAG"]:
+                                    await self.bot.whisper("**Votre réponse à été enregistrée**")
+                                    self.sond["VOTELIST"].append(author.id)
+                                    self.sond["TREP"][tag]["NB"] += 1
+                                    fileIO("data/astra/sond.json", "save", self.sond)
+                                    verif = True
+                                    break
+                                else:
+                                    pass
+                            else:
+                                if rep.lower() == "stop":
+                                    await self.bot.say("*Ignoré.*")
+                                    verif = True
+                                else:
+                                    await self.bot.say("*Incorrect* Le tag utilisé ne semble pas valide.\nRéessayez.")
+                        await asyncio.sleep(0.5)
+                        await self.bot.whisper("*Merci de votre participation !*")
+                else:
+                    await self.bot.whisper("Vous avez déjà voté !")
+            else:
+                await self.bot.whisper("Les votes n'ont pas encore démarrés !")
+        else:
+            await self.bot.whisper("Aucun sondage n'est ouvert.")
+
+    @snd.command(pass_context=True, no_pm=True)
+    @checks.mod_or_permissions(kick_members=True)
+    async def sondage(self, ctx):
+        """Permet de lancer un sondage avancé [BETA]"""
+        author = ctx.message.author
+        channel = ctx.message.channel
+        if self.sys["SONDAGE_OPEN"] != True:
+            server = ctx.message.server
+            msg = "**Bienvenue sur l'interface de sondage.**\n"
+            msg += "*Vous devez me fournir les paramètres du sondage pour le démarrer.*\n"
+            msg += "*Rappellez-vous que cette commande est utilisée pour des longues session.*\n"
+            msg += "*Pour des courtes sessions utilisez {}poll.*\n".format(ctx.prefix)
+            await self.bot.say(msg)
+            await asyncio.sleep(0.25)
+            
+            await self.bot.say("*QUESTION* - Saisissez votre question")
+            verif = False
+            while verif != True:
+                rep = await self.bot.wait_for_message(author=author, channel=channel)
+                rep = rep.content
+                if "?" in rep:
+                    await self.bot.say("Question enregistrée.\n")
+                    self.sond["QUESTION"] = str(rep)
+                    fileIO("data/astra/sond.json", "save", self.sond)
+                    verif = True
+                else:
+                    await self.bot.say("*Incorrect* Votre question doit comporter un point d'interrogation.\nRéessayez.")
+            await asyncio.sleep(0.5)
+
+            await self.bot.say("*REPONSES* - Saisissez vos réponses, séparées par un point-virgule ';'")
+            verif = False
+            while verif != True:
+                rep = await self.bot.wait_for_message(author=author, channel=channel)
+                rep = rep.content
+                if ";" in rep:
+                    replist = rep.split(";")
+                    clean = []
+                    for rep in replist:
+                        clean.append(rep)
+                    await self.bot.say("Réponses enregistrées.\n")
+                    self.sond["REPONSES"] = clean
+                    fileIO("data/astra/sond.json", "save", self.sond)
+                    verif = True
+                else:
+                    await self.bot.say("*Incorrect* Vérifiez vos réponses. Elles doivent être séparées par ';' et doivent être au minimum au nombre de deux.\nRéessayez.")
+            await asyncio.sleep(0.5)
+
+            await self.bot.say("*TEMPS* - Saisissez le temps suivi de la grandeur (m, h, j)\nIl est aussi possible de mettre une date précise à laquelle vous voulez arrêter le sondage en suivant ce format: *hh:mm jj/mm/aaaa*.\nPeu importe la méthode utilisée, n'oubliez pas que le compteur est sensible aux variations de bande passante et qu'un temps long peut potentiellement ralentir le bot (+24h).")
+            verif = False
+            while verif != True:
+                rep = await self.bot.wait_for_message(author=author, channel=channel)
+                rep = rep.content
+                if rep[0].isdigit():
+                    if ":" in rep:
+                        voulu = time.strptime(rep, "%H:%M %d/%m/%Y")
+                        voulu = time.mktime(voulu)
+                        now = int(time.time())
+                        val = voulu - now
+                        if val > 120:
+                            await self.bot.say("Temps enregistré.\n")
+                            self.sond["TEMPS"] = int(val)
+                            fileIO("data/astra/sond.json", "save", self.sond)
+                            verif = True
+                        else:
+                            await self.bot.say("L'intervalle de temps est trop limite. Mettez au moins 2 minutes...")
+                    elif rep[1] == "m":
+                        val = int(rep[0]) * 60 #m > s
+                        await self.bot.say("Temps enregistré.\n")
+                        self.sond["TEMPS"] = int(val)
+                        fileIO("data/astra/sond.json", "save", self.sond)
+                        verif = True
+                    elif rep[1] == "h":
+                        val = int(rep[0]) * 3600 #h > s
+                        await self.bot.say("Temps enregistré.\n")
+                        self.sond["TEMPS"] = int(val)
+                        fileIO("data/astra/sond.json", "save", self.sond)
+                        verif = True
+                    elif rep[1] == "j":
+                        val = int(rep[0]) * 86400 #j > s
+                        await self.bot.say("Temps enregistré.\n")
+                        self.sond["TEMPS"] = int(val)
+                        fileIO("data/astra/sond.json", "save", self.sond)
+                        verif = True
+                    else:
+                        await self.bot.say("*Invalide* Vérifiez votre grandeur...\n*Peut-être avez vous oublié '!' si vous avez précisé une heure*")
+                else:
+                    await self.bot.say("*Incorrect* Vérifiez la valeur et réessayez.")
+            await asyncio.sleep(0.5)
+
+            await self.bot.say("*LISTE BLANCHE* - Indiquez si votre sondage est protégé ou non par liste blanche.\n*Si oui, mentionnez les rôles nécéssaire pour y entrer. Sinon, tapez 'None'.")
+            verif = False
+            while verif != True:
+                rep = await self.bot.wait_for_message(author=author, channel=channel)
+                if rep.content != "":
+                    rolelist = rep.role_mentions
+                    if rolelist != []:
+                        await self.bot.say("Rôles pris en compte.\n")
+                        self.sond["ROLES"] = rolelist
+                        fileIO("data/astra/sond.json", "save", self.sond)
+                        verif = True
+                    elif rep.content.lower() == "none":
+                        await self.bot.say("Le sondage ne sera pas limité par rôles.")
+                        self.sond["ROLES"] = None
+                        fileIO("data/astra/sond.json", "save", self.sond)
+                        verif = True
+                    else:
+                        await self.bot.say("*Incorrect* Votre réponse est invalide.\nRéessayez.")
+                else:
+                    await self.bot.say("*Incorrect* Vous ne pouvez pas laisser le message vide.\nRéessayez.")
+            await asyncio.sleep(0.5)
+
+            await self.bot.say("*RESULTATS* - Mentionnez le channel où vous désirez recevoir les résultats (Publics).")
+            verif = False
+            while verif != True:
+                rep = await self.bot.wait_for_message(author=author, channel=channel)
+                if rep.content != "":
+                    chanlist = rep.channel_mentions
+                    if len(chanlist) == 1:
+                        await self.bot.say("Channel enregistré.\n")
+                        self.sond["CHAN_ID"] = chanlist[0].id
+                        fileIO("data/astra/sond.json", "save", self.sond)
+                        verif = True
+                    else:
+                        pass
+                else:
+                    await self.bot.say("*Incorrect* Vous devez mentionner un channel.\nRéessayez.")
+            await asyncio.sleep(0.5)
+
+
+            if self.sond["ROLES"] == None:
+                auto = False
+            else:
+                auto = True
+            self.sys["SONDAGE_OPEN"] = True
+            fileIO("data/astra/sys.json", "save", self.sys)
+            await asyncio.sleep(0.5)
+            await self.bot.say("Dès que vous êtes prêt à lancer le sondage, tapez '#START' sur ce channel !\n*Cette action va provoquer le listage des membres pouvant voter si une limite de rôle a été imposée.*")
+            
+            verif = False
+            while verif != True:
+                rep = await self.bot.wait_for_message(author=author, channel=channel)
+                if rep.content.lower() == "#start":
+                    if auto is True:
+                        lm = "**Membres sur liste blanche:**\n"
+                        for member in server.members:
+                            if self.compare_role(member, self.sond["ROLES"]):
+                                lm += "- *{}*\n".format(member.display_name)
+                                self.sond["BLANCHE_LISTE"].append(member.id)
+                        fileIO("data/astra/sond.json", "save", self.sond)
+                        await self.bot.whisper(lm)
+                    verif = True
+                    await self.bot.say("Je vais publier sur le channel indiqué le sondage.\n*Notez que vous recevrez des stats en direct du sondage sur ce channel ! [BETA : Non disponible]*")
+                else:
+                    pass
+
+            sondage = "**SONDAGE DEMARRE** - *{}*\n".format(self.sond["QUESTION"])
+            sondage += "Réponses :\n"
+            nb = 1
+            for rps in self.sond["REPONSES"]:
+                tag = "#" + str(nb)
+                sondage += "**{}** | *{}*\n".format(tag, rps)
+                self.sond["TREP"][tag] = {"TAG" : tag, "REPONSE" : rps, "NB" : 0}
+                nb += 1
+            sondage += "\n"
+            fileIO("data/astra/sond.json", "save", self.sond)
+            sondage += "*Tapez le tag '#numéro' lié à votre réponse en MP avec '{}snd vote' pour voter !*".format(ctx.prefix)
+            self.sys["VOTE_OPEN"] = True
+            fileIO("data/astra/sys.json", "save", self.sys)
+            await self.bot.send_message(chanlist[0], sondage)
+            verif = True
+            
+            #v ATTENTE
+            val = self.sond["TEMPS"]
+            await asyncio.sleep(val)
+            #(Le calcul des secondes se fait lors de l'entrée des valeurs plus haut)
+            
+            #v RESULTATS
+            clr = [] #Clear
+            for e in self.sond["TREP"]:
+                a = self.sond["TREP"][e]["TAG"]
+                b = self.sond["TREP"][e]["REPONSE"]
+                c = self.sond["TREP"][e]["NB"]
+                clr.append([a,b,c])
+            cls = sorted(clr, key=operator.itemgetter(2)) #Classé par NB
+            cls.reverse() #Pour avoir les plus grand en haut
+            results = "**SONDAGE TERMINE** - *{}*\n".format(self.sond["QUESTION"])
+            results += "Résultats :\n"
+            for r in cls:
+                results += "**{}** | *{}* ({} votes)\n".format(r[0], r[1], r[2])
+            results += "\n" + "*Merci d'avoir participé à ce sondage !*"
+            await self.bot.send_message(chanlist[0], results)
+            self.sond_reset()
+        else:
+            await self.bot.say("Un sondage est déjà en cours.")
 
     @commands.command(pass_context=True)
     async def signal(self, ctx, user : discord.Member, *raison):
@@ -59,6 +374,7 @@ class Astra:
             await send_cmd_help(ctx)
 
     @astra.command(pass_context=True)
+    @checks.mod_or_permissions(kick_members=True)
     async def suser(self, ctx, *snom):
         """Recherche un utilisateur."""
         server = ctx.message.server
@@ -593,6 +909,10 @@ def check_files():
     if not os.path.isfile("data/astra/ddb.json"):
         print("Création du fichier de signalement Astra...")
         fileIO("data/astra/ddb.json", "save", {})
+
+    if not os.path.isfile("data/astra/sond.json"):
+        print("Création du fichier de sondage Astra...")
+        fileIO("data/astra/sond.json", "save", defautsond)
 
 def setup(bot):
     check_folders()
