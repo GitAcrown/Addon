@@ -811,7 +811,7 @@ class Astra:
             else:
                 await self.bot.say("Réponse invalide, le rôle est conservé.")
 
-    @prs.command(pass_context=True)
+    @prs.command(pass_context=True, name = "mod")
     async def moderate(self, ctx, user : discord.Member, temps: int = 5, mute = None):
         """Ajoute/Enlève une personne en prison.
 
