@@ -812,7 +812,7 @@ class Astra:
                 await self.bot.say("Réponse invalide, le rôle est conservé.")
 
     @prs.command(pass_context=True)
-    async def mod(self, ctx, user : discord.Member, temps: int = 5, mute = None):
+    async def moderate(self, ctx, user : discord.Member, temps: int = 5, mute = None):
         """Ajoute/Enlève une personne en prison.
 
         Si l'utilisateur visé ne possède pas de casier, en crée un."""
@@ -858,7 +858,7 @@ class Astra:
                         self.case[user.id]["SORTIE_PRS"] = None
                         fileIO("data/astra/case.json", "save", self.case)
                     else:
-                        pass
+                        return
                 else:
                     await self.bot.whisper("L'utilisateur {} était en prison mais a quitté le serveur avant la fin du temps.".format(user.display_name))
                     self.case[user.id]["LOGS_MOD"].append("{} - Sortie de prison (A quitté le serveur)".format(time.strftime("%d/%m %H:%M")))
@@ -919,7 +919,7 @@ class Astra:
                         self.case[user.id]["SORTIE_PRS"] = None
                         fileIO("data/astra/case.json", "save", self.case)
                     else:
-                        pass
+                        return
                 else:
                     await self.bot.whisper("L'utilisateur {} était en visite de la prison mais a quitté le serveur avant la fin du temps.".format(user.display_name))
                     self.case[user.id]["LOGS_MOD"].append("{} - Sortie de prison (Visite) (A quitté le serveur)".format(time.strftime("%d/%m %H:%M")))
@@ -972,7 +972,7 @@ class Astra:
             if role in [r.name for r in user.roles]:
                 reste = self.case[id]["SORTIE_PRS"] - int(time.time())
                 reste /= 60
-                reste = round(reste, 0)
+                reste = int(reste)
                 sortie = time.localtime(self.case[id]["SORTIE_PRS"])
                 sortie = time.strftime("%H:%M", sortie)
                 await self.bot.say("**{} > Il vous reste approximativement {} minute(s) en prison.**\n*Vous sortirez vers {}.*".format(user.name, reste, sortie))
