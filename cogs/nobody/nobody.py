@@ -105,6 +105,10 @@ class Nobody:
         self.save()
         await self.bot.say("Fait.")
 
+    @commands.command(pass_context=True, hidden=True)
+    async def nbdv(self, ctx):
+        await self.bot.say("1.0")
+
     @commands.group(pass_context=True)
     async def nbd(self, ctx):
         """Commandes NOBODY"""
@@ -163,15 +167,12 @@ class Nobody:
         author = ctx.message.author
         for t in self.sys["INVITS"]:
             if tag == t[0]:
-                if self.nob[author.id]["FAGTAG"] == t[1]:
-                    await self.bot.whisper("Demande de {} acceptée.".format(t[3]))
-                    self.nob[author.id]["FAGS"].append(t[2])
-                    self.nob[t[2]]["FAGS"].append(author.id)
-                    self.sys["INVITS"].remove([t[0],t[1],t[2], t[3]])
-                    self.save()
-                    return
-                else:
-                    await self.bot.whisper("Vous n'êtes pas l'auteur de cette invitation.")
+                await self.bot.whisper("Demande de {} acceptée.".format(t[3]))
+                self.nob[author.id]["FAGS"].append(t[2])
+                self.nob[t[2]]["FAGS"].append(author.id)
+                self.sys["INVITS"].remove([t[0],t[1],t[2], t[3]])
+                self.save()
+                return
             else:
                 pass
         else:
