@@ -105,6 +105,11 @@ class Nobody:
         self.save()
         await self.bot.say("Fait.")
 
+    @commands.command(pass_context=True, hidden=True, no_pm=True)
+    async def serverset(self, ctx):
+        self.sys = {"INVITS" : [],"AN_CHAN" : None, "SERVER_ID" : ctx.message.server.id}
+        await self.bot.say("Fait.")
+
     @commands.command(pass_context=True, hidden=True)
     async def nbdv(self, ctx):
         await self.bot.say("1.0")
