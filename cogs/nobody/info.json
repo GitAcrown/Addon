@@ -1,0 +1,8 @@
+{
+    "AUTHOR" : "Acrown",
+    "DESCRIPTION" : "Extension sociale pour Discord.\nPermet diff\u00e9rentes interactions entre les utilisateurs.",
+    "DISABLED" : false,
+    "INSTALL_MSG" : "Merci d'avoir install\u00e9 ce module. Utilisez 'nbd' pour plus d'infos.",
+    "NAME" : "Nobody",
+    "SHORT" : "Extension sociale pour le Bot."
+}
