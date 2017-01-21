@@ -9,7 +9,7 @@ from cogs.utils.dataIO import fileIO, dataIO
 from __main__ import send_cmd_help, settings
 import time
 
-defaut = {"PRSROLE" : None, "SONDAGE_OPEN" : False, "VOTE_OPEN" : False}
+defaut = {"PRSROLE" : None, "SONDAGE_OPEN" : False, "VOTE_OPEN" : False, "VOTE" : {},"ALR" : [], "PVSTART" : False, "REPS" : [], "QUEST" : None, "CHANS" : [], "ROLES" : None, "USERLIST" : []}
 defautsond = {"STOP" : False, "ESTIME" : None, "QUESTION" : None,"REPONSES" : [],"TEMPS" : 0,"CHANNEL_ID" : None,"ROLES" : [], "BLANCHE_LISTE": [], "VOTELIST" : [],"TREP" : {}, "S_MSGID" : None}
 
 class Astra:
@@ -37,6 +37,176 @@ class Astra:
         fileIO("data/astra/sond.json", "save", self.sond)
         fileIO("data/astra/sys.json", "save", self.sys)
         return True
+
+    def pv_reset(self):
+        self.sys["ALR"] = []
+        self.sys["VOTE"] = {}
+        self.sys["PVSTART"] = False
+        self.sys["QUEST"] = None
+        self.sys["REPS"] = []
+        self.sys["CHANS"] = []
+        self.sys["ROLES"] = None
+        self.sys["USERLIST"] = []
+        fileIO("data/astra/sys.json", "save", self.sys)
+        return True
+
+    @commands.group(pass_context=True)
+    async def vp(self, ctx):
+        """Commandes de Vote privé."""
+        if ctx.invoked_subcommand is None:
+            await send_cmd_help(ctx)
+
+    @vp.command(pass_context=True, hidden=True)
+    async def hardreset(self, ctx):
+        self.pv_reset()
+        await self.bot.say("Fait.")
+
+    @vp.command(pass_context=True)
+    @checks.mod_or_permissions(kick_members=True)
+    async def stat(self, ctx):
+        """Permet d'afficher les statistiques."""
+        clr = [] #Clear
+        if self.sys["PVSTART"] is True:
+            for e in self.sys["VOTE"]:
+                a = self.sys["VOTE"][e]["NUM"]
+                b = self.sys["VOTE"][e]["REP"]
+                c = self.sys["VOTE"][e]["VOTES"]
+                clr.append([a,b,c])
+            cls = sorted(clr, key=operator.itemgetter(2)) #Classé par NB
+            cls.reverse() #Pour avoir les plus grand en haut
+            results = "**STATS** - *{}*\n".format(self.sys["QUEST"].upper())
+            for r in cls:
+                results += "**{}** | *{}* ({} votes)\n".format(r[0], r[1], r[2])
+            results += "\n" + "*Ces statistiques sont et doivent rester privées.*"
+            await self.bot.whisper(results)
+        else:
+            await self.bot.whisper("Aucun sondage en cours.")
+
+    @vp.command(pass_context=True, no_pm=True)
+    @checks.mod_or_permissions(kick_members=True)
+    async def start(self, ctx, question, reponses, autre: str=None):
+        """Permet de lancer un vote privé rapide.
+
+        Exemple : "Comment allez-vous ?" "Bien;Pas bien;ça va" @role1 #chanA"""
+        roles = ctx.message.role_mentions
+        chans = ctx.message.channel_mentions
+        server = ctx.message.server
+        clean = []
+        if self.sys["PVSTART"] is False:
+            self.sys["PVSTART"] = True
+            fileIO("data/astra/sys.json", "save", self.sys)
+            await self.bot.say("**Préparation du vote [...]**")
+            self.sys["QUEST"] = question
+            if chans == []:
+               clean.append(ctx.message.channel.id)
+            else:
+                for chan in chans:
+                    clean.append(chan.id)
+                self.sys["CHANS"] = clean
+                rolelist = []
+            if roles == []:
+                rolelist.append(server.default_role)
+            else:
+                rolelist = roles
+            reponses = reponses.split(";")
+            valid = []
+            for r in reponses:
+                valid.append([r, (len(valid) + 1)])
+            self.sys["REPS"] = valid
+            await asyncio.sleep(0.5)
+            vmsg = "**VOTE** - *{}*\n".format(question.upper())
+            vmsg += "*Utilisez {}vp rep <numero> sur ce MP pour voter !*\n".format(ctx.prefix)
+            vmsg += "\n"
+            for v in valid:
+                vmsg += "*{}* | **{}**\n".format(v[1],v[0])
+
+            umsg = "**VOTE - {}**\n".format(question.upper())
+            umsg += "*Les personnes éligibles au vote ont reçu un MP pour y participer.*\n"
+            umsg += "\n"
+            for v in valid:
+                umsg += "*{}* | **{}**\n".format(v[1],v[0])
+                num = str(v[1])
+                self.sys["VOTE"][num] = {"NUM" : str(v[1]),"REP" : v[0],"VOTES" : 0}
+            else:
+                fileIO("data/astra/sys.json", "save", self.sys)
+
+            await self.bot.say("**Sondage prêt. Listage et envoi de MP aux personnes éligibles [...]**")
+            for member in server.members:
+                if self.compare_role(member, rolelist):
+                    try:
+                        await self.bot.send_message(member, vmsg)
+                        self.sys["USERLIST"].append(member.id)
+                    except:
+                        pass
+            else:
+                await self.bot.say("**Sondage démarré. Publication sur les channels spécifiés [...]**")
+                for e in clean:
+                    try:
+                        chan = server.get_channel(e)
+                        await self.bot.send_message(chan, umsg)
+                    except:
+                        pass
+                else:
+                    await self.bot.say("**Terminé. Pour arrêter ce vote, faîtes '{}vp end'**".format(ctx.prefix))
+                    fileIO("data/astra/sys.json", "save", self.sys)
+        else:
+            await self.bot.say("Un vote est déjà en cours.")
+
+    @vp.command(pass_context=True, no_pm=True)
+    @checks.mod_or_permissions(kick_members=True)
+    async def end(self, ctx):
+        """Termine le sondage privé en cours."""
+        server = ctx.message.server
+        if self.sys["PVSTART"] is True:
+            self.sys["PVSTART"] = False
+            clr = [] #Clear
+            for e in self.sys["VOTE"]:
+                a = self.sys["VOTE"][e]["NUM"]
+                b = self.sys["VOTE"][e]["REP"]
+                c = self.sys["VOTE"][e]["VOTES"]
+                clr.append([a,b,c])
+            cls = sorted(clr, key=operator.itemgetter(2)) #Classé par NB
+            cls.reverse() #Pour avoir les plus grand en haut
+            results = "**VOTE TERMINE** - *{}*\n".format(self.sys["QUEST"].upper())
+            results += "Résultats :\n"
+            for r in cls:
+                results += "**{}** | *{}* ({} votes)\n".format(r[0], r[1], r[2])
+            results += "\n" + "*Merci d'avoir participé à ce sondage !*"
+            await self.bot.say("**Sondage arrêté. Publication des résultats [...]**")
+            for e in self.sys["CHANS"]:
+                chan = server.get_channel(e)
+                await self.bot.send_message(chan, results)
+            self.pv_reset()
+        else:
+            await self.bot.say("Aucun sondage n'est en cours.")
+
+    @vp.command(pass_context=True)
+    async def rep(self, ctx, num: str):
+        """Permet de répondre à un vote."""
+        author = ctx.message.author
+        if ctx.message.server:
+            await self.bot.whisper("Ce vote est privé, vous devez répondre en MP.")
+            return
+        if self.sys["PVSTART"] is True:
+            if author.id in self.sys["USERLIST"]:
+                for e in self.sys["VOTE"]:
+                    if self.sys["VOTE"][e]["NUM"] == num:
+                        if author.id not in self.sys["ALR"]:
+                            self.sys["VOTE"][num]["VOTES"] += 1
+                            fileIO("data/astra/sys.json", "save", self.sys)
+                            await self.bot.whisper("*Merci d'avoir participé à ce sondage*.\nVotre vote est bien pris en compte.")
+                            return
+                        else:
+                            await self.bot.whisper("Vous semblez avoir déjà voté !")
+                            return
+                else:
+                    await self.bot.whisper("Numéro invalide.")
+            else:
+                await self.bot.whisper("Vous n'êtes pas autorisé à voter.")
+        else:
+            await self.bot.whisper("Aucun sondage n'est en cours.")
+
+    #SONDAGE ============================
 
     @commands.group(pass_context=True)
     async def snd(self, ctx):
