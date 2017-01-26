@@ -719,15 +719,13 @@ class Astra:
             if nom in member.name.lower() or nom in member.display_name.lower():
                 dab.append(member)
                 nb += 1
-            elif member.id in self.past_names or member.id in self.past_nicknames:
+            if member.id in self.past_names or member.id in self.past_nicknames:
                 if nom in self.past_names[member.id]:
                     nam.append(member)
                     nb += 1
                 elif nom in self.past_nicknames[member.id]:
                     nick.append(member)
                     nb += 1
-            else:
-                pass
         
         msg = "__**RESULTATS**__\n"
         msg += "---- Pseudos/Surnoms directs ----\n"
