@@ -22,6 +22,8 @@ class Astra:
         self.logs = dataIO.load_json("data/astra/logs.json")
         self.ddb = dataIO.load_json("data/astra/ddb.json")
         self.sond = dataIO.load_json("data/astra/sond.json")
+        self.past_names = dataIO.load_json("data/mod/past_names.json")
+        self.past_nicknames = dataIO.load_json("data/mod/past_nicknames.json")
 
     def compare_role(self, user, rolelist):
             for role in rolelist:
@@ -699,6 +701,46 @@ class Astra:
         """Gestion de ASTRA"""
         if ctx.invoked_subcommand is None:
             await send_cmd_help(ctx)
+
+    @commands.command(pass_context=True, no_pm=True)
+    @checks.mod_or_permissions(kick_members=True)
+    async def nsa(self, ctx, *nom):
+        """Super-recherche de pseudos"""
+        server = ctx.message.server
+        if nom != "":
+            nom = " ".join(nom).lower()
+        else:
+            await self.bot.say("Veuillez rentrer une recherche...")
+        dab = []
+        nam = []
+        nick = []
+        nb = 0
+        for member in server.members:
+            if nom in member.name.lower() or nom in member.display_name.lower():
+                dab.append(member)
+                nb += 1
+            elif member.id in self.past_names or member.id in self.past_nicknames:
+                if nom in self.past_names[member.id]:
+                    nam.append(member)
+                    nb += 1
+                elif nom in self.past_nicknames[member.id]:
+                    nick.append(member)
+                    nb += 1
+            else:
+                pass
+        
+        msg = "__**RESULTATS**__\n"
+        msg += "---- Pseudos/Surnoms directs ----\n"
+        for e in dab:
+            msg += "- " + e.mention + "\n"
+        msg += "---- Anciens pseudos ----\n"
+        for e in nam:
+            msg += "- " + e.mention + "\n"
+        msg += "---- Anciens surnoms ----\n"
+        for e in nick:
+            msg += "- " + e.mention + "\n"
+        await self.bot.whisper(msg)
+        
 
     @astra.command(pass_context=True)
     @checks.mod_or_permissions(kick_members=True)
