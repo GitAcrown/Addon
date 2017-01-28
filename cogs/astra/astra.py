@@ -195,6 +195,7 @@ class Astra:
                     if self.sys["VOTE"][e]["NUM"] == num:
                         if author.id not in self.sys["ALR"]:
                             self.sys["VOTE"][num]["VOTES"] += 1
+                            self.sys["ALR"].append(author.id)
                             fileIO("data/astra/sys.json", "save", self.sys)
                             await self.bot.whisper("*Merci d'avoir participé à ce sondage*.\nVotre vote est bien pris en compte.")
                             return
