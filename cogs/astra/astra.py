@@ -11,6 +11,7 @@ import time
 
 defaut = {"PRSROLE" : None, "SONDAGE_OPEN" : False, "VOTE_OPEN" : False, "VOTE" : {},"ALR" : [], "PVSTART" : False, "REPS" : [], "QUEST" : None, "CHANS" : [], "ROLES" : None, "USERLIST" : []}
 defautsond = {"STOP" : False, "ESTIME" : None, "QUESTION" : None,"REPONSES" : [],"TEMPS" : 0,"CHANNEL_ID" : None,"ROLES" : [], "BLANCHE_LISTE": [], "VOTELIST" : [],"TREP" : {}, "S_MSGID" : None}
+presd = {"PG_ROLE" : None, "PTAG" : "0","IDEES" : {}}
 
 class Astra:
     """Collection d'outils."""
@@ -24,7 +25,8 @@ class Astra:
         self.sond = dataIO.load_json("data/astra/sond.json")
         self.past_names = dataIO.load_json("data/mod/past_names.json")
         self.past_nicknames = dataIO.load_json("data/mod/past_nicknames.json")
-
+        self.pres = dataIO.load_json("data/astra/pres.json")
+        
     def compare_role(self, user, rolelist):
             for role in rolelist:
                 if role in user.roles:
@@ -51,6 +53,209 @@ class Astra:
         self.sys["USERLIST"] = []
         fileIO("data/astra/sys.json", "save", self.sys)
         return True
+
+    #GESTION PRESIDENT ========================
+
+    @commands.group(pass_context=True)
+    async def gp(self, ctx):
+        """Outils pour Présidents."""
+        if ctx.invoked_subcommand is None:
+            await send_cmd_help(ctx)
+
+    @gp.command(pass_context=True, no_pm=True)
+    @checks.mod_or_permissions(ban_members=True)
+    async def pset(self, ctx, role:discord.Role):
+        """Permet de régler le rôle de Président."""
+        channel = ctx.message.channel
+        author = ctx.message.author
+        if self.pres["PG_ROLE"] is None:
+            self.pres["PG_ROLE"] = role.name
+            fileIO("data/astra/pres.json", "save", self.pres)
+            await self.bot.say("Rôle enregistré.")
+        else:
+            await self.bot.say("Le rôle {} est déja renseigné. Voulez-vous l'enlver ? (O/N)".format(self.pres["PG_ROLE"]))
+            rep = await self.bot.wait_for_message(author=author, channel=channel)
+            rep = rep.content.lower()
+            if rep == "o":
+                await self.bot.say("Le rôle à été retiré.")
+                self.pres["PG_ROLE"] = None
+                fileIO("data/astra/pres.json", "save", self.pres)
+            elif rep == "n":
+                await self.bot.say("Le rôle est conservé.")
+            else:
+                await self.bot.say("Réponse invalide, le rôle est conservé.")
+
+    @gp.command(pass_context=True)
+    async def prp(self, ctx):
+        """Permet de proposer une idée au Président."""
+        author = ctx.message.author
+        if self.pres["PG_ROLE"] != None:
+            self.pres["PTAG"] = str(int(self.pres["PTAG"]) + 1)
+            tag = self.pres["PTAG"]
+            self.pres["IDEES"][tag] = {"TAG" : tag, "AUTHOR" : str(author), "TITRE" : None, "TEXTE" : None}
+            msg = "**Proposer une idée**\n"
+            msg += "*Quel titre voulez-vous donner à votre idée ?*"
+            nec = await self.bot.whisper(msg)
+            channel = nec.channel
+            verif = False
+            while verif != True:
+                rep = await self.bot.wait_for_message(author=author, channel=channel)
+                if len(rep.content) >= 5:
+                    self.pres["IDEES"][tag]["TITRE"] = rep.content
+                    verif = True
+                elif rep.content.lower() == "q":
+                    await self.bot.whisper("Votre idée n'est pas conservée. Bye :wave:")
+                    del self.pres["IDEES"][tag]
+                    return
+                else:
+                    await self.bot.whisper("Invalide, votre titre doit comporter plus de 5 caractères. Réessayez...")
+
+            await self.bot.whisper("*Quelle est votre idée ?*\n*(Tip: Pour mettre un espace sans valider votre message, utilisez MAJ + Entrer)*")
+            verif = False
+            while verif != True:
+                rep = await self.bot.wait_for_message(author=author, channel=channel)
+                if len(rep.content) >= 30:
+                    self.pres["IDEES"][tag]["TEXTE"] = rep.content
+                    await self.bot.whisper("Votre idée est enregistrée. Merci !")
+                    fileIO("data/astra/pres.json", "save", self.pres)
+                    verif = True
+                elif rep.content.lower() == "q":
+                    await self.bot.whisper("Votre idée n'est pas conservée. Bye :wave:")
+                    del self.pres["IDEES"][tag]
+                    fileIO("data/astra/pres.json", "save", self.pres)
+                    return
+                else:
+                    await self.bot.whisper("Invalide, votre message doit comporter plus de 30 caractères. Réessayez...")
+            fileIO("data/astra/pres.json", "save", self.pres)
+        else:
+            await self.bot.whisper("Aucun président n'est enregistré dans mes données.")
+
+    
+    @gp.command(pass_context=True)
+    @checks.mod_or_permissions(administrator=True)
+    async def reset(self, ctx):
+        """Reset le module Président."""
+        self.pres["IDEES"] = {}
+        self.pres["PTAG"] = "0"
+        fileIO("data/astra/pres.json", "save", self.pres)
+        await self.bot.say("Fait.")
+
+    @gp.command(pass_context=True)
+    async def bai(self, ctx):
+        """Permet de consulter la Boite à Idées."""
+        author = ctx.message.author
+        if not ctx.message.server:
+            await self.bot.whisper("Cette commande est liée au serveur où vous êtes président. Lancez là commande sur celui-ci.")
+            return
+        role = self.pres["PG_ROLE"]
+        r = discord.utils.get(ctx.message.server.roles, name=role)
+        if role in [r.name for r in author.roles]:
+            retour = False
+            while retour == False:
+                msg = "**__Boite à idées :__**\n"
+                for i in self.pres["IDEES"]:
+                    msg += "__#{}__| **{}** - *{}*\n".format(self.pres["IDEES"][i]["TAG"], self.pres["IDEES"][i]["AUTHOR"],self.pres["IDEES"][i]["TITRE"])
+                else:
+                    msg += "\n*Tapez le numéro correspondant pour en savoir plus ou 'Q' pour quitter.*"
+                    nec = await self.bot.whisper(msg)
+                    channel = nec.channel
+                verif = False
+                while verif != True:
+                    rep = await self.bot.wait_for_message(author=author, channel=channel)
+                    if rep.content.lower() == "q":
+                        await self.bot.whisper("Bye :wave:")
+                        return
+                    if rep.content in [e for e in self.pres["IDEES"]]:
+                        verif = True
+                        aff = "__#{}__ - **{}**\n".format(self.pres["IDEES"][rep.content]["TAG"], self.pres["IDEES"][rep.content]["AUTHOR"])
+                        aff += "*{}*\n".format(self.pres["IDEES"][rep.content]["TITRE"])
+                        aff += "\n{}\n".format(self.pres["IDEES"][rep.content]["TEXTE"])
+                        opt = "**----- ACTIONS -----**\n"
+                        opt += "S - *Supprimer*\n"
+                        opt += "M - *Retour au Menu*\n"
+                        opt += "Q - *Quitter*\n"
+                        opt += "*Tapez la lettre correspondante à l'action désirée.*"
+                        await self.bot.whisper(aff)
+                        await asyncio.sleep(2)
+                        await self.bot.whisper(opt)
+                        
+                        sec = False
+                        while sec != True:
+                            act = await self.bot.wait_for_message(author=author, channel=channel)
+                            if act.content.lower() == "s":
+                                del self.pres["IDEES"][rep.content]
+                                await self.bot.whisper("Message supprimé.")
+                                sec = True
+                            elif act.content.lower() == "m":
+                                sec = True
+                            elif act.content.lower() == "q":
+                                await self.bot.whisper("Bye :wave:")
+                                return
+                            else:
+                                await self.bot.whisper("Invalide, réessayez.")
+                    else:
+                        await self.bot.whisper("Invalide, réessayez.")
+        else:
+            await self.bot.whisper("Vous n'avez pas le rôle pour accéder à cette fonction.")
+
+    @gp.command(pass_context=True)
+    @checks.mod_or_permissions(administrator=True)
+    async def admbai(self, ctx):
+        """Permet de consulter la Boite à Idées."""
+        author = ctx.message.author
+        channel = ctx.message.channel
+        if not ctx.message.server:
+            await self.bot.whisper("Cette commande est liée au serveur où vous êtes président. Lancez là commande sur celui-ci.")
+            return
+        role = self.pres["PG_ROLE"]
+        r = discord.utils.get(ctx.message.server.roles, name=role)
+        retour = False
+        while retour == False:
+            msg = "**__Boite à idées :__**\n"
+            for i in self.pres["IDEES"]:
+                msg += "__#{}__| **{}** - *{}*\n".format(self.pres["IDEES"][i]["TAG"], self.pres["IDEES"][i]["AUTHOR"],self.pres["IDEES"][i]["TITRE"])
+            else:
+                msg += "\n*Tapez le numéro correspondant pour en savoir plus ou 'Q' pour quitter.*"
+                nec = await self.bot.whisper(msg)
+                channel = nec.channel
+            verif = False
+            while verif != True:
+                rep = await self.bot.wait_for_message(author=author, channel=channel)
+                if rep.content.lower() == "q":
+                    await self.bot.whisper("Bye :wave:")
+                    return
+                if rep.content in [e for e in self.pres["IDEES"]]:
+                    verif = True
+                    aff = "__#{}__ - **{}**\n".format(self.pres["IDEES"][rep.content]["TAG"], self.pres["IDEES"][rep.content]["AUTHOR"])
+                    aff += "*{}*\n".format(self.pres["IDEES"][rep.content]["TITRE"])
+                    aff += "\n{}\n".format(self.pres["IDEES"][rep.content]["TEXTE"])
+                    opt = "**----- ACTIONS -----**\n"
+                    opt += "S - *Supprimer*\n"
+                    opt += "M - *Retour au Menu*\n"
+                    opt += "Q - *Quitter*\n"
+                    opt += "*Tapez la lettre correspondante à l'action désirée.*"
+                    await self.bot.whisper(aff)
+                    await asyncio.sleep(2)
+                    await self.bot.whisper(opt)
+                    
+                    sec = False
+                    while sec != True:
+                        act = await self.bot.wait_for_message(author=author, channel=channel)
+                        if act.content.lower() == "s":
+                            del self.pres["IDEES"][rep.content]
+                            await self.bot.whisper("Message supprimé.")
+                            sec = True
+                        elif act.content.lower() == "m":
+                            sec = True
+                        elif act.content.lower() == "q":
+                            await self.bot.whisper("Bye :wave:")
+                            return
+                        else:
+                            await self.bot.whisper("Invalide, réessayez.")
+                else:
+                    await self.bot.whisper("Invalide, réessayez.")
+        
+    #VP -------------------------------
 
     @commands.group(pass_context=True)
     async def vp(self, ctx):
@@ -1003,6 +1208,7 @@ class Astra:
     @prs.command(pass_context=True, hidden=True)
     async def set(self, ctx, role : discord.Role):
         """Réglage du rôle Prison."""
+        channel = ctx.message.channel
         if self.sys["PRSROLE"] is None:
             self.sys["PRSROLE"] = role.name
             if role.hoist is False:
@@ -1269,6 +1475,10 @@ def check_files():
     if not os.path.isfile("data/astra/case.json"):
         print("Création du fichier de données Astra...")
         fileIO("data/astra/case.json", "save", {})
+
+    if not os.path.isfile("data/astra/pres.json"):
+        print("Création du fichier de gestion Président Astra...")
+        fileIO("data/astra/pres.json", "save", presd)
 
     if not os.path.isfile("data/astra/logs.json"):
         print("Création du fichier de stockage Astra...")
