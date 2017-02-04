@@ -176,7 +176,7 @@ class Astra:
                         opt += "Q - *Quitter*\n"
                         opt += "*Tapez la lettre correspondante à l'action désirée.*"
                         await self.bot.whisper(aff)
-                        await asyncio.sleep(2)
+                        await asyncio.sleep(0.5)
                         await self.bot.whisper(opt)
                         
                         sec = False
