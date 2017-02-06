@@ -38,8 +38,8 @@ class Russianroulette:
                             self.rrgame["System"]["Roulette Initial"] = True
                             fileIO("data/roulette/rrgame.json", "save", self.rrgame)
                             await self.bot.say(play.mention + " **" + user.name + "** commence un jeu de la roulette avec comme offre de départ **" +
-                                               str(bet) + "**.\n" "La partie commence si 5 joueurs s'inscrivent, sinon dans 30 secondes.")
-                            await asyncio.sleep(30)
+                                               str(bet) + "**.\n" "La partie commence si 5 joueurs s'inscrivent, sinon dans 60 secondes.")
+                            await asyncio.sleep(60)
                             if self.rrgame["System"]["Player Count"] > 1 and self.rrgame["System"]["Player Count"] < 6:
                                 self.rrgame["System"]["Active"] = True
                                 await self.bot.say("Je vais mettre quelques balles dans le revolver.")
