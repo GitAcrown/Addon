@@ -5,6 +5,7 @@ import asyncio
 from .utils.dataIO import fileIO
 from discord.ext import commands
 from .utils import checks
+import discord
 
 
 class Russianroulette:
