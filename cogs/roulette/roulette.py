@@ -20,7 +20,7 @@ class Russianroulette:
         """Roulette russe. Requiert au moins 2 joueurs, 6 max."""
         user = ctx.message.author
         server = ctx.message.server
-        r = discord.utils.get(ctx.message.server.roles, name="Play")
+        play = discord.utils.get(ctx.message.server.roles, name="Play")
         if not self.rrgame["System"]["Active"]:
             if bet >= self.rrgame["Config"]["Min Bet"]:
                 if self.rrgame["System"]["Player Count"] < 6:
@@ -37,7 +37,7 @@ class Russianroulette:
                                                                     "Bet": bet}
                             self.rrgame["System"]["Roulette Initial"] = True
                             fileIO("data/roulette/rrgame.json", "save", self.rrgame)
-                            await self.bot.say(r.mention + " **" + user.name + "** commence un jeu de la roulette avec comme offre de départ **" +
+                            await self.bot.say(play.mention + " **" + user.name + "** commence un jeu de la roulette avec comme offre de départ **" +
                                                str(bet) + "**.\n" "La partie commence si 5 joueurs s'inscrivent, sinon dans 30 secondes.")
                             await asyncio.sleep(30)
                             if self.rrgame["System"]["Player Count"] > 1 and self.rrgame["System"]["Player Count"] < 6:
