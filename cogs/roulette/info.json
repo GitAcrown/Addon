@@ -1,0 +1,8 @@
+{
+    "AUTHOR" : "Acrown",
+    "DESCRIPTION" : "Jeu consistant en une arme charg\u00e9e de minimum une balle, chacun se tirant sur la tempe jusqu'au dernier survivant qui devient le gagnant.",
+    "DISABLED" : false,
+    "INSTALL_MSG" : "Merci d'avoir install\u00e9 ce module ! Plus d'aide avec 'help'",
+    "NAME" : "roulette",
+    "SHORT" : "Ce module vous permet de jouer au jeu de la Roulette."
+}
