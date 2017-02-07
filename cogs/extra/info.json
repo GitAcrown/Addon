@@ -1,0 +1,8 @@
+{
+    "AUTHOR" : "Acrown",
+    "DESCRIPTION" : "Commandes communautaires pour r\u00f4les secondaires notamment",
+    "DISABLED" : false,
+    "INSTALL_MSG" : "Utilisez help pour plus d'aide",
+    "NAME" : "extra",
+    "SHORT" : "Ajout de commandes communautaires"
+}
