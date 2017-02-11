@@ -1,0 +1,8 @@
+{
+    "AUTHOR" : "Acrown",
+    "DESCRIPTION" : "Extension comprennant des outils de mod\u00e9ration avec notamment la Prison",
+    "DISABLED" : false,
+    "INSTALL_MSG" : "JUSTICE RAINS FROM ABOVE",
+    "NAME" : "justice",
+    "SHORT" : "Permet l'extension des outils de mod\u00e9ration"
+}
