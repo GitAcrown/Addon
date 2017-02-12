@@ -1,8 +1,0 @@
-{
-    "AUTHOR" : "Acrown",
-    "DESCRIPTION" : "Permet le debug de code directement depuis Discord ou diverses actions sur le bot.",
-    "DISABLED" : false,
-    "INSTALL_MSG" : "Outils d'urgence",
-    "NAME" : "owner",
-    "SHORT" : "Outils d'administration Bot d'urgence"
-}
