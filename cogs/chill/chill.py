@@ -162,7 +162,7 @@ class Chill:
             else:
                 await self.bot.say(msg)
 
-    @ultrad.command(aliases = ["sl"], pass_context=True)
+    @commands.command(aliases = ["sl"], pass_context=True)
     async def second_list(self, ctx):
         """Permet de voir les commandes autorisées par préfixe secondaire."""
         author = ctx.message.author
