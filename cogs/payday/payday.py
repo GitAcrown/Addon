@@ -99,7 +99,7 @@ class Heist:
 
     def __init__(self, bot):
         self.bot = bot
-        self.file_path = "data/heist/system.json"
+        self.file_path = "data/JumperCogs/heist/heist.json"
         self.system = dataIO.load_json(self.file_path)
         self.version = "2.0.8.1"
         self.cycle_task = bot.loop.create_task(self.vault_updater())
