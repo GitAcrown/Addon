@@ -472,7 +472,7 @@ class Heist:
                 if settings["Crew"]:
                     players = [server.get_member(x) for x in list(settings["Crew"])]
                     data = self.calculate_credits(settings, players, target)
-                    headers = ["Criminals", "Credits Stolen", "Bonuses", "Total"]
+                    headers = ["Criminels", "Credits volés", "Bonus", "Total"]
                     t = tabulate(data, headers=headers)
                     msg = ("Les crédits volés ont étés répartis entre les membres:\n```"
                            "Python\n{}```".format(t))
