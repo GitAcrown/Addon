@@ -149,18 +149,34 @@ class Chill:
         if commande != None:
             if commande not in self.sys["LIMITE"]:
                 self.sys["LIMITE"].append(commande)
-                await self.bot.say("*{}* n'est plus utilisable.".format(commande))
+                await self.bot.say("*{}* est désormais utilisable.".format(commande))
                 fileIO("data/chill/sys.json", "save", self.sys)
             else:
                 self.sys["LIMITE"].remove(commande)
-                await self.bot.say("*{}* est de nouveau utilisable.".format(commande))
+                await self.bot.say("*{}* n'est plus utilisable.".format(commande))
                 fileIO("data/chill/sys.json", "save", self.sys)
         else:
-            msg = "**Commandes interdites :**\n"
+            msg = "**Commandes autorisées :**\n"
             for e in self.sys["LIMITE"]:
                 msg += "- *{}*\n".format(e)
             else:
                 await self.bot.say(msg)
+
+    @ultrad.command(aliases = ["sl"], pass_context=True)
+    async def second_list(self, ctx):
+        """Permet de voir les commandes autorisées par préfixe secondaire."""
+        author = ctx.message.author
+        if author.id not in self.sys["INTERDIT"]:
+            if self.sys["LIMITE"] != []:
+                msg = "**Commandes autorisées :**\n"
+                for e in self.sys["LIMITE"]:
+                    msg += "- *{}*\n".format(e)
+                else:
+                    await self.bot.say(msg)
+            else:
+                await self.bot.say("Aucune commande autorisée.")
+        else:
+            await self.bot.say("Vous n'êtes pas autorisé à utiliser le préfixe secondaire.")
 
     async def ultrad_listen(self, message):
         msg = message.content
@@ -168,7 +184,7 @@ class Chill:
             if self.sys["ULTRAD_PREFIX"] in msg and len(msg) > 2:
                 if message.author.id not in self.sys["INTERDIT"]:
                     command = msg[1:]
-                    if command not in self.sys["LIMITE"]:
+                    if command in self.sys["LIMITE"]:
                         prefix = self.sys["PREFIX"]
                         new_message = deepcopy(message)
                         new_message.content = prefix + command
