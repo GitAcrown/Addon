@@ -107,6 +107,15 @@ class Chill:
             self.sys["ULTRAD_ACTIF"] = False
             fileIO("data/chill/sys.json", "save", self.sys)
 
+    @ultrad.command(pass_context=True, hidden=True)
+    @checks.admin_or_permissions(ban_members=True)
+    async def wipe(self, ctx):
+        """Efface l'ensemble des données enregistrées Utilisateur"""
+        self.sys["LIMITE"] = []
+        self.sys["INTERDIT"] = []
+        fileIO("data/chill/sys.json", "save", self.sys)
+        await self.bot.say("Fait")
+
     @ultrad.command(pass_context=True)
     @checks.admin_or_permissions(kick_members=True)
     async def change(self, ctx, user :discord.Member = None):
