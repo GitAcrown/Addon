@@ -663,7 +663,7 @@ class Heist:
                 results.append(good_thing[0].format(player.name))
             else:
                 bad_thing = random.choice(bad_out)
-                dropout_msg = bad_thing[0] + "```\n{0} dropped out of the game.```"
+                dropout_msg = bad_thing[0] + "```\n{0} est hors-jeu.```"
                 self.failure_handler(settings, player, bad_thing[1])
                 settings["Crew"].pop(player.id)
                 bad_out.remove(bad_thing)
