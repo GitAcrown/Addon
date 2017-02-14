@@ -3,12 +3,11 @@ from discord.ext import commands
 from .utils import checks
 import asyncio
 import os
-import operator
 import random
 from cogs.utils.dataIO import fileIO, dataIO
-from __main__ import send_cmd_help, settings
+from copy import deepcopy
 
-default = {"ACQUIS": []}
+default = {"ACQUIS": [], "PREFIX": "&", "ULTRAD_PREFIX": ">"}
 
 class Chill:
     """Module vraiment très fun."""
@@ -68,6 +67,15 @@ class Chill:
         fileIO("data/chill/sys.json", "save", self.sys)
 
     @commands.command(pass_context=True)
+    @checks.admin_or_permissions(ban_members=True)
+    async def upre(self, ctx, prefixe: str):
+        """Régler l'Ultradprefix"""
+        self.sys["PREFIX"] = str(ctx.prefix)
+        self.sys["ULTRAD_PREFIX"] = prefixe
+        fileIO("data/chill/sys.json", "save", self.sys)
+        await self.bot.say("Fait")
+
+    @commands.command(pass_context=True)
     async def suck(self, ctx, user: discord.Member):
         """Eheheh"""
         phrases = ["{0} suce goulument {1}",
@@ -80,6 +88,19 @@ class Chill:
             msg = random.choice(phrases)
             msg = msg.format(ctx.message.author.display_name, user.display_name)
         await self.bot.say(msg)
+
+    # TRADUCTEUR ================================================================
+
+    async def ultrad(self, message):
+        msg = message.content
+        if self.sys["ULTRAD_PREFIX"] in msg and len(msg) > 2:
+            command = msg[1:]
+            prefix = self.sys["PREFIX"]
+            new_message = deepcopy(message)
+            new_message.content = prefix + command
+            await self.bot.process_commands(new_message)
+        else:
+            pass
 
 def check_folders():
     folders = ("data", "data/chill/")
@@ -97,4 +118,5 @@ def setup(bot):
     check_folders()
     check_files()
     n = Chill(bot)
+    bot.add_listener(n.ultrad, "on_message")
     bot.add_cog(n)
