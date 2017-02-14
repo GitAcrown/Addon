@@ -67,7 +67,19 @@ class Chill:
         self.sys["ACQUIS"] = []
         fileIO("data/chill/sys.json", "save", self.sys)
 
-
+    @commands.command(pass_context=True)
+    async def suck(self, ctx, user: discord.Member):
+        """Eheheh"""
+        phrases = ["{0} suce goulument {1}",
+                   "{1} se fait plaisir avec {0}",
+                   "{0} fait une gaterie à {1}",
+                   "{1} se fait sucer par {0}"]
+        if user == ctx.message.author:
+            msg = "{} s'autosuce, quelle souplesse !".format(ctx.message.author.display_name)
+        else:
+            msg = random.choice(phrases)
+            msg = msg.format(ctx.message.author.display_name, user.display_name)
+        await self.bot.say(msg)
 
 def check_folders():
     folders = ("data", "data/chill/")
