@@ -5,9 +5,10 @@ import asyncio
 import os
 import random
 from cogs.utils.dataIO import fileIO, dataIO
+from __main__ import send_cmd_help
 from copy import deepcopy
 
-default = {"ACQUIS": [], "PREFIX": "&", "ULTRAD_PREFIX": ">"}
+default = {"ACQUIS": [], "PREFIX": "&", "ULTRAD_PREFIX": ">","ULTRAD_ACTIF" : True, "INTERDIT" : [], "LIMITE" : []}
 
 class Chill:
     """Module vraiment très fun."""
@@ -67,15 +68,6 @@ class Chill:
         fileIO("data/chill/sys.json", "save", self.sys)
 
     @commands.command(pass_context=True)
-    @checks.admin_or_permissions(ban_members=True)
-    async def upre(self, ctx, prefixe: str):
-        """Régler l'Ultradprefix"""
-        self.sys["PREFIX"] = str(ctx.prefix)
-        self.sys["ULTRAD_PREFIX"] = prefixe
-        fileIO("data/chill/sys.json", "save", self.sys)
-        await self.bot.say("Fait")
-
-    @commands.command(pass_context=True)
     async def suck(self, ctx, user: discord.Member):
         """Eheheh"""
         phrases = ["{0} suce goulument {1}",
@@ -89,18 +81,89 @@ class Chill:
             msg = msg.format(ctx.message.author.display_name, user.display_name)
         await self.bot.say(msg)
 
-    # TRADUCTEUR ================================================================
+    # TRADUCTEUR ULTRAD ================================================================
 
-    async def ultrad(self, message):
-        msg = message.content
-        if self.sys["ULTRAD_PREFIX"] in msg and len(msg) > 2:
-            command = msg[1:]
-            prefix = self.sys["PREFIX"]
-            new_message = deepcopy(message)
-            new_message.content = prefix + command
-            await self.bot.process_commands(new_message)
+    @commands.group(pass_context=True)
+    @checks.admin_or_permissions(kick_members=True)
+    async def ultrad(self, ctx):
+        """Gestion de Ultrad (Traducteur de commandes)"""
+        if ctx.invoked_subcommand is None:
+            await send_cmd_help(ctx)
+
+    @ultrad.command(pass_context=True)
+    @checks.admin_or_permissions(ban_members=True)
+    async def set(self, ctx, prefixe: str = None):
+        """Régler le préfixe d'Ultrad
+
+        Ne rien rentrer désactive Ultrad."""
+        if prefixe != None:
+            self.sys["ULTRAD_ACTIF"] = True
+            self.sys["PREFIX"] = str(ctx.prefix)
+            self.sys["ULTRAD_PREFIX"] = prefixe
+            fileIO("data/chill/sys.json", "save", self.sys)
+            await self.bot.say("Fait")
         else:
-            pass
+            await self.bot.say("Ultrad désactivé")
+            self.sys["ULTRAD_ACTIF"] = False
+            fileIO("data/chill/sys.json", "save", self.sys)
+
+    @ultrad.command(pass_context=True)
+    @checks.admin_or_permissions(kick_members=True)
+    async def change(self, ctx, user :discord.Member = None):
+        """Exclut/Inclut les personnes ayant les droits d'Ultrad
+
+        Ne rien rentrer donne une liste des utilisateurs exclus."""
+        server = ctx.message.server
+        if user != None:
+            if user.id not in self.sys["INTERDIT"]:
+                self.sys["INTERDIT"].append(user.id)
+                await self.bot.say("{} ne pourra plus utiliser Ultrad.".format(user.name))
+                fileIO("data/chill/sys.json", "save", self.sys)
+            else:
+                self.sys["INTERDIT"].remove(user.id)
+                await self.bot.say("{} peut de nouveau utiliser Ultrad.".format(user.name))
+                fileIO("data/chill/sys.json", "save", self.sys)
+        else:
+            msg = "**Utilisateurs exclus :**\n"
+            for u in self.sys["INTERDIT"]:
+                user = self.bot.get_member(u)
+                msg += "- *{}*\n".format(user.name)
+            else:
+                await self.bot.say(msg)
+
+    @ultrad.command(pass_context=True)
+    @checks.admin_or_permissions(kick_members=True)
+    async def limite(self, ctx, commande:str = None):
+        """Interdit/Autorise les commandes à travers Ultrad
+
+        Ne rien rentrer donne une liste des commandes interdites."""
+        if commande != None:
+            if commande not in self.sys["LIMITE"]:
+                self.sys["LIMITE"].append(commande)
+                await self.bot.say("*{}* n'est plus utilisable.".format(commande))
+                fileIO("data/chill/sys.json", "save", self.sys)
+            else:
+                self.sys["LIMITE"].remove(commande)
+                await self.bot.say("*{}* est de nouveau utilisable.".format(commande))
+                fileIO("data/chill/sys.json", "save", self.sys)
+        else:
+            msg = "**Commandes interdites :**\n"
+            for e in self.sys["LIMITE"]:
+                msg += "- *{}*\n".format(e)
+            else:
+                await self.bot.say(msg)
+
+    async def ultrad_listen(self, message):
+        msg = message.content
+        if self.sys["ULTRAD_ACTIF"]:
+            if self.sys["ULTRAD_PREFIX"] in msg and len(msg) > 2:
+                if message.author.id not in self.sys["INTERDIT"]:
+                    command = msg[1:]
+                    if command not in self.sys["LIMITE"]:
+                        prefix = self.sys["PREFIX"]
+                        new_message = deepcopy(message)
+                        new_message.content = prefix + command
+                        await self.bot.process_commands(new_message)
 
 def check_folders():
     folders = ("data", "data/chill/")
@@ -118,5 +181,5 @@ def setup(bot):
     check_folders()
     check_files()
     n = Chill(bot)
-    bot.add_listener(n.ultrad, "on_message")
+    bot.add_listener(n.ultrad_listen, "on_message")
     bot.add_cog(n)
