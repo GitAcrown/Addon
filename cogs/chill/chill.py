@@ -108,6 +108,15 @@ class Chill:
             msg = msg.format(ctx.message.author.display_name, user.display_name)
         await self.bot.say(msg)
 
+    @commands.command(pass_context=True)
+    async def say(self, ctx, *msg : str):
+        """Fait répeter le bot avec votre message."""
+        msg = " ".join(msg)
+        if msg != "":
+            await self.bot.say(msg)
+        else:
+            await self.bot.say("Je suis là.")
+
     # TRADUCTEUR ULTRAD ================================================================
 
     @commands.group(pass_context=True)
@@ -206,15 +215,15 @@ class Chill:
             await self.bot.say("Vous n'êtes pas autorisé à utiliser le préfixe secondaire.")
 
     async def ultrad_listen(self, message):
-        msg = message.content
+        msg = message.content #²suck Acrown
         if self.sys["ULTRAD_ACTIF"]:
             if self.sys["ULTRAD_PREFIX"] in msg and len(msg) > 2:
                 if message.author.id not in self.sys["INTERDIT"]:
-                    command = msg[1:]
+                    brut = msg[1:] #suck Acrown
+                    command = msg.split(" ")[0][1:] #suck
                     if command in self.sys["LIMITE"]:
-                        prefix = self.sys["PREFIX"]
                         new_message = deepcopy(message)
-                        new_message.content = prefix + command
+                        new_message.content = self.sys["PREFIX"] + brut
                         await self.bot.process_commands(new_message)
 
 def check_folders():
