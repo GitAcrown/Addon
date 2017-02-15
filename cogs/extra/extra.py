@@ -70,29 +70,32 @@ class Extra:
 
         La recherche est flexible, entrer une partie du mot donne accès à un menu."""
         rec = " ".join(rec)
-        msg = "**__Résultats pour {}__**\n".format(rec)
-        if rec in self.wiki:
-            await self.bot.say("**{}** | *{}*".format(rec, self.wiki[rec]["DESCRIPTION"]))
-        else:
-            for e in self.wiki:
-                if rec in e:
-                    msg += "- **{}**\n".format(self.wiki[e]["COMMANDE"])
-            if msg != "**__Résultats pour {}__**\n".format(rec):
-                msg += "\n*Rentrez la commande précise pour en savoir plus*"
-                await self.bot.say(msg)
-                verif = False
-                while verif == False:
-                    com = await self.bot.wait_for_message(author=ctx.message.author, channel=ctx.message.channel, timeout=30)
-                    if com == None:
-                        await self.bot.say("Temps de réponse trop long, annulation...")
-                        return
-                    elif com.content in self.wiki:
-                        await self.bot.say("**{}** | *{}*".format(com.content, self.wiki[com.content]["DESCRIPTION"]))
-                        verif = True
-                    else:
-                        await self.bot.say("Invalide, réessayez")
+        if len(rec) >= 1:
+            msg = "**__Résultats pour {}__**\n".format(rec)
+            if rec in self.wiki:
+                await self.bot.say("**{}** | *{}*".format(rec, self.wiki[rec]["DESCRIPTION"]))
             else:
-                await self.bot.say("Essayez une recherche moins précise.")
+                for e in self.wiki:
+                    if rec in e:
+                        msg += "- **{}**\n".format(self.wiki[e]["COMMANDE"])
+                if msg != "**__Résultats pour {}__**\n".format(rec):
+                    msg += "\n*Rentrez la commande précise pour en savoir plus*"
+                    await self.bot.say(msg)
+                    verif = False
+                    while verif == False:
+                        com = await self.bot.wait_for_message(author=ctx.message.author, channel=ctx.message.channel, timeout=30)
+                        if com == None:
+                            await self.bot.say("Temps de réponse trop long, annulation...")
+                            return
+                        elif com.content in self.wiki:
+                            await self.bot.say("**{}** | *{}*".format(com.content, self.wiki[com.content]["DESCRIPTION"]))
+                            verif = True
+                        else:
+                            await self.bot.say("Invalide, réessayez")
+                else:
+                    await self.bot.say("Essayez une recherche moins précise.")
+        else:
+            await self.bot.say("Rentrez au moins un caractère")
 
         # PRESIDENT ============================================================
 
