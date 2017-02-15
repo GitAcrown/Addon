@@ -60,6 +60,10 @@ class Extra:
         else:
             await self.bot.say("Cette aide n'existe pas.")
 
+    @commands.command(pass_context=True, hidden=True)
+    async def detest(self, ctx):
+        await self.bot.say("Test réussi")
+
     @commands.command(name = "wiki", pass_context=True)
     async def wiki_search(self, ctx, *rec):
         """Permet de chercher de l'aide pour une commande.
