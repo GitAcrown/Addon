@@ -64,7 +64,7 @@ class Extra:
     async def wiki_search(self, ctx, *rec):
         """Permet de chercher de l'aide pour une commande.
 
-        -- La recherche est flexible --"""
+        La recherche est flexible, entrer une partie du mot donne accès à un menu."""
         rec = " ".join(rec)
         msg = "**__Résultats pour {}__**\n".format(rec)
         if rec in self.wiki:
