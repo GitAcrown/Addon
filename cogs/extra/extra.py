@@ -10,7 +10,7 @@ import datetime
 from cogs.utils.dataIO import fileIO, dataIO
 from __main__ import send_cmd_help, settings
 
-default = {"GEP_ROLE" : None, "GEP_IDEES" : {}, "GEP_PTAG" : 1}
+default = {"GEP_ROLE" : None, "GEP_IDEES" : {}, "GEP_PTAG" : 1, "HOF": True}
 
 class Extra:
     """Module d'outils communautaire."""
@@ -18,8 +18,79 @@ class Extra:
     def __init__(self, bot):
         self.bot = bot
         self.sys = dataIO.load_json("data/extra/sys.json")
+        self.wiki = dataIO.load_json("data/extra/wiki.json")
 
-# PRESIDENT ============================================================
+# WIKI =================================================================
+
+    @commands.group(pass_context=True)
+    async def wikiset(self, ctx):
+        """Gestion du wiki de commandes."""
+        if ctx.invoked_subcommand is None:
+            await send_cmd_help(ctx)
+
+    @wikiset.command(pass_context=True)
+    async def add(self, ctx, commande, *desc):
+        """Permet d'ajouter une aide au Wiki."""
+        desc = " ".join(desc)
+        if commande not in self.wiki:
+            self.wiki[commande] = {"COMMANDE" : commande, "DESCRIPTION" : desc}
+            fileIO("data/extra/wiki.json", "save", self.wiki)
+            await self.bot.say("Aide pour *{}* ajoutée.".format(commande))
+        else:
+            await self.bot.say("Cette aide existe déjà.")
+
+    @wikiset.command(pass_context=True)
+    async def delete(self, ctx, commande):
+        """Permet de retirer une aide du Wiki."""
+        if commande in self.wiki:
+            del self.wiki[commande]
+            fileIO("data/extra/wiki.json", "save", self.wiki)
+            await self.bot.say("Aide pour *{}* retirée.".format(commande))
+        else:
+            await self.bot.say("Cette aide n'existe pas.")
+
+    @wikiset.command(pass_context=True)
+    async def edit(self, ctx, commande, *desc):
+        """Permet d'éditer une aide du Wiki."""
+        desc = " ".join(desc)
+        if commande in self.wiki:
+            self.wiki[commande] = {"COMMANDE": commande, "DESCRIPTION": desc}
+            fileIO("data/extra/wiki.json", "save", self.wiki)
+            await self.bot.say("Aide pour *{}* éditée.".format(commande))
+        else:
+            await self.bot.say("Cette aide n'existe pas.")
+
+    @commands.command(name = "wiki", pass_context=True)
+    async def wiki_search(self, ctx, *rec):
+        """Permet de chercher de l'aide pour une commande.
+
+        -- La recherche est flexible --"""
+        rec = " ".join(rec)
+        msg = "**__Résultats pour {}__**\n".format(rec)
+        if rec in self.wiki:
+            await self.bot.say("**{}** | *{}*".format(rec, self.wiki[rec]["DESCRIPTION"]))
+        else:
+            for e in self.wiki:
+                if rec in e:
+                    msg += "- **{}**\n".format(self.wiki[e]["COMMANDE"])
+            if msg != "**__Résultats pour {}__**\n".format(rec):
+                msg += "\n*Rentrez la commande précise pour en savoir plus*"
+                await self.bot.say(msg)
+                verif = False
+                while verif == False:
+                    com = await self.bot.wait_for_message(author=ctx.message.author, channel=ctx.message.channel, timeout=30)
+                    if com == None:
+                        await self.bot.say("Temps de réponse trop long, annulation...")
+                        return
+                    elif com.content in self.wiki:
+                        await self.bot.say("**{}** | *{}*".format(com.content, self.wiki[com.content]["DESCRIPTION"]))
+                        verif = True
+                    else:
+                        await self.bot.say("Invalide, réessayez")
+            else:
+                await self.bot.say("Essayez une recherche moins précise.")
+
+        # PRESIDENT ============================================================
 
     @commands.group(pass_context=True)
     async def gep(self, ctx):
@@ -33,7 +104,7 @@ class Extra:
         """Reset la partie présidentielle du Module."""
         self.sys["GEP_IDEES"] = {}
         self.sys["GEP_PTAG"] = 1
-        fileIO("data/astra/sys.json", "save", self.sys)
+        fileIO("data/extra/sys.json", "save", self.sys)
         await self.bot.say("Fait.")
 
     @gep.command(pass_context=True, no_pm=True, hidden=True)
@@ -310,6 +381,10 @@ def check_files():
     if not os.path.isfile("data/extra/sys.json"):
         print("Création du fichier systeme Extra...")
         fileIO("data/extra/sys.json", "save", default)
+
+    if not os.path.isfile("data/extra/wiki.json"):
+        print("Création du fichier pour le Wiki...")
+        fileIO("data/extra/wiki.json", "save", {})
 
 def setup(bot):
     check_folders()
