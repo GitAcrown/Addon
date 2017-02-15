@@ -69,13 +69,40 @@ class Chill:
 
     @commands.command(pass_context=True)
     async def suck(self, ctx, user: discord.Member):
-        """Eheheh"""
+        """C'est votre délire."""
         phrases = ["{0} suce goulument {1}",
                    "{1} se fait plaisir avec {0}",
                    "{0} fait une gaterie à {1}",
                    "{1} se fait sucer par {0}"]
         if user == ctx.message.author:
             msg = "{} s'autosuce, quelle souplesse !".format(ctx.message.author.display_name)
+        else:
+            msg = random.choice(phrases)
+            msg = msg.format(ctx.message.author.display_name, user.display_name)
+        await self.bot.say(msg)
+
+    @commands.command(pass_context=True)
+    async def claque(self, ctx, user: discord.Member):
+        """Pour giffler des randoms."""
+        phrases = ["{0} claque violemment {1}",
+                   "{0} défonce {1} à coup de baffes",
+                   "{0} met une claque à {1}",
+                   "{1} s'est pris une giffle par {0}"]
+        if user == ctx.message.author:
+            msg = "{} se met une claque. Il est un peu masochiste.".format(ctx.message.author.display_name)
+        else:
+            msg = random.choice(phrases)
+            msg = msg.format(ctx.message.author.display_name, user.display_name)
+        await self.bot.say(msg)
+
+    @commands.command(pass_context=True)
+    async def gaz(self, ctx, user: discord.Member):
+        """Comme à l'époque."""
+        phrases = ["{0} enferme {1} dans une chambre à gaz",
+                   "{1} meurt à cause du Zyklon B lancé par {0}",
+                   "{0} emmène {1} prendre une douche"]
+        if user == ctx.message.author:
+            msg = "RIP {}".format(ctx.message.author.display_name)
         else:
             msg = random.choice(phrases)
             msg = msg.format(ctx.message.author.display_name, user.display_name)
@@ -172,7 +199,7 @@ class Chill:
                 for e in self.sys["LIMITE"]:
                     msg += "- *{}*\n".format(e)
                 else:
-                    await self.bot.say(msg)
+                    await self.bot.whisper(msg)
             else:
                 await self.bot.say("Aucune commande autorisée.")
         else:
