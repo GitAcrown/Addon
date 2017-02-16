@@ -451,7 +451,8 @@ class Heist:
             self.subtract_costs(settings, author, cost)
             settings["Config"]["Heist Planned"] = True
             settings["Crew"][author.id] = {}
-            await self.bot.say("Un braquage est prévu par {}\nLe braquage commence dans {} secondes. Tapez {}payday play pour rejoindre"
+            r = discord.utils.get(ctx.message.server.roles, name="Play")
+            await self.bot.say(r.mention + " Un braquage est prévu par {}\nLe braquage commence dans {} secondes. Tapez {}payday play pour rejoindre"
                                " son crew.".format(author.name, wait_time, ctx.prefix))
             await asyncio.sleep(wait_time)
             if len(settings["Crew"].keys()) <= 1:
