@@ -100,7 +100,7 @@ class Extra:
                 if len(rec) >= 5:
                     msg = "**__Résultats de votre recherche inversée__**\n"
                     for e in self.wiki:
-                        if rec in self.wiki[e]["DESCRIPTION"]:
+                        if rec in self.wiki[e]["DESCRIPTION"].lower():
                             msg += "**{}** | *{}*\n".format(self.wiki[e]["COMMANDE"], self.wiki[e]["DESCRIPTION"])
                     await self.bot.whisper(msg)
                 else:
