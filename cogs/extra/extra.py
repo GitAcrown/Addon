@@ -10,7 +10,7 @@ import datetime
 from cogs.utils.dataIO import fileIO, dataIO
 from __main__ import send_cmd_help, settings
 
-default = {"GEP_ROLE" : None, "GEP_IDEES" : {}, "GEP_PTAG" : 1, "HOF": True}
+default = {"GEP_ROLE" : None, "GEP_IDEES" : {}, "GEP_PTAG" : 1, "AFK_LIST" : [], "AFK" : True}
 
 class Extra:
     """Module d'outils communautaire."""
@@ -65,35 +65,46 @@ class Extra:
         await self.bot.say("Test réussi")
 
     @commands.command(name = "wiki", pass_context=True)
-    async def wiki_search(self, ctx, *rec):
+    async def wiki_search(self, ctx, inverse:bool, *rec):
         """Permet de chercher de l'aide pour une commande.
 
         La recherche est flexible, entrer une partie du mot donne accès à un menu."""
+        reverse = inverse
         rec = " ".join(rec)
         if len(rec) >= 1:
-            msg = "**__Résultats pour {}__**\n".format(rec)
-            if rec in self.wiki:
-                await self.bot.say("**{}** | *{}*".format(rec, self.wiki[rec]["DESCRIPTION"]))
-            else:
-                for e in self.wiki:
-                    if rec in e:
-                        msg += "- **{}**\n".format(self.wiki[e]["COMMANDE"])
-                if msg != "**__Résultats pour {}__**\n".format(rec):
-                    msg += "\n*Rentrez la commande précise pour en savoir plus*"
-                    await self.bot.say(msg)
-                    verif = False
-                    while verif == False:
-                        com = await self.bot.wait_for_message(author=ctx.message.author, channel=ctx.message.channel, timeout=30)
-                        if com == None:
-                            await self.bot.say("Temps de réponse trop long, annulation...")
-                            return
-                        elif com.content in self.wiki:
-                            await self.bot.say("**{}** | *{}*".format(com.content, self.wiki[com.content]["DESCRIPTION"]))
-                            verif = True
-                        else:
-                            await self.bot.say("Invalide, réessayez")
+            if reverse is False:
+                msg = "**__Résultats pour {}__**\n".format(rec)
+                if rec in self.wiki:
+                    await self.bot.say("**{}** | *{}*".format(rec, self.wiki[rec]["DESCRIPTION"]))
                 else:
-                    await self.bot.say("Essayez une recherche moins précise.")
+                    for e in self.wiki:
+                        if rec in e:
+                            msg += "- **{}**\n".format(self.wiki[e]["COMMANDE"])
+                    if msg != "**__Résultats pour {}__**\n".format(rec):
+                        msg += "\n*Rentrez la commande précise pour en savoir plus*"
+                        await self.bot.say(msg)
+                        verif = False
+                        while verif == False:
+                            com = await self.bot.wait_for_message(author=ctx.message.author, channel=ctx.message.channel, timeout=30)
+                            if com == None:
+                                await self.bot.say("Temps de réponse trop long, annulation...")
+                                return
+                            elif com.content in self.wiki:
+                                await self.bot.say("**{}** | *{}*".format(com.content, self.wiki[com.content]["DESCRIPTION"]))
+                                verif = True
+                            else:
+                                await self.bot.say("Invalide, réessayez")
+                    else:
+                        await self.bot.say("Essayez une recherche moins précise.")
+            else:
+                if len(rec) >= 5:
+                    msg = "**__Résultats de votre recherche inversée__**\n"
+                    for e in self.wiki:
+                        if rec in self.wiki[e]["DESCRIPTION"]:
+                            msg += "**{}** | *{}*\n".format(self.wiki[e]["COMMANDE"], self.wiki[e]["DESCRIPTION"])
+                    await self.bot.whisper(msg)
+                else:
+                    await self.bot.say("Rentrez au moins 5 caractères pour lancer une recherche inversée.")
         else:
             await self.bot.say("Rentrez au moins un caractère")
 
@@ -230,7 +241,10 @@ class Extra:
                     channel = nec.channel
                 verif = False
                 while verif != True:
-                    rep = await self.bot.wait_for_message(author=author, channel=channel)
+                    rep = await self.bot.wait_for_message(author=author, channel=channel, timeout=60)
+                    if rep == None:
+                        await self.bot.whisper("Réponse trop longue, bye :wave:")
+                        return
                     if rep.content.lower() == "q":
                         await self.bot.whisper("Bye :wave:")
                         return
@@ -319,7 +333,10 @@ class Extra:
                 channel = nec.channel
             verif = False
             while verif != True:
-                rep = await self.bot.wait_for_message(author=author, channel=channel)
+                rep = await self.bot.wait_for_message(author=author, channel=channel, timeout=60)
+                if rep == None:
+                    await self.bot.whisper("Réponse trop longue, bye :wave:")
+                    return
                 if rep.content.lower() == "q":
                     await self.bot.whisper("Bye :wave:")
                     return
@@ -375,6 +392,43 @@ class Extra:
                 else:
                     await self.bot.whisper("Invalide, réessayez.")
 
+# AFK DETECT ===========================================================
+
+    async def trigger(self, message):
+        if self.sys["AFK"] is True:
+            author = message.author
+            channel = message.channel
+            if message.author.id in self.sys["AFK_LIST"]:
+                self.sys["AFK_LIST"].remove(author.id)
+                fileIO("data/extra/sys.json", "save", self.sys)
+            elif message.content.lower() == "afk":
+                if author.id not in self.sys["AFK_LIST"]:
+                    self.sys["AFK_LIST"].append(author.id)
+                    fileIO("data/extra/sys.json", "save", self.sys)
+            elif message.mentions != []:
+                for user in message.mentions:
+                    if user.id in self.sys["AFK_LIST"]:
+                        await self.bot.send_message(channel, "**{}** est AFK".format(user.name))
+            else:
+                pass
+
+    @commands.command(pass_context=True)
+    @checks.mod_or_permissions(ban_members=True)
+    async def toggleafk(self, ctx):
+        """Permet d'activer l'AFK."""
+        if "AFK" not in self.sys:
+            self.sys["AFK"] = False
+            self.sys["AFK_LIST"] = []
+        if self.sys["AFK"] is True:
+            await self.bot.say("Désactivé.")
+            self.sys["AFK"] = False
+            self.sys["AFK_LIST"] = []
+            fileIO("data/extra/sys.json", "save", self.sys)
+        else:
+            await self.bot.say("Activé.")
+            self.sys["AFK"] = True
+            fileIO("data/extra/sys.json", "save", self.sys)
+
 # SYSTEME ==============================================================
 
 def check_folders():
@@ -393,8 +447,13 @@ def check_files():
         print("Création du fichier pour le Wiki...")
         fileIO("data/extra/wiki.json", "save", {})
 
+    if not os.path.isfile("data/extra/save.json"):
+        print("Création du fichier de sauvegarde...")
+        fileIO("data/extra/save.json", "save", {})
+
 def setup(bot):
     check_folders()
     check_files()
     n = Extra(bot)
+    bot.add_listener(n.trigger, "on_message")
     bot.add_cog(n)
