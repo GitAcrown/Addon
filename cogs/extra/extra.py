@@ -97,14 +97,14 @@ class Extra:
                     else:
                         await self.bot.say("Essayez une recherche moins précise.")
             else:
-                if len(rec) >= 5:
+                if len(rec) >= 3:
                     msg = "**__Résultats de votre recherche inversée__**\n"
                     for e in self.wiki:
                         if rec in self.wiki[e]["DESCRIPTION"].lower():
                             msg += "**{}** | *{}*\n".format(self.wiki[e]["COMMANDE"], self.wiki[e]["DESCRIPTION"])
                     await self.bot.whisper(msg)
                 else:
-                    await self.bot.say("Rentrez au moins 5 caractères pour lancer une recherche inversée.")
+                    await self.bot.say("Rentrez au moins 3 caractères pour lancer une recherche inversée.")
         else:
             await self.bot.say("Rentrez au moins un caractère")
 
