@@ -2,12 +2,14 @@ from typing import List
 import discord
 from discord.ext import commands
 from .utils import checks
-from .utils.dataIO import dataIO
+from .utils.dataIO import dataIO, fileIO
 from .utils import checks, chat_formatting as cf
 from __main__ import send_cmd_help
 import os
 import time
+import datetime
 import asyncio
+import operator
 
 default_settings = {
     "join_message": "{0.mention} has joined the server.",
@@ -26,13 +28,62 @@ class Tools:
         self.bot = bot
         self.settings_path = "data/membership/settings.json"
         self.settings = dataIO.load_json(self.settings_path)
+        self.live = dataIO.load_json("data/gen/live.json")
 
     def compare_role(self, user, rolelist):
-            for role in rolelist:
-                if role in user.roles:
-                    return True
-            else:
-                return False
+        for role in rolelist:
+            if role in user.roles:
+                return True
+        else:
+            return False
+
+    def log_update(self, server, change: str):
+        temps = time.strftime("%d/%m/%Y %H:%M:%S", time.localtime())
+        if server.id in self.live:
+            self.live[server.id]["UPDATE"].append([temps, change])
+            fileIO("data/gen/live.json", "save", self.live)
+            return True
+        else:
+            self.live[server.id] = {"NOM" : server.name,
+                                  "UPDATE" : []}
+            self.live[server.id]["UPDATE"].append([temps, change])
+            fileIO("data/gen/live.json", "save", self.live)
+            return True
+
+    @commands.command(pass_context=True)
+    async def jp(self, ctx, nb: int=10):
+        """Affiche les X derniers changements de pseudo du serveur.
+
+        Par défaut les 10 derniers."""
+        server = ctx.message.server
+        clsm = []
+        msg = "**Derniers changements**\n"
+        if server.id in self.live:
+            for e in self.live[server.id]["UPDATE"]:
+                clsm.append([e[0],e[1]])
+            clsm = sorted(clsm, key=operator.itemgetter(0))
+            clsm.reverse()
+            if len(clsm) <= nb:
+                nb = len(clsm)
+            a = 0
+            while a < nb:
+                rang = clsm[a]
+                temps = rang[0]
+                update = rang[1]
+                msg += "__{}__ > {}\n".format(temps, update)
+                a += 1
+            await self.bot.say(msg)
+        else:
+            self.live[server.id] = {"NOM": server.name,
+                                    "UPDATE": []}
+            fileIO("data/gen/live.json", "save", self.live)
+            await self.bot.say("Aucun changement enregistré pour ce serveur.")
+
+    @commands.command(pass_context=True, no_pm=True)
+    async def easter(self, ctx):
+        """Ceci n'est pas un easter egg."""
+        # Pour les gens qui cherchent des easter-eggs dans les codes :jpp:
+        await self.bot.say("```css\nCeci n'est en aucun cas un easter-egg.```")
 
 # AUTRE ------------------------------------------------------------
 
@@ -526,17 +577,20 @@ class Tools:
             if before.nick != after.nick:
                 if after.nick != None:
                     if before.nick == None:
-                        channel = self.bot.get_channel(self.settings[server.id]["upchan"])
-                        await self.bot.send_message(channel, "> **{}** a changé son surnom en **{}** (Pseudo *{}*)".format(before.name, after.nick, after.name))
+                        self.log_update(server,
+                                        "**{}** a changé son surnom en **{}** (Pseudo *{}*)".format(before.name,
+                                                                                                      after.nick,
+                                                                                                      after.name))
                         return
-                    channel = self.bot.get_channel(self.settings[server.id]["upchan"])
-                    await self.bot.send_message(channel, "> **{}** a changé son surnom en **{}** (Pseudo *{}*)".format(before.nick, after.nick, after.name))
+                    self.log_update(server, "**{}** a changé son surnom en **{}** (Pseudo *{}*)".format(before.nick,
+                                                                                                         after.nick,
+                                                                                                         after.name))
                 else:
-                    channel = self.bot.get_channel(self.settings[server.id]["upchan"])
-                    await self.bot.send_message(channel, "> **{}** a enlevé son surnom (Pseudo *{}*)".format(before.nick, after.name))
+                    self.log_update(server, "**{}** a retiré son surnom (Pseudo *{}*)".format(before.name,after.name))
             elif before.name != after.name:
-                channel = self.bot.get_channel(self.settings[server.id]["upchan"])
-                await self.bot.send_message(channel, "> **{}** a changé son pseudo en **{}** (Surnom *{}*)".format(before.name, after.name, after.nick))
+                self.log_update(server,
+                                "**{}** a changé son pseudo en **{}** (Pseudo *{}*)".format(before.name, after.name,
+                                                                                              after.nick))
             else:
                 pass
         else:
@@ -570,6 +624,11 @@ def check_files():
     f = "data/gen/sondage.json"
     if not dataIO.is_valid_json(f):
         print("Création du fichier de Sondages...")
+        dataIO.save_json(f, {})
+
+    f = "data/gen/live.json"
+    if not dataIO.is_valid_json(f):
+        print("Création du fichier Live...")
         dataIO.save_json(f, {})
 
 def setup(bot: commands.Bot):
