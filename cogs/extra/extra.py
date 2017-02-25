@@ -268,12 +268,16 @@ class Extra:
                         clean = sorted(clean, key=operator.itemgetter(2))
                         clean.reverse()
                         for e in clean:
-                            res += "__#{}__ ({}%) | **{}** / *{}*\n".format(e[2], e[3], e[0], e[1])
+                            res += "{} voix ({}%) | **{}** / *{}*\n".format(e[2], e[3], e[0], e[1])
                         em.add_field(name="Votes (%) | Candidat / Suppléant", value=res)
                         em.set_footer(text="Merci d'avoir participé et félicitation aux gagnants ! [Total = {} votes]".format(total))
                         for chan in rep.channel_mentions:
                             await asyncio.sleep(0.25)
                             await self.bot.send_message(chan, embed=em)
+                        for u in self.elect:
+                            self.elect[u]["VOTES"] = 0
+                        self.sys["VOTED"] = []
+                        self.sys["BLANC"] = 0
                         fileIO("data/extra/elect.json", "save", self.elect)
                         fileIO("data/extra/sys.json", "save", self.sys)
                     else:
@@ -355,6 +359,17 @@ class Extra:
                     if author.id not in self.sys["VOTED"]:
                         retour = False
                         while retour == False:
+                            em = discord.Embed(title=titre)
+                            msg = ""
+                            for cand in self.elect:
+                                num = self.elect[cand]["NUMERO"]
+                                pseudo = self.elect[cand]["USER_NAME"]
+                                supp = self.elect[cand]["SUPP_NAME"]
+                                msg += "__#{}__ | **{}** / *{}*\n".format(num, pseudo, supp)
+                            em.add_field(name="__Candidats et suppléants__", value=msg)
+                            em.set_footer(text="Suivez les indications ci-dessous pour voter".format(ctx.prefix))
+                            await self.bot.whisper(embed=em)
+                            await asyncio.sleep(1)
                             em = discord.Embed()
                             em.add_field(name="Voter", value="Tapez le numéro d'un candidat pour en savoir plus.")
                             em.set_footer(text="Tapez 'blanc' pour voter Blanc")
@@ -365,6 +380,8 @@ class Extra:
                                 if rep == None:
                                     await self.bot.whisper("Bye :wave:")
                                     return
+                                elif "&" in rep.content:
+                                    await self.bot.whisper("Ne marquez que le numéro correspondant au candidat !")
                                 elif rep.content.lower() == "blanc":
                                     terc = False
                                     while terc == False:
@@ -436,7 +453,7 @@ class Extra:
                                                 else:
                                                     await self.bot.whisper("Invalide...")
                                         else:
-                                            await self.bot.whisper("Numéro invalide.")
+                                            pass
                                 else:
                                     await self.bot.whisper("Invalide, essayez un autre numéro !")
                     else:
