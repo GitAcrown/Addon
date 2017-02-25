@@ -248,7 +248,7 @@ class Extra:
                 if ok is True:
                     self.sys["ELECT_START"] = False
                     await self.bot.say("Mentionnez le(s) channel(s) où je dois poster les résulats")
-                    rep = await self.bot.wait_for_message(author = ctx.message.author, channel=ctx.message.channel, timeout=60)
+                    rep = await self.bot.wait_for_message(author = ctx.message.author, channel=ctx.message.channel)
                     if rep.channel_mentions != []:
                         em = discord.Embed(title="Résultats des élections")
                         res = ""
