@@ -359,7 +359,7 @@ class Extra:
                     if author.id not in self.sys["VOTED"]:
                         retour = False
                         while retour == False:
-                            em = discord.Embed(title=titre)
+                            em = discord.Embed()
                             msg = ""
                             for cand in self.elect:
                                 num = self.elect[cand]["NUMERO"]
