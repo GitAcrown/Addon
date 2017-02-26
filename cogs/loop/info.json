@@ -1,0 +1,8 @@
+{
+    "AUTHOR" : "Acrown",
+    "DESCRIPTION" : "Permet de nouvelles interactions sociales sur un serveur (et entre les serveurs).",
+    "DISABLED" : false,
+    "INSTALL_MSG" : "Pour plus d'aide, utilisez [p]loop",
+    "NAME" : "loop",
+    "SHORT" : "Module social pour discord [BETA]"
+}
