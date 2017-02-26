@@ -1,0 +1,8 @@
+{
+    "AUTHOR" : "Acrown",
+    "DESCRIPTION" : "Permet de lier un sample audio aux stickers",
+    "DISABLED" : false,
+    "INSTALL_MSG" : "Utilisez help pour plus d'aide",
+    "NAME" : "horn",
+    "SHORT" : "Permet de lier de l'audio a l'image"
+}
