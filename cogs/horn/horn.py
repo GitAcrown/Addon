@@ -30,24 +30,25 @@ class Horn:
     async def lecture(self, message):
         server = message.server
         channel = message.channel
-        if ":" in message.content:
-            output = re.compile(':(.*?):', re.DOTALL |  re.IGNORECASE).findall(message.content)
-            if output:
-                for cast in output:
-                    if cast in self.settings[server.id]:
-                        soundname = cast #Conversion TYPIQUE DU BORDELIQUE
-                        if "volume" in self.settings[server.id][cast]:
-                            vol = self.settings[server.id][soundname]["volume"]
-                        else:
-                            vol = default_volume
-                            self.settings[server.id][soundname]["volume"] = vol
-                            dataIO.save_json(self.settings_path, self.settings)
+        if self.sys["ACTIVE"] == True:
+            if ":" in message.content:
+                output = re.compile(':(.*?):', re.DOTALL |  re.IGNORECASE).findall(message.content)
+                if output:
+                    for cast in output:
+                        if cast in self.settings[server.id]:
+                            soundname = cast #Conversion TYPIQUE DU BORDELIQUE
+                            if "volume" in self.settings[server.id][cast]:
+                                vol = self.settings[server.id][soundname]["volume"]
+                            else:
+                                vol = default_volume
+                                self.settings[server.id][soundname]["volume"] = vol
+                                dataIO.save_json(self.settings_path, self.settings)
 
-                        prefix = self.sys["PREFIX"]
-                        new_message = deepcopy(message)
-                        new_message.content = prefix + "cast" + " " + soundname
-                        await self.bot.process_commands(new_message)
-                        return
+                            prefix = self.sys["PREFIX"]
+                            new_message = deepcopy(message)
+                            new_message.content = prefix + "cast" + " " + soundname
+                            await self.bot.process_commands(new_message)
+                            return
 
 
     def voice_channel_full(self, voice_channel: discord.Channel) -> bool:
@@ -127,12 +128,21 @@ class Horn:
                     self.audio_players[server.id].start()
                     await self.wait_for_disconnect(server)
 
-    @commands.command(pass_context=True, hidden=True)
-    async def setprefix(self, ctx):
-        """Règle le prefix du module"""
-        self.sys["PREFIX"] = ctx.prefix
-        dataIO.save_json("data/playsound/sys.json", self.sys)
-        await self.bot.say("Fait.")
+    @commands.command(pass_context=True)
+    @checks.mod_or_permissions(manage_messages=True)
+    async def castactive(self, ctx):
+        """Permet d'activer/désactiver les casts auto."""
+        if "ACTIVE" not in self.sys:
+            self.sys = {"PREFIX": ctx.prefix, "ACTIVE": False}
+            dataIO.save_json("data/playsound/sys.json", self.sys)
+        if self.sys["ACTIVE"] is True:
+            self.sys["ACTIVE"] = False
+            dataIO.save_json("data/playsound/sys.json", self.sys)
+            await self.bot.say("Désactivé")
+        else:
+            self.sys["ACTIVE"] = True
+            dataIO.save_json("data/playsound/sys.json", self.sys)
+            await self.bot.say("Activé")
 
     @commands.command(no_pm=True, pass_context=True, name="cast")
     async def _cast(self, ctx: commands.Context, soundname: str):
