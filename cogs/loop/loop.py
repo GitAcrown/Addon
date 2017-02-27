@@ -129,7 +129,7 @@ class Loop:
                         if rep == None:
                             return
                         onglet = rep.content.upper()
-                        elif onglet == "A":
+                        if onglet == "A":
                             verif1 = True
                             em = discord.Embed(color=0x667399)
                             em.set_author(name="[LOOP BETA]", icon_url="http://i.imgur.com/EsX4ZXo.png")
