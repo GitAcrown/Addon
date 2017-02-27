@@ -3,11 +3,18 @@ import os
 import random
 from copy import deepcopy
 import discord
+from collections import namedtuple
 from __main__ import send_cmd_help
 from discord.ext import commands
 from .utils.dataIO import fileIO, dataIO
 
 #'Addon' Exclusive/ Pour Plume - Issoubot
+
+dcart = [["oldfag","Pour avoir obtenu le rôle *Oldfag*","http://i.imgur.com/GFqLDbv.png"],
+         ["fortuné","Pour avoir été virtuellement le plus riche une fois dans sa vie","http://i.imgur.com/jceOmWl.png"],
+         ["staff","Pour avoir été dans le staff","http://i.imgur.com/wa8FbsD.png"],
+         ["a voté","Pour avoir exercé son devoir de citoyen","http://i.imgur.com/2x7zb48.png"],
+         ["malsain","Pour avoir été sur le serveur original, tel un vrai malsain","http://i.imgur.com/1mtI9y7.png"]]
 
 class Loop:
     """Extension sociale pour Discord."""
@@ -42,6 +49,56 @@ class Loop:
                              "SUCESS" : [],
                              "FAGS" : []}
         self.save()
+
+    def find_carte(self, carte): #Retrouve une carte à partir de son nom
+        Carte = namedtuple('Carte', ['nom', 'condition', 'image_url'])
+        for c in dcart:
+            if c[0] == carte:
+                return Carte(c[0], c[1], c[2])
+        else:
+            return False
+
+    def pos_carte(self, user, carte): #Renvoie True si possédé, False si manquante chez l'utilisateur visé
+        if user.id in self.acc:
+            for c in self.acc[user.id]["SUCESS"]:
+                if c[0] == carte:
+                    return True
+            else:
+                return False
+        else:
+            return False
+
+    def add_carte(self, user, carte):
+        """Permet d'ajouter une carte à un utilisateur."""
+        if self.find_carte(carte) != False:
+            carte = self.find_carte(carte)
+            if user.id in self.acc:
+                if not self.pos_carte(user, carte.nom):
+                    self.acc[user.id]["SUCESS"].append(carte.nom)
+                    self.save()
+                    return True
+                else:
+                    return False
+            else:
+                return False
+        else:
+            return False
+
+    def del_carte(self, user, carte):
+        """Permet de retirer une carte à un utilisateur."""
+        if self.find_carte(carte) != False:
+            carte = self.find_carte(carte)
+            if user.id in self.acc:
+                if self.pos_carte(user, carte.nom):
+                    self.acc[user.id]["SUCESS"].remove(carte.nom)
+                    self.save()
+                    return True
+                else:
+                    return False
+            else:
+                return False
+        else:
+            return False
 
     def can_see(self, user, perm):
         """Défini si quelqu'un peut voir le profil d'un autre.
@@ -99,6 +156,8 @@ class Loop:
             em.set_thumbnail(url=user.avatar_url)
             em.set_footer(text="Cette personne ne vous autorise pas à voir l'intégralité de son profil.")
             return em
+
+    # COMMANDES >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
     @commands.group(pass_context=True)
     async def loop(self, ctx):
@@ -698,12 +757,13 @@ class Loop:
                     em = self.gen_profil(user, complete=True)
                     menu = await self.bot.whisper(embed=em)
                     await self.bot.add_reaction(menu, "👥") #Voir ses fags (amis)
+                    await self.bot.add_reaction(menu, "📃") #Voir mes cartes (succès)
                     await self.bot.add_reaction(menu, "📝") #Modifier profil
                     await self.bot.add_reaction(menu, "❓") #Aide
                     await asyncio.sleep(0.25)
                     verif = False
                     while verif != True:
-                        rep = await self.bot.wait_for_reaction(["👥","📝","❓"], message=menu, user=user, timeout=60)
+                        rep = await self.bot.wait_for_reaction(["👥","📃","📝","❓"], message=menu, user=user, timeout=60)
                         if rep == None:
                             return
                         elif rep.reaction.emoji == "👥":
@@ -713,7 +773,7 @@ class Loop:
                                 for fag in self.acc[user.id]["FAGS"]:
                                     ami = self.offlinesnip(fag)
                                     amis += "#*{}* | **{}**\n".format(fag, ami)
-                                em.add_field(name= "Vos Fags",value=amis)
+                                em.add_field(name= "Vos fags",value=amis)
                                 await self.bot.whisper(embed=em)
                                 await asyncio.sleep(1)
                                 verif = True
@@ -721,6 +781,42 @@ class Loop:
                                 await self.bot.whisper("Vous n'avez pas d'amis.")
                                 await asyncio.sleep(0.5)
                                 verif = True
+                        elif rep.reaction.emoji == "📃":
+                            if self.acc[user.id]["SUCESS"] != []:
+                                em = discord.Embed(color=0x667399)
+                                sucs = ""
+                                n = 1
+                                liste = []
+                                for suc in self.acc[user.id]["SUCESS"]:
+                                    liste.append([n,self.find_carte(suc)])
+                                    n += 1
+                                for i in liste:
+                                    sucs += "{} | **{}**\n".format(i[0],i[1].nom)
+                                em.add_field(name="Vos cartes", value=sucs)
+                                em.set_footer(text="Tapez un chiffre pour en savoir plus sur le succès ou patientez pour revenir au menu.")
+                                await self.bot.whisper(embed=em)
+                                verif2 = False
+                                while verif2 != True:
+                                    rep = await self.bot.wait_for_message(author=user, channel=menu.channel,timeout=10)
+                                    if rep == None:
+                                        verif2 = True
+                                        verif = True
+                                    elif len(rep.content) == 1:
+                                        if rep.content.isdigit():
+                                            for i in liste:
+                                                if rep.content == i[0]:
+                                                    em = discord.Embed(title=i[1].nom, description=i[1].condition,color=0x667399)
+                                                    em.set_image(url=i[1].image_url)
+                                                    em.set_footer(text="-- Cartes à collectionner Loop --")
+                                                    await self.bot.whisper(embed=em)
+                                                    await asyncio.sleep(1.5)
+                                                    verif2 = True
+                                        else:
+                                            verif2 = True
+                                    else:
+                                        await self.bot.whisper("Invalide")
+                            else:
+                                await self.bot.whisper("Vous n'avez pas de cartes.\n*Elles seront distribuées bientôt !*")
                         elif rep.reaction.emoji == "📝":
                             await self.bot.whisper("Chargement ...")
                             await asyncio.sleep(1.5)
@@ -731,6 +827,7 @@ class Loop:
                         elif rep.reaction.emoji == "❓":
                             aide = "**__AIDE__**\n"
                             aide += "👥 = Voir ses fags\n"
+                            aide += "📃 = Voir ses cartes\n"
                             aide += "📝 = Modifier son profil\n"
                             aide += "❓ = Recevoir de l'aide\n"
                             await self.bot.whisper(aide)
