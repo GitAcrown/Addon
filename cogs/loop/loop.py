@@ -125,9 +125,11 @@ class Loop:
                     menu = await self.bot.whisper(embed = em)
                     verif1 = False
                     while verif1 != True:
-                        rep = await self.bot.wait_for_message(author=author, channel=menu.channel, timeout=30)
+                        rep = await self.bot.wait_for_message(author=author, channel=menu.channel, timeout=45)
+                        if rep == None:
+                            return
                         onglet = rep.content.upper()
-                        if onglet == "A":
+                        elif onglet == "A":
                             verif1 = True
                             em = discord.Embed(color=0x667399)
                             em.set_author(name="[LOOP BETA]", icon_url="http://i.imgur.com/EsX4ZXo.png")
