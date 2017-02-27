@@ -7,8 +7,7 @@ from __main__ import send_cmd_help
 from discord.ext import commands
 from .utils.dataIO import fileIO, dataIO
 
-
-#'Addon' Exclusive
+#'Addon' Exclusive/ Pour Plume - Issoubot
 
 class Loop:
     """Extension sociale pour Discord."""
