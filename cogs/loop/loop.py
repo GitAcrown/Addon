@@ -68,6 +68,14 @@ class Loop:
         else:
             return False
 
+    def offlinesnip(self, snip):
+        """Retrouver un utilisateur en offline"""
+        for id in self.acc:
+            if self.acc[id]["SNIP"] == snip:
+                return self.acc[id]["PSEUDO"]
+        else:
+            return False
+
     def gen_profil(self, user, complete=False):
         if complete is True:
             em = discord.Embed(title="{}".format(user.name), color=0x667399)
@@ -683,8 +691,8 @@ class Loop:
                                 em = discord.Embed(color=0x667399)
                                 amis = ""
                                 for fag in self.acc[user.id]["FAGS"]:
-                                    ami = self.usersnip(server, fag)
-                                    amis += "#*{}* | **{}**\n".format(fag, ami.name)
+                                    ami = self.offlinesnip(fag)
+                                    amis += "#*{}* | **{}**\n".format(fag, ami)
                                 em.add_field(name= "Vos Fags",value=amis)
                                 await self.bot.whisper(embed=em)
                                 await asyncio.sleep(1)
