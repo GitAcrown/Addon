@@ -484,7 +484,7 @@ class Loop:
         else:
             await self.bot.whisper("Un affichage version mobile arrivera bientôt !\n En attendant, inscrivez-vous sur un appareil doté d'un écran suffisamment grand.")
 
-    @loop.command(pass_context=True, no_pm=True)
+    @loop.command(pass_context=True)
     async def log(self, ctx, user:discord.Member = None):
         """Permet de voir le profil d'un utilisateur ou à défaut de soi-même."""
         author = ctx.message.author
