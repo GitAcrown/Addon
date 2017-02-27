@@ -320,6 +320,7 @@ class Loop:
                     msg += "E = Comptes\n"
                     msg += "F = Confidentialité\n"
                     msg += "----------------\n"
+                    msg += "S = Supprimer mon profil\n"
                     msg += "T = Terminer\n"
                     msg += "Q = Quitter sans sauvegarder"
                     em.add_field(name="Menu", value=msg)
@@ -470,6 +471,27 @@ class Loop:
                                 await self.bot.whisper("**Enregistré**")
                             else:
                                 await self.bot.whisper("Invalide")
+                        elif onglet == "S":
+                            an = await self.bot.whisper("Voulez-vous réellement supprimer définitivement votre profil ? (O/N)")
+                            rep = await self.bot.wait_for_message(author=author, channel=an.channel, timeout=15)
+                            if rep == None:
+                                await self.bot.whisper("Réponse trop longue. Action annulée.")
+                                verif = True
+                            elif rep.content.lower() == "o":
+                                key = self.acc[author.id]["SNIP"]
+                                for u in self.acc:
+                                    if key in self.acc[u]["FAGS"]:
+                                        self.acc[u]["FAGS"].remove(key)
+                                del self.acc[author.id]
+                                await self.bot.whisper("**Supprimé.**")
+                                self.save()
+                                return
+                            elif rep.content.lower() == "n":
+                                await self.bot.whisper("Action annulée.")
+                                verif = True
+                            else:
+                                await self.bot.whisper("Invalide. Action annulée.")
+                                verif = True
                         elif onglet == "T":
                             verif1 = True
                             await self.bot.whisper("**Modification du compte...**")
@@ -678,12 +700,11 @@ class Loop:
                     menu = await self.bot.whisper(embed=em)
                     await self.bot.add_reaction(menu, "👥") #Voir ses fags (amis)
                     await self.bot.add_reaction(menu, "📝") #Modifier profil
-                    await self.bot.add_reaction(menu, "💥") #Supprimer profil
                     await self.bot.add_reaction(menu, "❓") #Aide
                     await asyncio.sleep(0.25)
                     verif = False
                     while verif != True:
-                        rep = await self.bot.wait_for_reaction(["👥","📝","💥","❓"], message=menu, user=user, timeout=60)
+                        rep = await self.bot.wait_for_reaction(["👥","📝","❓"], message=menu, user=user, timeout=60)
                         if rep == None:
                             return
                         elif rep.reaction.emoji == "👥":
@@ -708,32 +729,10 @@ class Loop:
                             new_message.content = ctx.prefix + "loop sign"
                             await self.bot.process_commands(new_message)
                             return
-                        elif rep.reaction.emoji == "💥":
-                            an = await self.bot.whisper("Voulez-vous réellement supprimer définitivement votre profil ? (O/N)")
-                            rep = await self.bot.wait_for_message(author=user, channel=an.channel, timeout=15)
-                            if rep == None:
-                                await self.bot.whisper("Réponse trop longue. Action annulée.")
-                                verif = True
-                            elif rep.content.lower() == "o":
-                                key = self.acc[user.id]["SNIP"]
-                                for u in self.acc:
-                                    if key in self.acc[u]["FAGS"]:
-                                        self.acc[u]["FAGS"].remove(key)
-                                del self.acc[user.id]
-                                await self.bot.whisper("**Supprimé.**")
-                                self.save()
-                                return
-                            elif rep.content.lower() == "n":
-                                await self.bot.whisper("Action annulée.")
-                                verif = True
-                            else:
-                                await self.bot.whisper("Invalide. Action annulée.")
-                                verif = True
                         elif rep.reaction.emoji == "❓":
                             aide = "**__AIDE__**\n"
                             aide += "👥 = Voir ses fags\n"
                             aide += "📝 = Modifier son profil\n"
-                            aide += "💥 = Supprimer son profil\n"
                             aide += "❓ = Recevoir de l'aide\n"
                             await self.bot.whisper(aide)
                             await asyncio.sleep(1)
