@@ -24,6 +24,10 @@ dcart = [["oldfag","Pour avoir été un oldfag","http://image.noelshack.com/fich
          ["a voté","Pour avoir exercé son devoir de citoyen","http://image.noelshack.com/fichiers/2017/09/1488311074-cartevote.png","commune"],
          ["detective","Pour avoir découvert un Easter-egg !","http://image.noelshack.com/fichiers/2017/09/1488316832-cartedetective.png","collector"],
          ["chanceux","Pour avoir multiplié son offre par 5000 dans la Machine à sous", "http://image.noelshack.com/fichiers/2017/09/1488318404-cartechanceux.png","rare"],
+         ["shazam","Pour avoir gagné un Event Blindtest","http://i.imgur.com/xYYcEdR.png","rare"],
+         ["président","Pour avoir été Président du serveur","http://i.imgur.com/FvLbLKY.png","unique"],
+         ["artiste","Pour avoir gagné l'Event Artistique","http://i.imgur.com/JwSp2dT.png","collector"],
+         ["malaise","Pour avoir été le plus malaisant","http://i.imgur.com/GNOkPlH.png","rare"],
          ["malsain","Pour avoir été sur le serveur original, tel un vrai malsain","http://image.noelshack.com/fichiers/2017/09/1488317991-cartemalsain.png","unique"]]
 
 class Loop:
@@ -1008,6 +1012,10 @@ class Loop:
                 if not self.pos_carte(after, "malsain"):
                     self.add_carte(after, "malsain")
                     msg += "Vous avez débloqué la carte **Malsain** ! [Unique]\n"
+            if "Président" in [r.name for r in after.roles]:
+                if not self.pos_carte(after, "président"):
+                    self.add_carte(after, "président")
+                    msg += "Vous avez débloqué la carte **Président** ! [Unique]\n"
             if msg != "":
                 return msg
             else:
