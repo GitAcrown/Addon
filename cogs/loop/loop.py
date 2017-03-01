@@ -978,18 +978,23 @@ class Loop:
 
     def carte_synchro(self, after):
         if after.id in self.acc:
+            msg = ""
             if "Staff" in [r.name for r in after.roles]:
                 if not self.pos_carte(after, "staff"):
                     self.add_carte(after, "staff")
-                    return "Vous avez débloqué la carte **Staff** ! [Unique]"
+                    msg +="Vous avez débloqué la carte **Staff** ! [Unique]\n"
             if "Oldfag" in [r.name for r in after.roles]:
                 if not self.pos_carte(after, "oldfag"):
                     self.add_carte(after, "oldfag")
-                    return "Vous avez débloqué la carte **Oldfag** ! [Unique]"
+                    msg += "Vous avez débloqué la carte **Oldfag** ! [Unique]\n"
             if "Malsain" in [r.name for r in after.roles]:
                 if not self.pos_carte(after, "malsain"):
                     self.add_carte(after, "malsain")
-                    return "Vous avez débloqué la carte **Malsain** ! [Unique]"
+                    msg += "Vous avez débloqué la carte **Malsain** ! [Unique]\n"
+            if msg != "":
+                return msg
+            else:
+                return False
         else:
             return False
 
