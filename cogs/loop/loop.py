@@ -715,14 +715,30 @@ class Loop:
                     if self.acc[author.id]["SNIP"] in self.acc[user.id]["FAGS"]:
                         em = self.gen_profil(user, complete=True)
                         menu = await self.bot.whisper(embed=em)
+                        await self.bot.add_reaction(menu, "📃") #Afficher ses cartes
                         await self.bot.add_reaction(menu, "✖") #Retirer l'ami
                         await self.bot.add_reaction(menu, "❓")
                         await asyncio.sleep(0.25)
                         verif = False
                         while verif != True:
-                            rep = await self.bot.wait_for_reaction(["✖", "❓"], message=menu, user=author, timeout=60)
+                            rep = await self.bot.wait_for_reaction(["📃","✖", "❓"], message=menu, user=author, timeout=60)
                             if rep == None:
                                 return
+                            elif rep.reaction.emoji == "📃":
+                                em = discord.Embed(color=0x667399)
+                                if self.acc[user.id]["SUCESS"] != []:
+                                    msg = ""
+                                    for c in self.acc[user.id]["SUCESS"]:
+                                        carte = self.find_carte(c)
+                                        msg += "**{}** [*{}*]\n".format(carte.nom.upper(), carte.type.upper())
+                                    em.add_field(name="Cartes de {}".format(user.name),value=msg)
+                                    em.set_footer(text="-- Cartes à collectionner Loop --")
+                                    await self.bot.whisper(embed=em)
+                                    await asyncio.sleep(1)
+                                    verif = True
+                                else:
+                                    await self.bot.whisper("Cet utilisateur ne possède pas de cartes.")
+
                             elif rep.reaction.emoji == "✖":
                                 an = await self.bot.whisper(
                                     "Voulez-vous réellement retirer ce Fag de votre entourage ? (O/N)")
@@ -744,6 +760,7 @@ class Loop:
                                     verif = True
                             elif rep.reaction.emoji == "❓":
                                 aide = "**__AIDE__**\n"
+                                aide += "📃 = Afficher ses cartes\n"
                                 aide += "✖ = Retirer ce Fag\n"
                                 aide += "❓ = Recevoir de l'aide\n"
                                 await self.bot.whisper(aide)
