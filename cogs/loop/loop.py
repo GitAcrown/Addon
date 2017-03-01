@@ -21,7 +21,7 @@ from .utils.dataIO import fileIO, dataIO
 dcart = [["oldfag","Pour avoir été un oldfag","http://image.noelshack.com/fichiers/2017/09/1488317998-carteoldfag.png","unique"],
          ["fortuné","Pour avoir été virtuellement le plus riche une fois dans sa vie","http://image.noelshack.com/fichiers/2017/09/1488318000-cartefortune.png","unique"],
          ["staff","Pour avoir été dans le staff","http://image.noelshack.com/fichiers/2017/09/1488317994-cartestaff.png","unique"],
-         ["a voté","Pour avoir exercé son devoir de citoyen","http://image.noelshack.com/fichiers/2017/09/1488311074-cartevote.png","normal"],
+         ["a voté","Pour avoir exercé son devoir de citoyen","http://image.noelshack.com/fichiers/2017/09/1488311074-cartevote.png","commune"],
          ["detective","Pour avoir découvert un Easter-egg !","http://image.noelshack.com/fichiers/2017/09/1488316832-cartedetective.png","collector"],
          ["chanceux","Pour avoir multiplié son offre par 5000 dans la Machine à sous", "http://image.noelshack.com/fichiers/2017/09/1488318404-cartechanceux.png","rare"],
          ["malsain","Pour avoir été sur le serveur original, tel un vrai malsain","http://image.noelshack.com/fichiers/2017/09/1488317991-cartemalsain.png","unique"]]
@@ -126,7 +126,7 @@ class Loop:
             return None
 
     def usersnip(self, server, snip):
-        """Retrouver l'utilisateur qui possède un snip en particulier."""
+        """Retrouver l'utilisateur qui possède un snip en particulier. (S'appuie sur le serveur - Précis)"""
         for id in self.acc:
             if self.acc[id]["SNIP"] == snip:
                 user = server.get_member(self.acc[id]["ID"])
@@ -135,7 +135,7 @@ class Loop:
             return False
 
     def offlinesnip(self, snip):
-        """Retrouver un utilisateur en offline"""
+        """Retrouver un utilisateur en offline (S'appuie sur les données enregistées - Moins précis)"""
         for id in self.acc:
             if self.acc[id]["SNIP"] == snip:
                 return self.acc[id]["PSEUDO"]
@@ -668,7 +668,38 @@ class Loop:
                         else:
                             await self.bot.whisper("Invalide, essayez une autre lettre.")
         else:
-            await self.bot.whisper("Un affichage version mobile arrivera bientôt !\n En attendant, inscrivez-vous sur un appareil doté d'un écran suffisamment grand.")
+            if author.id not in self.acc:
+                an = await self.bot.whisper("Un compte vide va être créé, vous pourrez le personnaliser lorsque vous serez sur un écran plus grand.\n*Voulez-vous vous inscrire ?* (O/N)")
+                verif = False
+                while verif == False:
+                    rep = await self.bot.wait_for_message(author=author, channel=an.channel, timeout=10)
+                    if rep == None:
+                        await self.bot.whisper("Annulation...")
+                        return
+                    elif rep.content.lower() == "o":
+                        verif = True
+                        await self.bot.whisper("**Création d'un compte vide...**")
+                        await asyncio.sleep(1)
+                        self.new_acc(author)
+                        self.acc[author.id]["SEXE"] = None
+                        self.acc[author.id]["ANNIV"] = None
+                        self.acc[author.id]["PROF"] = None
+                        self.acc[author.id]["COMPTES"] = None
+                        self.acc[author.id]["SIGN"] = None
+                        self.acc[author.id]["PUBLIC"] = False
+                        await self.bot.whisper(
+                            "**Votre compte à été créé avec succès.**\nVous pouvez y accéder depuis {0}loop log\nVous pourrez le modifier avec {0}loop sign".format(
+                                ctx.prefix))
+                        self.save()
+                        return
+                    elif rep.content.lower() == "n":
+                        await self.bot.whisper("Annulation...")
+                        return
+                    else:
+                        await self.bot.whisper("Invalide, réessayez.")
+            else:
+                await self.bot.whisper("Vous avez déjà un compte. Vous pouvez y accéder depuis {}loop log".format(ctx.prefix))
+
 
     @loop.command(pass_context=True)
     async def log(self, ctx, user:discord.Member = None):
@@ -972,13 +1003,6 @@ class Loop:
         else:
             pass
 
-    async def smart(self, reaction, user):
-        if user.id in self.acc:
-            if reaction.message.author.id in self.acc:
-                await asyncio.sleep(0.25)
-
-                return
-
 def check_folders():
     if not os.path.exists("data/loop"):
         print("Creation du dossier loop...")
@@ -999,4 +1023,3 @@ def setup(bot):
     n = Loop(bot)
     bot.add_cog(n)
     bot.add_listener(n.cardupdate, "on_member_update")
-    bot.add_listener(n.smart, "on_reaction_add")
