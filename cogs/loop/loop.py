@@ -951,16 +951,14 @@ class Loop:
                 if not self.pos_carte(after, "staff"):
                     self.add_carte(after, "staff")
                     return "Vous avez débloqué la carte **Staff** ! [Unique]"
-            elif "Oldfag" in [r.name for r in after.roles]:
+            if "Oldfag" in [r.name for r in after.roles]:
                 if not self.pos_carte(after, "oldfag"):
                     self.add_carte(after, "oldfag")
                     return "Vous avez débloqué la carte **Oldfag** ! [Unique]"
-            elif "Malsain" in [r.name for r in after.roles]:
+            if "Malsain" in [r.name for r in after.roles]:
                 if not self.pos_carte(after, "malsain"):
                     self.add_carte(after, "malsain")
                     return "Vous avez débloqué la carte **Malsain** ! [Unique]"
-            else:
-                return False
         else:
             return False
 
