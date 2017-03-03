@@ -10,13 +10,14 @@ from discord.ext import commands
 from .utils.dataIO import fileIO, dataIO
 
 #'Addon' Exclusive/ Pour Plume - Issoubot
-# /!\ >> SI VOUS NE VOULEZ PAS DE SPOIL, OU SI VOUS NE VOULEZ PAS ÊTRE PENALISE POUR AVOIR TRICHE, NE LISEZ PAS LES LIGNES CI-DESSOUS. <<
 
 # Types :
 # - Normal (Texte en noir - Grande distribution)
 # - Unique (Texte en bleu - Personnelle et Non-échangeable type Rôles)
 # - Rare (Texte en rouge - Fait remarquable)
 # - Collector (Texte en or - Event particulier)
+
+# /!\ >> SI VOUS NE VOULEZ PAS DE SPOIL, OU SI VOUS NE VOULEZ PAS ÊTRE PENALISE POUR AVOIR TRICHE, NE LISEZ PAS LES LIGNES CI-DESSOUS. <<
 
 dcart = [["oldfag","Pour avoir été un oldfag","http://image.noelshack.com/fichiers/2017/09/1488317998-carteoldfag.png","unique"],
          ["fortuné","Pour avoir été virtuellement le plus riche une fois dans sa vie","http://image.noelshack.com/fichiers/2017/09/1488318000-cartefortune.png","unique"],
@@ -64,6 +65,15 @@ class Loop:
                              "FAGS" : []}
         self.save()
 
+    def is_lite(self, user):
+        if user.id not in self.acc:
+            if user.id in self.sys:
+                return True
+            else:
+                self.new_sys(user)
+        else:
+            return False
+
     def find_carte(self, carte): #Retrouve une carte à partir de son nom
         Carte = namedtuple('Carte', ['nom', 'condition', 'image_url', 'type'])
         for c in dcart:
@@ -71,6 +81,16 @@ class Loop:
                 return Carte(c[0], c[1], c[2], c[3])
         else:
             return False
+
+    def new_sys(self, user):
+        """Création d'un compte système vierge"""
+        self.sys[user.id] = {"PSEUDO" : user.name,
+                             "MSG" : 0,
+                             "VOCAL" : False,
+                             "VOCACTIF": False,
+                             "XP" : 0,
+                             "NIVEAU" : 1}
+        self.save()
 
     def pos_carte(self, user, carte): #Renvoie True si possédé, False si manquante chez l'utilisateur visé
         if user.id in self.acc:
@@ -152,6 +172,7 @@ class Loop:
             em.set_author(name="[LOOP BETA]",icon_url="http://image.noelshack.com/fichiers/2017/09/1488319163-looplog.png")
             em.set_thumbnail(url=user.avatar_url)
             em.add_field(name="Sexe", value=self.acc[user.id]["SEXE"] if self.acc[user.id]["SEXE"] != None else "N.R.")
+            em.add_field(name="Niveau", value= "**{}** (*{}xp*)".format(self.sys[user.id]["NIVEAU"] if user.id in self.sys else "0",self.sys[user.id]["XP"] if user.id in self.sys else "0"))
             em.add_field(name="Anniversaire", value=self.acc[user.id]["ANNIV"] if self.acc[user.id]["ANNIV"] != None else "N.R.")
             em.add_field(name="Profession", value=self.acc[user.id]["PROF"] if self.acc[user.id]["PROF"] != None else "N.R.")
             comptes = self.acc[user.id]["COMPTES"]
@@ -167,6 +188,7 @@ class Loop:
         else:
             em = discord.Embed(title="{}".format(user.name), color=0x667399)
             em.set_author(name="[LOOP BETA]", icon_url="http://image.noelshack.com/fichiers/2017/09/1488319163-looplog.png")
+            em.add_field(name="Niveau", value="**{}** (*{}xp*)".formar(self.acc[user.id]["NIVEAU"]))
             em.set_thumbnail(url=user.avatar_url)
             em.set_footer(text="Cette personne ne vous autorise pas à voir l'intégralité de son profil.")
             return em
@@ -271,6 +293,22 @@ class Loop:
         author = ctx.message.author
         if mobile is False:
             if author.id not in self.acc:
+                if self.is_lite(author):
+                    conf = await self.bot.whisper(
+                        "Votre compte Loop lite sera transformé en compte Loop classique. Voulez-vous continuer ? (O/N)")
+                    verif1 = False
+                    while verif1 != True:
+                        rep = await self.bot.wait_for_message(author=author, channel=conf.channel, timeout=20)
+                        if rep == None:
+                            await self.bot.whisper("Annulation... :wave:")
+                            return
+                        if rep.content.lower() == "o":
+                            verif1 = True
+                        elif rep.content.lower() == "n":
+                            await self.bot.whisper("Annulation...")
+                            return
+                        else:
+                            await self.bot.whisper("Invalide.")
                 main = False
                 profil_public = profil_sexe = profil_comptes = profil_prof = profil_sign = profil_anniv = None #Défaut
                 while main is False:
@@ -988,7 +1026,10 @@ class Loop:
 
         else:
             if author.id not in self.acc:
-                await self.bot.whisper("Vous ne possédez pas de compte Loop. *Redirection vers inscription...*")
+                if self.is_lite(author):
+                    await self.bot.whisper("Votre compte Loop Lite ne permet pas de voir les profils membres.\n*Redirection vers inscription...*")
+                else:
+                    await self.bot.whisper("Vous ne possédez pas de compte Loop. *Redirection vers inscription...*")
                 await asyncio.sleep(1.5)
                 new_message = deepcopy(ctx.message)
                 new_message.content = ctx.prefix + "loop sign"
@@ -1023,6 +1064,37 @@ class Loop:
         else:
             return False
 
+    @loop.command(pass_context=True)
+    @checks.mod_or_permissions(kick_members=True)
+    async def level(self, ctx, type : str, nb : int):
+        """Permet la recherche des comptes Loop (Y compris 'Lite') possédant au moins X niveaux ou X d'Xp.
+        Type : 'niveau' ou 'xp'.
+        Nb : Nombre minimal à chercher."""
+        if type == "niveau":
+            msg = ""
+            for m in self.sys:
+                if self.sys[m]["NIVEAU"] >= nb:
+                    msg += "- *{}*\n".format(self.sys[m]["PSEUDO"])
+            else:
+                if msg != "":
+                    await self.bot.whisper(msg)
+                else:
+                    await self.bot.whisper("Aucun résultat")
+        elif type == "xp":
+            msg = ""
+            for m in self.sys:
+                if self.sys[m]["XP"] >= nb:
+                    msg += "- *{}*\n".format(self.sys[m]["PSEUDO"])
+            else:
+                if msg != "":
+                    await self.bot.whisper(msg)
+                else:
+                    await self.bot.whisper("Aucun résultat")
+        else:
+            await self.bot.say("Le type doit être 'niveau' ou 'xp'.")
+
+    #CECI N'EST PAS UN EASTER-EGG
+
     async def cardupdate(self, before:discord.Member, after:discord.Member):
         if before.roles != after.roles:
             msg = self.carte_synchro(after)
@@ -1032,6 +1104,55 @@ class Loop:
                 pass
         else:
             pass
+
+    async def xpmsg(self, message):
+        author = message.author
+        mentions = message.mentions
+        if author.id in self.sys:
+            if message.server:
+                if "Prison" not in [r.name for r in author.roles]:
+                    self.sys[author.id]["MSG"] += 1
+        else:
+            self.new_sys(author)
+            self.sys[author.id]["MSG"] += 1
+        if mentions != []:
+            for p in mentions:
+                if p.id in self.acc:
+                    if p.id in self.sys:
+                        self.sys[p.id]["XP"] += 2
+                    else:
+                        self.new_sys(p)
+                        self.sys[p.id]["XP"] += 2
+
+    async def xpvocal(self, before, after):
+        if before.voice != after.voice:
+            if after.id in self.sys:
+                if after.voice.voice_channel != None:
+                    self.sys[after.id]["VOCAL"] = True
+                    self.sys[after.id]["VOCACTIF"] = True if after.voice.self_mute is False else False
+                else:
+                    self.sys[after.id]["VOCAL"] = False
+                    self.sys[after.id]["VOCACTIF"] = False
+
+    async def loopdate(self): #MAJ Niveau
+        while self == self.bot.get_cog("Loop"):
+            for id in self.sys:
+                if self.sys[id]["MSG"] >= 2:
+                    self.sys[id]["XP"] += int(self.sys[id]["MSG"] / 2)
+                self.sys[id]["MSG"] = 0
+                if self.sys[id]["VOCAL"] is True:
+                    self.sys[id]["XP"] += 5 if self.sys[id]["VOCACTIF"] is False else 15
+                    requis = int((self.sys[id]["NIVEAU"] + 1) ** 2)
+                    requis = (25*requis) + (50*self.sys[id]["NIVEAU"])
+                    if self.sys[id]["XP"] >= requis:
+                        self.sys[id]["NIVEAU"] += 1
+            self.save()
+            await asyncio.sleep(900)
+
+    async def autosave(self):
+        while self == self.bot.get_cog("Loop"):
+            self.save()
+            await asyncio.sleep(300)
 
 def check_folders():
     if not os.path.exists("data/loop"):
@@ -1053,3 +1174,7 @@ def setup(bot):
     n = Loop(bot)
     bot.add_cog(n)
     bot.add_listener(n.cardupdate, "on_member_update")
+    bot.add_listener(n.xpmsg, "on_message")
+    bot.add_listener(n.xpvocal, "on_voice_state_update")
+    bot.loop.create_task(n.loopdate())
+    bot.loop.create_task(n.autosave())
