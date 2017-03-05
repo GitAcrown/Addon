@@ -1080,20 +1080,28 @@ class Loop:
             msg = ""
             for m in self.sys:
                 if self.sys[m]["NIVEAU"] >= nb:
-                    msg += "- *{}*\n".format(self.sys[m]["PSEUDO"])
+                    msg += "- *{}* ({})\n".format(self.sys[m]["PSEUDO"], self.sys[m]["NIVEAU"])
+                    if len(msg) >= 1950:
+                        msg += "§"
             else:
                 if msg != "":
-                    await self.bot.whisper(msg)
+                    msgl = msg.split("§")
+                    for msg in msgl:
+                        await self.bot.whisper(msg)
                 else:
                     await self.bot.whisper("Aucun résultat")
         elif type == "xp":
             msg = ""
             for m in self.sys:
                 if self.sys[m]["XP"] >= nb:
-                    msg += "- *{}*\n".format(self.sys[m]["PSEUDO"])
+                    msg += "- *{}* ({}xp)\n".format(self.sys[m]["PSEUDO"], self.sys[m]["XP"])
+                    if len(msg) >= 1950:
+                        msg += "§"
             else:
                 if msg != "":
-                    await self.bot.whisper(msg)
+                    msgl = msg.split("§")
+                    for msg in msgl:
+                        await self.bot.whisper(msg)
                 else:
                     await self.bot.whisper("Aucun résultat")
         else:
