@@ -188,7 +188,7 @@ class Loop:
         else:
             em = discord.Embed(title="{}".format(user.name), color=0x667399)
             em.set_author(name="[LOOP BETA]", icon_url="http://image.noelshack.com/fichiers/2017/09/1488319163-looplog.png")
-            em.add_field(name="Niveau", value="**{}** (*{}xp*)".format(self.acc[user.id]["NIVEAU"]))
+            em.add_field(name="Niveau", value="**{}** (*{}xp*)".format(self.sys[user.id]["NIVEAU"]))
             em.set_thumbnail(url=user.avatar_url)
             em.set_footer(text="Cette personne ne vous autorise pas à voir l'intégralité de son profil.")
             return em
