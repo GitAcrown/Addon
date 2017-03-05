@@ -1139,6 +1139,14 @@ class Loop:
                 else:
                     self.sys[after.id]["VOCAL"] = False
                     self.sys[after.id]["VOCACTIF"] = False
+            else:
+                self.new_sys(after)
+                if after.voice.voice_channel != None:
+                    self.sys[after.id]["VOCAL"] = True
+                    self.sys[after.id]["VOCACTIF"] = True if after.voice.self_mute is False else False
+                else:
+                    self.sys[after.id]["VOCAL"] = False
+                    self.sys[after.id]["VOCACTIF"] = False
 
     async def loopdate(self): #MAJ Niveau
         while self == self.bot.get_cog("Loop"):
