@@ -1145,17 +1145,18 @@ class Loop:
             for id in self.sys:
                 before = self.sys[id]["XP"]
                 if self.sys[id]["MSG"] >= 2:
-                    self.sys[id]["XP"] += int(self.sys[id]["MSG"] / 2)
+                    self.sys[id]["XP"] += int(self.sys[id]["MSG"] * 1.5)
                 self.sys[id]["MSG"] = 0
                 if self.sys[id]["VOCAL"] is True:
-                    self.sys[id]["XP"] += 5 if self.sys[id]["VOCACTIF"] is False else 15
+                    self.sys[id]["XP"] += 7 if self.sys[id]["VOCACTIF"] is False else 16
                     requis = int((self.sys[id]["NIVEAU"] + 1) ** 2)
                     requis = (25*requis) + (50*self.sys[id]["NIVEAU"])
                 if self.sys[id]["XP"] >= requis:
                     self.sys[id]["NIVEAU"] += 1
                 after = self.sys[id]["XP"]
                 if before == after:
-                    self.sys[id]["XP"] -= 0.5
+                    if self.sys[id]["XP"] > 0:
+                        self.sys[id]["XP"] -= 1
             self.save()
             await asyncio.sleep(900)
 
