@@ -1035,6 +1035,12 @@ class Loop:
                 new_message.content = ctx.prefix + "loop sign"
                 await self.bot.process_commands(new_message)
                 return
+            elif user.id not in self.acc:
+                if self.is_lite(user):
+                    await self.bot.whisper("L'utilisateur ne possède qu'un compte Loop lite qui ne contient pas de profil.")
+                    return
+                else:
+                    await self.bot.whisper("L'utilisateur ne possède pas de compte Loop.")
             else:
                 await self.bot.whisper("L'utilisateur ne possède pas de compte Loop.")
 
