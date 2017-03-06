@@ -1159,8 +1159,8 @@ class Loop:
     async def loopdate(self): #MAJ Niveau
         while self == self.bot.get_cog("Loop"):
             for id in self.sys:
-                if self.sys[id]["MSG"] >= 2:
-                    self.sys[id]["XP"] += int(self.sys[id]["MSG"] / 2)
+                if self.sys[id]["MSG"] >= 5:
+                    self.sys[id]["XP"] += int(self.sys[id]["MSG"] / 2.5)
                 self.sys[id]["MSG"] = 0
                 if self.sys[id]["VOCAL"] is True:
                     self.sys[id]["XP"] += 1 if self.sys[id]["VOCACTIF"] is False else 4
