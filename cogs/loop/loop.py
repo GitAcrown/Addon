@@ -1164,9 +1164,9 @@ class Loop:
                     self.sys[id]["XP"] += int(self.sys[id]["MSG"] * 1.5)
                 self.sys[id]["MSG"] = 0
                 if self.sys[id]["VOCAL"] is True:
-                    self.sys[id]["XP"] += 7 if self.sys[id]["VOCACTIF"] is False else 16
-                    requis = int((self.sys[id]["NIVEAU"] + 1) ** 2)
-                    requis = (25*requis) + (50*self.sys[id]["NIVEAU"])
+                    self.sys[id]["XP"] += 3 if self.sys[id]["VOCACTIF"] is False else 6
+                requis = int((self.sys[id]["NIVEAU"] + 1) ** 2)
+                requis = (30*requis) + (45*self.sys[id]["NIVEAU"])
                 if self.sys[id]["XP"] >= requis:
                     self.sys[id]["NIVEAU"] += 1
                 after = self.sys[id]["XP"]
@@ -1174,12 +1174,7 @@ class Loop:
                     if self.sys[id]["XP"] > 0:
                         self.sys[id]["XP"] -= 1
             self.save()
-            await asyncio.sleep(900)
-
-    async def autosave(self):
-        while self == self.bot.get_cog("Loop"):
-            self.save()
-            await asyncio.sleep(300)
+            await asyncio.sleep(120)
 
 def check_folders():
     if not os.path.exists("data/loop"):
@@ -1204,4 +1199,3 @@ def setup(bot):
     bot.add_listener(n.xpmsg, "on_message")
     bot.add_listener(n.xpvocal, "on_voice_state_update")
     bot.loop.create_task(n.loopdate())
-    bot.loop.create_task(n.autosave())
