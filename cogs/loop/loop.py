@@ -1159,7 +1159,6 @@ class Loop:
     async def loopdate(self): #MAJ Niveau
         while self == self.bot.get_cog("Loop"):
             for id in self.sys:
-                before = self.sys[id]["XP"]
                 if self.sys[id]["MSG"] >= 2:
                     self.sys[id]["XP"] += int(self.sys[id]["MSG"] / 2)
                 self.sys[id]["MSG"] = 0
@@ -1169,10 +1168,6 @@ class Loop:
                 requis = (30*requis) + (45*self.sys[id]["NIVEAU"])
                 if self.sys[id]["XP"] >= requis:
                     self.sys[id]["NIVEAU"] += 1
-                after = self.sys[id]["XP"]
-                if before == after:
-                    if self.sys[id]["XP"] > 0:
-                        self.sys[id]["XP"] -= 1
             self.save()
             await asyncio.sleep(300)
 
