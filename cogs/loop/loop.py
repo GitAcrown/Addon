@@ -1161,10 +1161,10 @@ class Loop:
             for id in self.sys:
                 before = self.sys[id]["XP"]
                 if self.sys[id]["MSG"] >= 2:
-                    self.sys[id]["XP"] += int(self.sys[id]["MSG"] * 1.5)
+                    self.sys[id]["XP"] += int(self.sys[id]["MSG"] / 2)
                 self.sys[id]["MSG"] = 0
                 if self.sys[id]["VOCAL"] is True:
-                    self.sys[id]["XP"] += 3 if self.sys[id]["VOCACTIF"] is False else 6
+                    self.sys[id]["XP"] += 1 if self.sys[id]["VOCACTIF"] is False else 4
                 requis = int((self.sys[id]["NIVEAU"] + 1) ** 2)
                 requis = (30*requis) + (45*self.sys[id]["NIVEAU"])
                 if self.sys[id]["XP"] >= requis:
@@ -1174,7 +1174,7 @@ class Loop:
                     if self.sys[id]["XP"] > 0:
                         self.sys[id]["XP"] -= 1
             self.save()
-            await asyncio.sleep(120)
+            await asyncio.sleep(300)
 
 def check_folders():
     if not os.path.exists("data/loop"):
