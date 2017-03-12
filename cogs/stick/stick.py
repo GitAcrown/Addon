@@ -177,11 +177,13 @@ class Stick:
                     if cat != None:
                         msg = "**INVENTAIRE**\n"
                         msg += "*Votre inventaire de stickers*\n\n"
+                        a = 0
                         for stk in self.img["STICKER"]:
                             if self.img["STICKER"]["CAT"] == cat:
                                 msg += "**{}**\n".format(self.img["STICKER"][stk]["NOM"])
-                                if len(msg) >= 1900:
+                                if len(msg) >= 1900 * a:
                                     msg += "!!"
+                                    a += 1
                         else:
                             lmsg = msg.split("!!")
                             for msg in lmsg:
@@ -216,10 +218,12 @@ class Stick:
                 elif rep.reaction.emoji == "📖":
                     msg = "**STICKERS DISPONIBLES**\n"
                     msg += "*Liste de tous les stickers*\n\n"
+                    a = 1
                     for stk in self.img["STICKER"]:
                         msg += "**{}**\n".format(self.img["STICKER"][stk]["NOM"])
-                        if len(msg) >= 1950:
+                        if len(msg) >= 1950 * a:
                             msg += "!!"
+                            a += 1
                     else:
                         lmsg = msg.split("!!")
                         for msg in lmsg:
@@ -237,11 +241,13 @@ class Stick:
                             cat = rep.content.upper()
                             msg = "**RECHERCHE - INVENTAIRE**\n"
                             msg += "*Stickers de l'inventaire de {}*\n\n".format(cat.title())
+                            a = 1
                             for stk in self.img["STICKER"]:
                                 if self.img["STICKER"]["CAT"] == cat:
                                     msg += "**{}**\n".format(self.img["STICKER"][stk]["NOM"])
-                                    if len(msg) >= 1900:
+                                    if len(msg) >= 1900 * a:
                                         msg += "!!"
+                                        a += 1
                             else:
                                 lmsg = msg.split("!!")
                                 for msg in lmsg:
@@ -251,10 +257,12 @@ class Stick:
                             for stk in self.img["STICKER"]:
                                 msg = "**RECHERCHE - STICKER**\n"
                                 msg += "*Résultats pour {}*\n\n".format(rep.content.lower())
+                                a = 1
                                 if rep.content.lower in self.img["STICKER"][stk]["NOM"]:
                                     msg += "**{}** - *{}*\n".format(self.img["STICKER"][stk]["NOM"],self.img["STICKER"][stk]["CAT"])
-                                    if len(msg) >= 1950:
+                                    if len(msg) >= 1950 * a:
                                         msg += "!!"
+                                        a += 1
                             else:
                                 lmsg = msg.split("!!")
                                 for msg in lmsg:
