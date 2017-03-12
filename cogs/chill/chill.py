@@ -24,7 +24,7 @@ class Chill:
         """Ajoute/Enlève une personne en prison"""
         server = ctx.message.server
         id = user.id
-        r = discord.utils.get(ctx.message.server.roles, name="Prison")
+        spe = discord.utils.get(ctx.message.server.roles, name="Prison")
         if mute == None:
             mute = False
         else:
@@ -32,7 +32,7 @@ class Chill:
         if temps >= 1:
             sec = temps * 60  # Temps en secondes
             if "Prison" not in [r.name for r in user.roles]:
-                await self.bot.add_roles(user, r)
+                await self.bot.add_roles(user, spe)
                 if mute == True:
                     self.bot.server_voice_state(user, mute=True)
                 else:
@@ -44,18 +44,19 @@ class Chill:
                 # \/ Sortie
                 await asyncio.sleep(sec)  # Attente
                 if "Prison" in [r.name for r in user.roles]:
-                    try:
-                        await self.bot.remove_roles(user, r)
-                        await self.bot.server_voice_state(user, mute=False)
-                        await self.bot.say("**{}** est sorti de prison.".format(user.display_name))
-                        await self.bot.send_message(user, "Vous êtes désormais libre.")
-                    except:
-                        pass
+                    await self.bot.remove_roles(user, spe)
+                    await asyncio.sleep(0.25)
+                    await self.bot.server_voice_state(user, mute=False)
+                    await asyncio.sleep(0.25)
+                    await self.bot.say("**{}** est sorti de prison.".format(user.display_name))
+                    await self.bot.send_message(user, "Vous êtes désormais libre.")
                 else:
                     return
             else:
-                await self.bot.remove_roles(user, r)
+                await self.bot.remove_roles(user, spe)
+                await asyncio.sleep(0.25)
                 await self.bot.server_voice_state(user, mute=False)
+                await asyncio.sleep(0.25)
                 await self.bot.say("**{}** a été libéré de la prison.".format(user.display_name))
                 await self.bot.send_message(user, "Vous avez été libéré de la prison plus tôt que prévu.")
         else:
