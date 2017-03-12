@@ -18,9 +18,9 @@ class Chill:
         self.sys = dataIO.load_json("data/chill/sys.json")
         self.factory = dataIO.load_json("data/chill/factory.json")
 
-    @commands.command(pass_context=True, name="mod")
+    @commands.command(pass_context=True, name="goulag")
     @checks.admin_or_permissions(kick_members=True)
-    async def moderate(self, ctx, user: discord.Member, temps: int = 5, mute=None):
+    async def moderate_goulag(self, ctx, user: discord.Member, temps: int = 5, mute=None):
         """Ajoute/Enlève une personne en prison"""
         server = ctx.message.server
         id = user.id
