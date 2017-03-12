@@ -33,7 +33,7 @@ class Stick:
 
     @commands.group(pass_context=True)  # UTILISATEUR
     async def stk(self, ctx):
-        """Gestion utilisateur du module Stickers."""
+        """Commandes de gestion des stickers"""
         if ctx.invoked_subcommand is None:
             await send_cmd_help(ctx)
 
