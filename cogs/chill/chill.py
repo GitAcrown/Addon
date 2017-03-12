@@ -18,6 +18,49 @@ class Chill:
         self.sys = dataIO.load_json("data/chill/sys.json")
         self.factory = dataIO.load_json("data/chill/factory.json")
 
+    @commands.command(pass_context=True, name="mod")
+    @checks.admin_or_permissions(kick_members=True)
+    async def moderate(self, ctx, user: discord.Member, temps: int = 5, mute=None):
+        """Ajoute/Enlève une personne en prison"""
+        server = ctx.message.server
+        id = user.id
+        r = discord.utils.get(ctx.message.server.roles, name="Prison")
+        if mute == None:
+            mute = False
+        else:
+            mute = bool(mute)
+        if temps >= 1:
+            sec = temps * 60  # Temps en secondes
+            if "Prison" not in [r.name for r in user.roles]:
+                await self.bot.add_roles(user, r)
+                if mute == True:
+                    self.bot.server_voice_state(user, mute=True)
+                else:
+                    pass
+                await self.bot.say("**{}** est désormais en prison pour {} minute(s).".format(user.display_name, temps))
+                await self.bot.send_message(user,
+                                            "Vous êtes en prison pour {} minute(s).\n*Vous avez accès au salon #prison pour toute plainte*".format(
+                                                temps))
+                # \/ Sortie
+                await asyncio.sleep(sec)  # Attente
+                if "Prison" in [r.name for r in user.roles]:
+                    try:
+                        await self.bot.remove_roles(user, r)
+                        await self.bot.server_voice_state(user, mute=False)
+                        await self.bot.say("**{}** est sorti de prison.".format(user.display_name))
+                        await self.bot.send_message(user, "Vous êtes désormais libre.")
+                    except:
+                        pass
+                else:
+                    return
+            else:
+                await self.bot.remove_roles(user, r)
+                await self.bot.server_voice_state(user, mute=False)
+                await self.bot.say("**{}** a été libéré de la prison.".format(user.display_name))
+                await self.bot.send_message(user, "Vous avez été libéré de la prison plus tôt que prévu.")
+        else:
+            await self.bot.say("Le temps doit être de plus d'une minute.")
+
     @commands.command(pass_context=True)
     @checks.admin_or_permissions(kick_members=True)
     async def distrib(self, ctx, nombre: int):
