@@ -12,7 +12,7 @@ import sys
 import operator
 
 class Stick:
-    """Système de stickers personnalisés"""
+    """Système de stickers personnalisés (Refonte)"""
 
     def __init__(self, bot):
         self.bot = bot
