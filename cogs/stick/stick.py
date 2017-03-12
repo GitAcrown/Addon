@@ -179,7 +179,7 @@ class Stick:
                         msg += "*Votre inventaire de stickers*\n\n"
                         a = 0
                         for stk in self.img["STICKER"]:
-                            if self.img["STICKER"]["CAT"] == cat:
+                            if self.img["STICKER"][stk]["CAT"] == cat:
                                 msg += "**{}**\n".format(self.img["STICKER"][stk]["NOM"])
                                 if len(msg) >= 1900 * a:
                                     msg += "!!"
@@ -243,7 +243,7 @@ class Stick:
                             msg += "*Stickers de l'inventaire de {}*\n\n".format(cat.title())
                             a = 1
                             for stk in self.img["STICKER"]:
-                                if self.img["STICKER"]["CAT"] == cat:
+                                if self.img["STICKER"][stk]["CAT"] == cat:
                                     msg += "**{}**\n".format(self.img["STICKER"][stk]["NOM"])
                                     if len(msg) >= 1900 * a:
                                         msg += "!!"
@@ -258,7 +258,7 @@ class Stick:
                                 msg = "**RECHERCHE - STICKER**\n"
                                 msg += "*Résultats pour {}*\n\n".format(rep.content.lower())
                                 a = 1
-                                if rep.content.lower in self.img["STICKER"][stk]["NOM"]:
+                                if rep.content.lower() in self.img["STICKER"][stk]["NOM"]:
                                     msg += "**{}** - *{}*\n".format(self.img["STICKER"][stk]["NOM"],self.img["STICKER"][stk]["CAT"])
                                     if len(msg) >= 1950 * a:
                                         msg += "!!"
