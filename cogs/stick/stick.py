@@ -20,6 +20,9 @@ class Stick:
         self.import_old()
 
     def import_old(self):
+        if "SUBMIT" not in self.img:
+            self.img["SUBMIT"] = {}
+            fileIO("data/stick/img.json", "save", self.img)
         if "CLAIM" not in self.img["CATEGORIE"]:
             self.img["CATEGORIE"] = {}
             self.img["CATEGORIE"]["CLAIM"] = {"NOM" : "CLAIM",
@@ -37,6 +40,176 @@ class Stick:
         if ctx.invoked_subcommand is None:
             await send_cmd_help(ctx)
 
+    @stk.command(aliases=["s"], pass_context=True)
+    async def submit(self, ctx, nom: str, url: str):
+        """Permet de soumettre une idée de sticker au Staff
+
+        L'URL doit être un lien direct provenant de Imgur ou Noelshack."""
+        author = ctx.message.author
+        server = ctx.message.server
+        for stk in self.img["SUBMIT"]:
+            if self.img["SUBMIT"][stk]["ID"] == author.id:
+                await self.bot.say("Une seule demande à la fois par utilisateur.")
+                return
+        if "imgur" not in url.lower():
+            if "noelshack" not in url.lower():
+                await self.bot.say("Votre lien doit provenir de Imgur ou Noelshack\n*Ces sites n'imposent pas de cookies, ce qui permet un téléchargement propre de l'image*")
+                return
+        nom = nom.lower()
+        if nom not in self.img["STICKER"]:
+            if nom not in self.img["SUBMIT"]:
+                self.img["SUBMIT"][nom] = {"AUTEUR" : author.name,
+                                           "ID" : author.id,
+                                           "NOM": nom,
+                                           "URL": url}
+                fileIO("data/stick/img.json", "save", self.img)
+                modchan = server.get_channel("212749025760378883")
+                em = discord.Embed(title="Proposition de {} - :{}:".format(author.name, nom))
+                em.add_field(name="Options",
+                             value="✔ = Sticker accepté\n"
+                                   "✖ = Sticker refusé")
+                em.set_image(url=url)
+                em.set_footer(
+                    text="Cliquez sur une réaction pour interagir (Valable 5 minutes)")
+                act = await self.bot.send_message(modchan, embed=em)
+                await self.bot.add_reaction(act, "✔")  # Accepte
+                await self.bot.add_reaction(act, "✖")  # Refuse
+                await asyncio.sleep(0.25)
+                rep = await self.bot.wait_for_reaction(["✔","✖"], message=act ,timeout=300)
+                if rep == None:
+                    await self.bot.send_message(modchan, "**La demande de sticker de **{}** à expirée\n"
+                                       "Vous pouvez la réactiver avec {}stk act {}".format(author.name, ctx.prefix, author.mention))
+                    return
+                elif rep.reaction.emoji == "✔":
+                    await self.bot.send_message(modchan, "**La demande est acceptée**\n*Ajout automatique...*")
+                    await self.bot.say("{} - **Votre demande à été acceptée.**".format(author.mention))
+                    await asyncio.sleep(1)
+                    del self.img["SUBMIT"][nom]
+                    #PAVE
+
+                    cat = ctx.message.author.name.upper()
+                    if cat not in self.img["CATEGORIE"]:
+                        self.img["CATEGORIE"][cat] = {"NOM": cat,
+                                                       "DESC": "Inventaire de {}".format(ctx.message.author.name),
+                                                       "CREATEUR": ctx.message.author.id}
+                        fileIO("data/stick/img.json", "save", self.img)
+                        await self.bot.whisper("Votre inventaire de stickers a été créé.")
+                    if nom not in self.img["STICKER"]:
+                        filename = url.split('/')[-1]
+                        if filename in os.listdir("data/stick/imgstk"):
+                            exten = filename.split(".")[1]
+                            nomsup = random.randint(1, 99999)
+                            filename = filename.split(".")[0] + str(nomsup) + "." + exten
+                        try:
+                            f = open(filename, 'wb')
+                            f.write(request.urlopen(url).read())
+                            f.close()
+                            file = "data/stick/imgstk/" + filename
+                            os.rename(filename, file)
+                            aff = "URL"
+                            self.img["STICKER"][nom] = {"NOM": nom,
+                                                        "CHEMIN": file,
+                                                        "URL": url,
+                                                        "CAT": cat,
+                                                        "AFF": aff,
+                                                        "POP": 0}
+                            fileIO("data/stick/img.json", "save", self.img)
+                            await self.bot.say("Votre proposition à été ajoutée avec succès")
+                            await self.bot.send_message(modchan, "Opération réussie")
+                        except Exception as e:
+                            print("Impossible de télécharger une image : {}".format(e))
+                            await self.bot.say(
+                                "Impossible de télécharger cette image.\nContactez un membre du staff pour qu'il rajoute manuellement le sticker.")
+                elif rep.reaction.emoji == "✖":
+                    await self.bot.send_message(modchan,"**Demande refusée**")
+                    del self.img["SUBMIT"][nom]
+                    fileIO("data/stick/img.json", "save", self.img)
+
+            else:
+                await self.bot.say("Ce sticker a déjà été proposé.")
+        else:
+            await self.bot.say("Ce sticker est déjà approuvé et disponible.")
+
+    def findact(self, user):
+        for stk in self.img["SUBMIT"]:
+            if user.id == self.img["SUBMIT"][stk]["ID"]:
+                return stk
+
+    @stk.command(aliases=["c"], pass_context=True)
+    @checks.mod_or_permissions(kick_members=True)
+    async def act(self, ctx, user:discord.Member):
+        """Permet de consulter la proposition de sticker d'un membre."""
+        author = user
+        server = ctx.message.server
+        if self.findact(user):
+            stk = self.findact(user)
+            nom = self.img["SUBMIT"][stk]["NOM"]
+            url = self.img["SUBMIT"][stk]["URL"]
+            modchan = server.get_channel("212749025760378883")
+            em = discord.Embed(title="Proposition de {} - :{}:".format(author.name, nom))
+            em.add_field(name="Options",
+                         value="✔ = Sticker accepté\n"
+                               "✖ = Sticker refusé")
+            em.set_image(url=url)
+            em.set_footer(
+                text="Cliquez sur une réaction pour interagir (Valable 5 minutes)")
+            act = await self.bot.send_message(modchan, embed=em)
+            await self.bot.add_reaction(act, "✔")  # Accepte
+            await self.bot.add_reaction(act, "✖")  # Refuse
+            await asyncio.sleep(0.25)
+            rep = await self.bot.wait_for_reaction(["✔", "✖"], message=act, timeout=300)
+            if rep == None:
+                await self.bot.send_message(modchan, "**La demande de sticker de **{}** à expirée\n"
+                                                     "Vous pouvez la réactiver avec {}stk act {}".format(
+                    author.name, ctx.prefix, author.mention))
+                return
+            elif rep.reaction.emoji == "✔":
+                await self.bot.send_message(modchan, "**La demande est acceptée**\n*Ajout automatique...*")
+                await self.bot.send_message(user, "{} - **Votre demande à été acceptée.**".format(author.mention))
+                await asyncio.sleep(1)
+                del self.img["SUBMIT"][nom]
+                # PAVE
+
+                cat = ctx.message.author.name.upper()
+                if cat not in self.img["CATEGORIE"]:
+                    self.img["CATEGORIE"][cat] = {"NOM": cat,
+                                                   "DESC": "Inventaire de {}".format(ctx.message.author.name),
+                                                   "CREATEUR": ctx.message.author.id}
+                    fileIO("data/stick/img.json", "save", self.img)
+                    await self.bot.send_message(user, "Votre inventaire de stickers a été créé.")
+                if nom not in self.img["STICKER"]:
+                    filename = url.split('/')[-1]
+                    if filename in os.listdir("data/stick/imgstk"):
+                        exten = filename.split(".")[1]
+                        nomsup = random.randint(1, 99999)
+                        filename = filename.split(".")[0] + str(nomsup) + "." + exten
+                    try:
+                        f = open(filename, 'wb')
+                        f.write(request.urlopen(url).read())
+                        f.close()
+                        file = "data/stick/imgstk/" + filename
+                        os.rename(filename, file)
+                        aff = "URL"
+                        self.img["STICKER"][nom] = {"NOM": nom,
+                                                    "CHEMIN": file,
+                                                    "URL": url,
+                                                    "CAT": cat,
+                                                    "AFF": aff,
+                                                    "POP": 0}
+                        fileIO("data/stick/img.json", "save", self.img)
+                        await self.bot.send_message(user, "Votre proposition à été ajoutée avec succès")
+                        await self.bot.send_message(modchan, "Opération réussie")
+                    except Exception as e:
+                        print("Impossible de télécharger une image : {}".format(e))
+                        await self.bot.send_message(user,
+                            "Impossible de télécharger cette image.\nContactez un membre du staff pour qu'il rajoute manuellement le sticker.")
+            elif rep.reaction.emoji == "✖":
+                await self.bot.send_message(modchan, "**Demande refusée**")
+                del self.img["SUBMIT"][nom]
+                fileIO("data/stick/img.json", "save", self.img)
+        else:
+            await self.bot.whisper("Cet utilisateur n'a pas fait de propositions.")
+
     @stk.command(aliases=["a"], pass_context=True)
     @checks.mod_or_permissions(kick_members=True)
     async def add(self, ctx, nom, url, aff=None):
@@ -47,13 +220,13 @@ class Stick:
         Aff = Type d'affichage (URL,UPLOAD,INTEGRE)"""
         nom = nom.lower()
         cat = ctx.message.author.name.upper()
-        if cat not in self.img["CATEGORIES"]:
-            self.img["CATEGORIES"][cat] = {"NOM" : cat,
+        if cat not in self.img["CATEGORIE"]:
+            self.img["CATEGORIE"][cat] = {"NOM" : cat,
                                            "DESC" : "Inventaire de {}".format(ctx.message.author.name),
                                            "CREATEUR" : ctx.message.author.id}
             fileIO("data/stick/img.json", "save", self.img)
             await self.bot.whisper("Votre inventaire de stickers a été créé.")
-        if nom not in self.img["STICKERS"]:
+        if nom not in self.img["STICKER"]:
             filename = url.split('/')[-1]
             if ".gif" in filename:
                 await self.bot.say("*Assurez-vous que l'icone 'GIF' ne cache pas votre sticker.*")
@@ -147,8 +320,8 @@ class Stick:
         else:
             await self.bot.say("Ce sticker n'existe pas.")
 
-    @stk.command(aliases=["s"], pass_context=True)
-    async def search(self, ctx):
+    @stk.command(aliases=["i"], pass_context=True)
+    async def inter(self, ctx):
         """Interface permettant la recherche et le listage des stickers."""
         author = ctx.message.author
         cat = author.name.upper() if author.name.upper() in self.img["CATEGORIE"] else None
@@ -177,7 +350,7 @@ class Stick:
                     if cat != None:
                         msg = "**INVENTAIRE**\n"
                         msg += "*Votre inventaire de stickers*\n\n"
-                        a = 0
+                        a = 1
                         for stk in self.img["STICKER"]:
                             if self.img["STICKER"][stk]["CAT"] == cat:
                                 msg += "**{}**\n".format(self.img["STICKER"][stk]["NOM"])
@@ -203,7 +376,7 @@ class Stick:
                             maxp = 10
                         clsm = sorted(clsm, key=operator.itemgetter(1))
                         clsm.reverse()
-                        a = 0
+                        a = 1
                         while a < maxp:
                             nom = clsm[a]
                             nom = nom[0]
