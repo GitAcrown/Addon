@@ -87,7 +87,7 @@ class Stick:
                     del self.img["SUBMIT"][nom]
                     #PAVE
 
-                    cat = ctx.message.author.name.upper()
+                    cat = author.name.upper()
                     if cat not in self.img["CATEGORIE"]:
                         self.img["CATEGORIE"][cat] = {"NOM": cat,
                                                        "DESC": "Inventaire de {}".format(ctx.message.author.name),
@@ -143,6 +143,7 @@ class Stick:
         server = ctx.message.server
         if self.findact(user):
             stk = self.findact(user)
+            psd = self.img["SUBMIT"][stk]["AUTEUR"]
             nom = self.img["SUBMIT"][stk]["NOM"]
             url = self.img["SUBMIT"][stk]["URL"]
             modchan = server.get_channel("212749025760378883")
@@ -170,7 +171,7 @@ class Stick:
                 del self.img["SUBMIT"][nom]
                 # PAVE
 
-                cat = ctx.message.author.name.upper()
+                cat = psd.upper()
                 if cat not in self.img["CATEGORIE"]:
                     self.img["CATEGORIE"][cat] = {"NOM": cat,
                                                    "DESC": "Inventaire de {}".format(ctx.message.author.name),
