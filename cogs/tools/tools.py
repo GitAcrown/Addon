@@ -83,7 +83,11 @@ class Tools:
     async def easter(self, ctx):
         """Ceci n'est pas un easter egg."""
         # Pour les gens qui cherchent des easter-eggs dans les codes :jpp:
-        await self.bot.say("```css\nCeci n'est en aucun cas un easter-egg.```")
+        await self.bot.say("```css\nCeci n'est en aucun cas un easter-egg...```")
+        await asyncio.sleep(66)
+        await self.bot.say("Ou bien Si...")
+        await asyncio.sleep(3)
+        await self.bot.say("011001010110011101100111001000000110010101110011011101000010000001101100011000010010000001110010011001010111000001101111011011100111001101100101")
 
 # AUTRE ------------------------------------------------------------
 
