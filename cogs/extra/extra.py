@@ -134,6 +134,47 @@ class Extra:
             else:
                 await self.bot.send_message(adv, "Vous devez saisir plus de 3 caractères pour envoyer un indice valide.")
 
+    # RP ===================================================================
+
+    @commands.command(aliases = ["d"], pass_context=True)
+    async def rolld(self, ctx, nombre: int, multiple: int = None):
+        """Permet de rouler un dé
+
+        Ajouter un multiple permet de lancer x dés en même temps."""
+        if nombre > 1:
+            msg = ""
+            if nombre < 100:
+                if multiple != None:
+                    a = 0
+                    while a < multiple:
+                        a += 1
+                        roll = random.randint(1, nombre)
+                        msg += "d{} - #{}: {}\n".format(nombre, a, roll)
+                    await self.bot.say(msg)
+                else:
+                    roll = random.randint(1, nombre)
+                    await self.bot.say("d{}: {}".format(nombre, roll))
+            elif nombre == 100:
+                if multiple != None:
+                    a = 0
+                    while a < multiple:
+                        unite = random.randint(0, 9)
+                        diz = random.randint(0, 9)
+                        a += 1
+                        roll =  "{}&{}".format(unite, diz)
+                        msg += "d{} - #{}: {}\n".format(nombre, a, roll)
+                    await self.bot.say(msg)
+                else:
+                    unite = random.randint(0, 9)
+                    diz = random.randint(0, 9)
+                    roll = "{}&{}".format(unite, diz)
+                    await self.bot.say("d{}: {}\n".format(nombre, roll))
+            else:
+                await self.bot.say("Le nombre doit être inférieur ou égal à 100.")
+        else:
+            await self.bot.say("Le nombre doit être positif et supérieur à 1.")
+
+
     # ELECT >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
     @commands.group(pass_context=True)
@@ -608,10 +649,6 @@ class Extra:
             await self.bot.say("Aide pour *{}* éditée.".format(commande))
         else:
             await self.bot.say("Cette aide n'existe pas.")
-
-    @commands.command(pass_context=True, hidden=True)
-    async def detest(self, ctx):
-        await self.bot.say("Test réussi")
 
     @commands.command(name="wiki", pass_context=True)
     async def wiki_search(self, ctx, inverse: bool, *rec):
