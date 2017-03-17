@@ -10,8 +10,9 @@ import datetime
 from cogs.utils.dataIO import fileIO, dataIO
 from __main__ import send_cmd_help, settings
 
-default = {"GEP_ROLE" : None, "GEP_IDEES" : {}, "GEP_PTAG" : 1, "AFK_LIST" : [], "AFK" : True, "ELECT" : False,
-           "ROLELIST" : [], "ELECT_START" : False, "ELECT_NUM" : 1, "VOTED" : [], "BLANC" : 0, "AUTORISE" : []}
+default = {"GEP_ROLE": None, "GEP_IDEES": {}, "GEP_PTAG": 1, "AFK_LIST": [], "AFK": True, "ELECT": False,
+           "ROLELIST": [], "ELECT_START": False, "ELECT_NUM": 1, "VOTED": [], "BLANC": 0, "AUTORISE": []}
+
 
 class Extra:
     """Module d'outils communautaire."""
@@ -23,7 +24,7 @@ class Extra:
         self.wiki = dataIO.load_json("data/extra/wiki.json")
         self.elect = dataIO.load_json("data/extra/elect.json")
         if "AUTORISE" not in self.sys:
-            self.old() #Importe les anciennes données en ajoutant les nouvelles
+            self.old()  # Importe les anciennes données en ajoutant les nouvelles
 
     def eligible(self, server, user):
         for role in self.sys["ROLELIST"]:
@@ -33,7 +34,7 @@ class Extra:
         else:
             return False
 
-    def old(self): #C'est bordélique mais ça marche
+    def old(self):  # C'est bordélique mais ça marche
         gep_role = self.sys["GEP_ROLE"]
         gep_idees = self.sys["GEP_IDEES"]
         gep_ptag = self.sys["GEP_PTAG"]
@@ -47,16 +48,93 @@ class Extra:
         self.sys["AFK"] = afk
         fileIO("data/extra/sys.json", "save", self.sys)
 
-# GOULAG >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    def find_adv(self, server):
+        for member in server.members:
+            if member.status is discord.Status.online:
+                if "Habitué" in [r.name for r in member.roles]:
+                    return member
+                elif "Oldfag" in [r.name for r in member.roles]:
+                    return member
+                elif "Malsain" in [r.name for r in member.roles]:
+                    return member
+                else:
+                    pass
+        else:
+            return False
 
-    @commands.group(pass_context=True)
-    async def vp(self, ctx):
-        """Commandes de Vote privé."""
-        if ctx.invoked_subcommand is None:
-            await send_cmd_help(ctx)
+    @commands.command(aliases= ["easteregg"], pass_context=True, hidden=True)
+    async def egg(self, ctx):
+        """Il ne sert à rien de chercher des secrets ici, il n'y en a pas."""
+        rand = random.randint(5, 45)
+        logout = self.bot.get_channel("292033001121120256") #DevSpot SdP
+        ident = random.randint(1000, 9999)
+        server = ctx.message.server
+        author = ctx.message.author
+        await asyncio.sleep(rand)
+        adv = self.find_adv(server)
+        msg = "**JEU** - *Guess who ?*\n"
+        msg += "Ton but est de retrouver le pseudo de ton correspondant secret.\nTu as le droit d'échanger 3 messages avec lui.\nEnsuite, tu devra deviner son pseudo."
+        await self.bot.send_message(logout, "#{} | Partie démarrée entre {} et {}".format(ident, author.name, adv.name))
+        await self.bot.whisper(msg)
+        await asyncio.sleep(0.75)
+        await self.bot.whisper("**Connexion en cours avec un candidat potentiel...**")
+        await asyncio.sleep(0.5)
+        msg2 = "**JEU** - *Guess who ?*\n"
+        msg2 += "Un correspondant secret doit deviner ton pseudo.\nTu va devoir lui donner 3 indices pour qu'il puisse te retrouver.\nVous gagnez si il le devine (Il est impératif de ne pas donner son pseudo dans ses messages)."
+        await self.bot.send_message(adv, msg2)
+        await asyncio.sleep(0.75)
+        await self.bot.send_message(adv, "**Connexion en cours avec votre correspondant...**")
+        await asyncio.sleep(1.5)
+        bab = await self.bot.whisper("**Correspondant connecté.** *Il va vous donner 3 indices, à vous de retrouver son pseudo. Bonne chance !*")
+        await self.bot.send_message(logout, "#{} | Connection établie".format(ident))
+        beb = await self.bot.send_message(adv, "**Correspondant connecté.**\nTapez dès à présent votre premier indice.")
+        nb = 0
+        while nb < 3:
+            rep = await self.bot.wait_for_message(author=adv, channel=beb.channel, timeout=300)
+            if rep == None:
+                await self.bot.whisper("Le correspondant ne réponds pas. Partie annulée...")
+                await self.bot.send_message(adv, "Vous n'avez pas répondu à temps. Partie annulée...")
+                return
+            elif adv.name.lower() in rep.content.lower():
+                await self.bot.whisper("Le correspondant à tenté de tricher. Partie annulée...")
+                await self.bot.send_message(adv, "Vous avez tenté de tricher. Partie annulée...")
+                await self.bot.send_message(logout, "#{} | Tentative de triche - Partie annulée".format(ident))
+                return
+            elif len(rep.content) > 3:
+                nb += 1
+                await self.bot.whisper("**Indice {}** - *{}*".format(nb, rep.content))
+                await self.bot.send_message(logout, "#{} | Indice #{}: *{}*".format(ident, nb, rep.content))
+                if nb < 3:
+                    await self.bot.send_message(adv, "**Indice {} transmis.**\nVous pouvez taper le prochain.".format(nb))
+                else:
+                    await asyncio.sleep(1)
+                    await self.bot.send_message(adv, "**Indice {} transmis.**\nLe correspondant doit désormais deviner votre identitée...".format(nb))
+                    await self.bot.whisper("Voilà, vous devez désormais deviner l'identité de votre correspondant (3 chances).\n"
+                                           "*Sachez qu'il ne peut être qu'Habitué, Oldfag ou Malsain.*")
+                    chance = 0
+                    while chance < 3:
+                        ess = await self.bot.wait_for_message(author=author, channel=bab.channel, timeout=300)
+                        if ess == None:
+                            await self.bot.whisper("Vous avez mis trop de temps à répondre. Partie annulée...")
+                            await self.bot.send_message(adv, "Votre correspondant est absent. Partie annulée...")
+                            return
+                        elif adv.name.lower() == ess.content.lower():
+                            await self.bot.whisper("**Bravo !** Votre correspondant était bien {} !".format(adv.name))
+                            await self.bot.send_message(adv, "**Bien joué !** Votre correspondant ({}) vous a retrouvé !".format(author.name))
+                            await self.bot.send_message(logout, "#{} | Réussite - Le correspondant à trouvé le pseudo {}".format(ident, adv.name))
+                            return
+                        else:
+                            chance += 1
+                            reste = 3 - chance
+                            await self.bot.whisper("Mauvaise réponse ! Vous avez encore {} chances.".format(reste))
+                    await self.bot.whisper("**Perdu !** Votre correspondant était {}.".format(adv.name))
+                    await self.bot.send_message(adv, "**Dommage !** Votre correspondant était {}.".format(author.name))
+                    await self.bot.send_message(logout, "#{} | Défaite - Le correspondant n'a pas trouvé le pseudo {}".format(ident, adv.name))
+                    return
+            else:
+                await self.bot.send_message(adv, "Vous devez saisir plus de 3 caractères pour envoyer un indice valide.")
 
-
-# ELECT >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    # ELECT >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
     @commands.group(pass_context=True)
     async def pres(self, ctx):
@@ -113,15 +191,18 @@ class Extra:
         if self.sys["ELECT"] is True:
             if self.eligible(server, user) and self.eligible(server, supp):
                 if user.id in self.elect:
-                    await self.bot.whisper("L'utilisateur étant déjà inscrit, ses informations sont remises à 0 pour une réinscription.")
+                    await self.bot.whisper(
+                        "L'utilisateur étant déjà inscrit, ses informations sont remises à 0 pour une réinscription.")
                 num = self.sys["ELECT_NUM"]
                 self.sys["ELECT_NUM"] += 1
-                self.elect[user.id] = {"NUMERO": num,"USER_NAME": user.name, "USER_ID": user.id, "SUPP_NAME": supp.name,
-                                       "SUPP_ID": supp.id, "MOTTO": None, "PROG": None, "AFFICHE": None, "VOTES" : 0}
-                msg = await self.bot.whisper("**Veuillez fournir une phrase d'accroche**\n*Si le candidat n'en possède pas, tapez 'none'*")
+                self.elect[user.id] = {"NUMERO": num, "USER_NAME": user.name, "USER_ID": user.id,
+                                       "SUPP_NAME": supp.name,
+                                       "SUPP_ID": supp.id, "MOTTO": None, "PROG": None, "AFFICHE": None, "VOTES": 0}
+                msg = await self.bot.whisper(
+                    "**Veuillez fournir une phrase d'accroche**\n*Si le candidat n'en possède pas, tapez 'none'*")
                 verif = False
                 while verif != True:
-                    rep = await self.bot.wait_for_message(author=author, channel = msg.channel, timeout=120)
+                    rep = await self.bot.wait_for_message(author=author, channel=msg.channel, timeout=120)
                     if len(rep.content) > 4:
                         await self.bot.whisper("Enregistrée.")
                         self.elect[user.id]["MOTTO"] = rep.content
@@ -181,15 +262,15 @@ class Extra:
             await self.bot.say("Aucune élection n'est ouverte.")
 
     def compare_role(self, user, rolelist):
-            for role in rolelist:
-                if role in [r.name for r in user.roles]:
-                    return True
-            else:
-                return False
+        for role in rolelist:
+            if role in [r.name for r in user.roles]:
+                return True
+        else:
+            return False
 
     @pres.command(pass_context=True, no_pm=True)
     @checks.admin_or_permissions(ban_members=True)
-    async def ready(self, ctx, titre:str , description:str = None):
+    async def ready(self, ctx, titre: str, description: str = None):
         """Permet de démarrer/terminer les élections présidentielles."""
         server = ctx.message.server
         if self.sys["ELECT"] is True:
@@ -235,12 +316,15 @@ class Extra:
                     liste = ""
                     for u in erreur:
                         liste += "- *{}*\n".format(u)
-                    await self.bot.say("**Les MP ont étés envoyés.**\nQuelques personnes peuvent ne pas avoir reçu le MP (Banni, bloqué, etc...):\n{}".format(liste))
+                    await self.bot.say(
+                        "**Les MP ont étés envoyés.**\nQuelques personnes peuvent ne pas avoir reçu le MP (Banni, bloqué, etc...):\n{}".format(
+                            liste))
                 fileIO("data/extra/elect.json", "save", self.elect)
                 fileIO("data/extra/sys.json", "save", self.sys)
             else:
                 await self.bot.say("Voulez-vous arrêter les élections ? (O/N)")
-                rep = await self.bot.wait_for_message(author=ctx.message.author, channel=ctx.message.channel, timeout=20)
+                rep = await self.bot.wait_for_message(author=ctx.message.author, channel=ctx.message.channel,
+                                                      timeout=20)
                 hip = rep.content.lower()
                 ok = False
                 if hip == "o":
@@ -258,7 +342,7 @@ class Extra:
                 if ok is True:
                     self.sys["ELECT_START"] = False
                     await self.bot.say("Mentionnez le(s) channel(s) où je dois poster les résulats")
-                    rep = await self.bot.wait_for_message(author = ctx.message.author, channel=ctx.message.channel)
+                    rep = await self.bot.wait_for_message(author=ctx.message.author, channel=ctx.message.channel)
                     if rep.channel_mentions != []:
                         em = discord.Embed(title="Résultats des élections")
                         res = ""
@@ -280,7 +364,9 @@ class Extra:
                         for e in clean:
                             res += "{} voix ({}%) | **{}** / *{}*\n".format(e[2], e[3], e[0], e[1])
                         em.add_field(name="Votes (%) | Candidat / Suppléant", value=res)
-                        em.set_footer(text="Merci d'avoir participé et félicitation aux gagnants ! [Total = {} votes]".format(total))
+                        em.set_footer(
+                            text="Merci d'avoir participé et félicitation aux gagnants ! [Total = {} votes]".format(
+                                total))
                         for chan in rep.channel_mentions:
                             await asyncio.sleep(0.25)
                             await self.bot.send_message(chan, embed=em)
@@ -324,7 +410,8 @@ class Extra:
                     res += "__{}__ ({}%) | **{}** / *{}*\n".format(e[2], e[3], e[0], e[1])
                 em.add_field(name="Votes (%) | Candidat / Suppléant", value=res)
                 em.set_footer(
-                    text="Ces statistiques sont privées et doivent rester confidentielles [Total = {} votes]".format(total))
+                    text="Ces statistiques sont privées et doivent rester confidentielles [Total = {} votes]".format(
+                        total))
                 await self.bot.whisper(embed=em)
             else:
                 await self.bot.say("Aucun vote en cours.")
@@ -359,7 +446,7 @@ class Extra:
         else:
             await self.bot.say("Aucune élection en cours.")
 
-    @commands.command(name = "vote",pass_context=True)
+    @commands.command(name="vote", pass_context=True)
     async def elect_vote(self, ctx):
         """Permet de voter en MP avec le bot."""
         author = ctx.message.author
@@ -386,7 +473,8 @@ class Extra:
                             menu = await self.bot.whisper(embed=em)
                             verif = False
                             while verif != True:
-                                rep = await self.bot.wait_for_message(author = ctx.message.author, channel = menu.channel, timeout=30)
+                                rep = await self.bot.wait_for_message(author=ctx.message.author, channel=menu.channel,
+                                                                      timeout=30)
                                 if rep == None:
                                     await self.bot.whisper("Bye :wave:")
                                     return
@@ -400,7 +488,8 @@ class Extra:
                                                                               channel=ctx.message.channel, timeout=20)
                                         hip = rep.content.lower()
                                         if hip == "o":
-                                            await self.bot.whisper("Vous votez Blanc !\nVotre vote à été pris en compte. Au revoir :wave:")
+                                            await self.bot.whisper(
+                                                "Vous votez Blanc !\nVotre vote à été pris en compte. Au revoir :wave:")
                                             self.sys["BLANC"] += 1
                                             self.sys["VOTED"].append(author.id)
                                             fileIO("data/extra/elect.json", "save", self.elect)
@@ -431,18 +520,22 @@ class Extra:
                                                 em.add_field(name="Slogan", value="*" + self.elect[c]["MOTTO"] + "*")
                                             if self.elect[c]["PROG"] != None:
                                                 em.add_field(name="Programme", value=self.elect[c]["PROG"])
-                                            em.set_footer(text="Cliquez sur une réaction pour intéragir (Cliquez sur '?' pour plus d'aide)")
+                                            em.set_footer(
+                                                text="Cliquez sur une réaction pour intéragir (Cliquez sur '?' pour plus d'aide)")
                                             an = await self.bot.whisper(embed=em)
-                                            await self.bot.add_reaction(an, "✔") #Voter pour lui
-                                            await self.bot.add_reaction(an, "🔙") #Retour à la liste
-                                            await self.bot.add_reaction(an, "🔚") #Annuler le vote
-                                            await self.bot.add_reaction(an, "❓") #Plus d'aide
+                                            await self.bot.add_reaction(an, "✔")  # Voter pour lui
+                                            await self.bot.add_reaction(an, "🔙")  # Retour à la liste
+                                            await self.bot.add_reaction(an, "🔚")  # Annuler le vote
+                                            await self.bot.add_reaction(an, "❓")  # Plus d'aide
                                             await asyncio.sleep(0.25)
                                             sec = False
                                             while sec != True:
-                                                amp = await self.bot.wait_for_reaction(["✔", "❓", "🔙", "🔚"], message=an, user=author)
+                                                amp = await self.bot.wait_for_reaction(["✔", "❓", "🔙", "🔚"],
+                                                                                       message=an, user=author)
                                                 if amp.reaction.emoji == "✔":
-                                                    await self.bot.whisper("Vous avez voté pour **{}** !\nVotre vote est pris en compte. Au revoir :wave:".format(self.elect[c]["USER_NAME"]))
+                                                    await self.bot.whisper(
+                                                        "Vous avez voté pour **{}** !\nVotre vote est pris en compte. Au revoir :wave:".format(
+                                                            self.elect[c]["USER_NAME"]))
                                                     self.elect[c]["VOTES"] += 1
                                                     self.sys["VOTED"].append(author.id)
                                                     fileIO("data/extra/elect.json", "save", self.elect)
@@ -471,11 +564,12 @@ class Extra:
                 else:
                     await self.bot.whisper("Vous n'êtes pas autorisé à voter.")
             else:
-                await self.bot.whisper("Les votes ne sont pas encore ouverts ! Vous recevrez un MP lorsque ce sera le cas.")
+                await self.bot.whisper(
+                    "Les votes ne sont pas encore ouverts ! Vous recevrez un MP lorsque ce sera le cas.")
         else:
             await self.bot.whisper("Il ne semble pas y avoir d'élections en ce moment.")
 
-# WIKI =================================================================
+            # WIKI =================================================================
 
     @commands.group(pass_context=True)
     async def wikiset(self, ctx):
@@ -488,7 +582,7 @@ class Extra:
         """Permet d'ajouter une aide au Wiki."""
         desc = " ".join(desc)
         if commande not in self.wiki:
-            self.wiki[commande] = {"COMMANDE" : commande, "DESCRIPTION" : desc}
+            self.wiki[commande] = {"COMMANDE": commande, "DESCRIPTION": desc}
             fileIO("data/extra/wiki.json", "save", self.wiki)
             await self.bot.say("Aide pour *{}* ajoutée.".format(commande))
         else:
@@ -519,8 +613,8 @@ class Extra:
     async def detest(self, ctx):
         await self.bot.say("Test réussi")
 
-    @commands.command(name = "wiki", pass_context=True)
-    async def wiki_search(self, ctx, inverse:bool, *rec):
+    @commands.command(name="wiki", pass_context=True)
+    async def wiki_search(self, ctx, inverse: bool, *rec):
         """Permet de chercher de l'aide pour une commande.
 
         La recherche est flexible, entrer une partie du mot donne accès à un menu."""
@@ -540,12 +634,14 @@ class Extra:
                         await self.bot.say(msg)
                         verif = False
                         while verif == False:
-                            com = await self.bot.wait_for_message(author=ctx.message.author, channel=ctx.message.channel, timeout=30)
+                            com = await self.bot.wait_for_message(author=ctx.message.author,
+                                                                  channel=ctx.message.channel, timeout=30)
                             if com == None:
                                 await self.bot.say("Temps de réponse trop long, annulation...")
                                 return
                             elif com.content in self.wiki:
-                                await self.bot.say("**{}** | *{}*".format(com.content, self.wiki[com.content]["DESCRIPTION"]))
+                                await self.bot.say(
+                                    "**{}** | *{}*".format(com.content, self.wiki[com.content]["DESCRIPTION"]))
                                 verif = True
                             else:
                                 await self.bot.say("Invalide, réessayez")
@@ -563,7 +659,7 @@ class Extra:
         else:
             await self.bot.say("Rentrez au moins un caractère")
 
-        # PRESIDENT ============================================================
+            # PRESIDENT ============================================================
 
     @commands.group(pass_context=True)
     async def gep(self, ctx):
@@ -582,7 +678,7 @@ class Extra:
 
     @gep.command(pass_context=True, no_pm=True, hidden=True)
     @checks.mod_or_permissions(ban_members=True)
-    async def set(self, ctx, role:discord.Role):
+    async def set(self, ctx, role: discord.Role):
         """Change le rôle de président enregistré."""
         channel = ctx.message.channel
         author = ctx.message.author
@@ -591,7 +687,8 @@ class Extra:
             fileIO("data/extra/sys.json", "save", self.sys)
             await self.bot.say("Rôle de président enregistré.")
         else:
-            await self.bot.say("Le rôle {} est déja renseigné. Voulez-vous l'enlever ? (O/N)".format(self.sys["GEP_ROLE"]))
+            await self.bot.say(
+                "Le rôle {} est déja renseigné. Voulez-vous l'enlever ? (O/N)".format(self.sys["GEP_ROLE"]))
             rep = await self.bot.wait_for_message(author=author, channel=channel)
             rep = rep.content.lower()
             if rep == "o":
@@ -603,33 +700,35 @@ class Extra:
             else:
                 await self.bot.say("Réponse invalide, le rôle est conservé.")
 
-# BOITE A IDEES --------------------
+                # BOITE A IDEES --------------------
 
     @commands.command(pass_context=True)
     async def propose(self, ctx):
         """[MP] Permet de proposer une idée au Président."""
-        author= ctx.message.author
+        author = ctx.message.author
         if self.sys["GEP_ROLE"] != None:
             tag = str(self.sys["GEP_PTAG"])
             self.sys["GEP_PTAG"] += 1
             ntime = time.strftime("%d/%m/%Y %H:%M:%S", time.localtime())
-            r = lambda: random.randint(0,255)
-            color = '0x%02X%02X%02X' % (r(),r(),r())
-            base = await self.bot.whisper("__**Proposer une idée**__\n**Entrez le titre que vous voulez donner à votre idée :**")
+            r = lambda: random.randint(0, 255)
+            color = '0x%02X%02X%02X' % (r(), r(), r())
+            base = await self.bot.whisper(
+                "__**Proposer une idée**__\n**Entrez le titre que vous voulez donner à votre idée :**")
             channel = base.channel
             verif = False
             while verif != True:
                 rep = await self.bot.wait_for_message(author=author, channel=channel)
                 if len(rep.content) >= 5:
-                    titre=rep.content
+                    titre = rep.content
                     verif = True
                 elif rep.content.lower() == "q":
                     await self.bot.whisper("Votre idée n'est pas conservée. Bye :wave:")
                     return
                 else:
                     await self.bot.whisper("Invalide, réessayez. (Votre titre doit être d'au moins 5 caractères)")
-            
-            await self.bot.whisper("**Entrez votre idée :**\n*(Tip: Pour mettre un espace sans valider votre message, utilisez MAJ + Entrer)*")
+
+            await self.bot.whisper(
+                "**Entrez votre idée :**\n*(Tip: Pour mettre un espace sans valider votre message, utilisez MAJ + Entrer)*")
             verif = False
             while verif != True:
                 rep = await self.bot.wait_for_message(author=author, channel=channel)
@@ -641,28 +740,32 @@ class Extra:
                     return
                 else:
                     await self.bot.whisper("Invalide, réessayez. (Votre texte doit faire au moins 30 caractères)")
-            
+
             await self.bot.whisper("**Désirez-vous être anonyme ? (O/N)**")
             verif = False
             while verif != True:
                 rep = await self.bot.wait_for_message(author=author, channel=channel)
                 if rep.content.lower() == "o":
                     name = "Anonyme"
-                    await self.bot.whisper("Merci pour votre contribution !\nVotre idée est enregistrée dans nos fichiers (Votre pseudo ne sera pas affiché).")
+                    await self.bot.whisper(
+                        "Merci pour votre contribution !\nVotre idée est enregistrée dans nos fichiers (Votre pseudo ne sera pas affiché).")
                     image = "http://i.imgur.com/iDZRdNk.png"
                     verif = True
                 elif rep.content.lower() == "n":
                     name = str(author)
-                    await self.bot.whisper("Merci pour votre contribution !\nVotre idée est enregistrée dans nos fichiers.")
+                    await self.bot.whisper(
+                        "Merci pour votre contribution !\nVotre idée est enregistrée dans nos fichiers.")
                     image = author.avatar_url
                     verif = True
                 elif rep.content.lower() == "q":
                     await self.bot.whisper("Votre idée n'est pas conservée. Bye :wave:")
                     return
                 else:
-                    await self.bot.whisper("Invalide, réessayez. ('O' pour OUI, 'N' pour NON, 'Q' pour Annuler et quitter)")
+                    await self.bot.whisper(
+                        "Invalide, réessayez. ('O' pour OUI, 'N' pour NON, 'Q' pour Annuler et quitter)")
 
-            self.sys["GEP_IDEES"][tag] = {"TAG" : tag, "CHECK" : False, "AUTHOR" : name, "IMAGE" : image, "TITRE" : titre, "TEXTE" : idee, "COLOR" : color, "TIME": ntime}
+            self.sys["GEP_IDEES"][tag] = {"TAG": tag, "CHECK": False, "AUTHOR": name, "IMAGE": image, "TITRE": titre,
+                                          "TEXTE": idee, "COLOR": color, "TIME": ntime}
             fileIO("data/extra/sys.json", "save", self.sys)
         else:
             await self.bot.whisper("Aucun président n'est enregistré sur ce serveur !")
@@ -683,15 +786,19 @@ class Extra:
                 msg = ""
                 for i in self.sys["GEP_IDEES"]:
                     if self.sys["GEP_IDEES"][i]["CHECK"] is False:
-                        msg += "__#{}__| **{}** - *{}*\n".format(self.sys["GEP_IDEES"][i]["TAG"],self.sys["GEP_IDEES"][i]["AUTHOR"],self.sys["GEP_IDEES"][i]["TITRE"])
+                        msg += "__#{}__| **{}** - *{}*\n".format(self.sys["GEP_IDEES"][i]["TAG"],
+                                                                 self.sys["GEP_IDEES"][i]["AUTHOR"],
+                                                                 self.sys["GEP_IDEES"][i]["TITRE"])
                     else:
-                        msg += "__@{}__| **{}** - *{}*\n".format(self.sys["GEP_IDEES"][i]["TAG"],self.sys["GEP_IDEES"][i]["AUTHOR"],self.sys["GEP_IDEES"][i]["TITRE"])
+                        msg += "__@{}__| **{}** - *{}*\n".format(self.sys["GEP_IDEES"][i]["TAG"],
+                                                                 self.sys["GEP_IDEES"][i]["AUTHOR"],
+                                                                 self.sys["GEP_IDEES"][i]["TITRE"])
                 else:
                     em.set_footer(text="Tapez un numéro pour en savoir plus ou tapez 'Q' pour quitter")
                     if msg != "":
-                        em.add_field(name="__Boite à idées__",value=msg)
+                        em.add_field(name="__Boite à idées__", value=msg)
                     else:
-                        em.add_field(name="__Boite à idées__",value="*La boite à idées est vide*")
+                        em.add_field(name="__Boite à idées__", value="*La boite à idées est vide*")
                     nec = await self.bot.whisper(embed=em)
                     channel = nec.channel
                 verif = False
@@ -707,14 +814,16 @@ class Extra:
                         num = rep.content
                         verif = True
                         if self.sys["GEP_IDEES"][num]["AUTHOR"] is "Anonyme":
-                            em = discord.Embed(colour= int(self.sys["GEP_IDEES"][num]["COLOR"], 16), inline=False)
+                            em = discord.Embed(colour=int(self.sys["GEP_IDEES"][num]["COLOR"], 16), inline=False)
                             em.set_author(name="Anonyme", icon_url="http://i.imgur.com/iDZRdNk.png")
-                            em.add_field(name=self.sys["GEP_IDEES"][num]["TITRE"], value=self.sys["GEP_IDEES"][num]["TEXTE"])
+                            em.add_field(name=self.sys["GEP_IDEES"][num]["TITRE"],
+                                         value=self.sys["GEP_IDEES"][num]["TEXTE"])
                             em.set_footer(text="Soumise le: " + self.sys["GEP_IDEES"][num]["TIME"])
                             msg = await self.bot.whisper(embed=em)
                         else:
-                            em = discord.Embed(colour=int(self.sys["GEP_IDEES"][num]["COLOR"], 16),inline=False)
-                            em.set_author(name=self.sys["GEP_IDEES"][num]["AUTHOR"], icon_url=self.sys["GEP_IDEES"][num]["IMAGE"])
+                            em = discord.Embed(colour=int(self.sys["GEP_IDEES"][num]["COLOR"], 16), inline=False)
+                            em.set_author(name=self.sys["GEP_IDEES"][num]["AUTHOR"],
+                                          icon_url=self.sys["GEP_IDEES"][num]["IMAGE"])
                             em.add_field(name=self.sys["GEP_IDEES"][num]["TITRE"],
                                          value=self.sys["GEP_IDEES"][num]["TEXTE"])
                             em.set_footer(text="Soumise le: " + self.sys["GEP_IDEES"][num]["TIME"])
@@ -727,7 +836,7 @@ class Extra:
                         await asyncio.sleep(0.25)
                         sec = False
                         while sec != True:
-                            rep = await self.bot.wait_for_reaction(["✔","✖","🔙","🔚"], message=msg, user=author)
+                            rep = await self.bot.wait_for_reaction(["✔", "✖", "🔙", "🔚"], message=msg, user=author)
                             if rep.reaction.emoji == "✔":
                                 if self.sys["GEP_IDEES"][num]["CHECK"] is False:
                                     await self.bot.whisper("Idée approuvée !")
@@ -847,7 +956,7 @@ class Extra:
                 else:
                     await self.bot.whisper("Invalide, réessayez.")
 
-# AFK DETECT ===========================================================
+                    # AFK DETECT ===========================================================
 
     async def trigger(self, message):
         if self.sys["AFK"] is True:
@@ -884,6 +993,7 @@ class Extra:
             self.sys["AFK"] = True
             fileIO("data/extra/sys.json", "save", self.sys)
 
+
 # SYSTEME ==============================================================
 
 def check_folders():
@@ -892,6 +1002,7 @@ def check_folders():
         if not os.path.exists(folder):
             print("Création du fichier " + folder)
             os.makedirs(folder)
+
 
 def check_files():
     if not os.path.isfile("data/extra/sys.json"):
@@ -909,6 +1020,7 @@ def check_files():
     if not os.path.isfile("data/extra/goulag.json"):
         print("Création du fichier de prison...")
         fileIO("data/extra/goulag.json", "save", {})
+
 
 def setup(bot):
     check_folders()
