@@ -305,15 +305,19 @@ class Stick:
             chemin = self.img["STICKER"][nom]["CHEMIN"]
             file = self.img["STICKER"][nom]["CHEMIN"].split('/')[-1]
             splitted = "/".join(chemin.split('/')[:-1]) + "/"
-            if file in os.listdir(splitted):
-                try:
-                    os.remove(chemin)
-                    await self.bot.say("Fichier lié supprimé.")
-                except:
+            try:
+                if file in os.listdir(splitted):
+                    try:
+                        os.remove(chemin)
+                        await self.bot.say("Fichier lié supprimé.")
+                    except:
+                        await self.bot.say("Le fichier est introuvable. Poursuite...")
+                        await asyncio.sleep(1)
+                else:
                     await self.bot.say("Le fichier est introuvable. Poursuite...")
                     await asyncio.sleep(1)
-            else:
-                await self.bot.say("Le fichier est introuvable. Poursuite...")
+            except:
+                await self.bot.say("Les données du bot sont corrompues. Je vais essayer de forcer sa suppression...")
                 await asyncio.sleep(1)
             del self.img["STICKER"][nom]
             await self.bot.say("Données du sticker supprimés.")
@@ -454,7 +458,7 @@ class Stick:
         if ":" in message.content:
             output = re.compile(':(.*?):', re.DOTALL | re.IGNORECASE).findall(message.content)
             if output:
-                if len(output) <= 3:
+                if len(output) <= 2:
                     for stk in output:
                         if stk in self.img["STICKER"]:
                             self.img["STICKER"][stk]["POP"] += 1
