@@ -7,6 +7,7 @@ import operator
 import random
 import time
 import datetime
+from .utils.chat_formatting import *
 from cogs.utils.dataIO import fileIO, dataIO
 from __main__ import send_cmd_help, settings
 
@@ -1013,6 +1014,25 @@ class Extra:
             else:
                 pass
 
+    async def spy(self, reaction, author):
+        if "Staff" in [r.name for r in author.roles]:
+            if reaction.emoji == "❔":
+                user = reaction.message.author
+                message = reaction.message
+                roles = [x.name for x in user.roles if x.name != "@everyone"]
+                if not roles: roles = ["None"]
+                data = "```python\n"
+                data += "Nom: {}\n".format(str(user))
+                data += "ID: {}\n".format(user.id)
+                passed = (message.timestamp - user.created_at).days
+                data += "Crée: {} (Il y a {} jours)\n".format(user.created_at, passed)
+                passed = (message.timestamp - user.joined_at).days
+                data += "Rejoint le: {} (Il y a {} jours)\n".format(user.joined_at, passed)
+                data += "Rôles: {}\n".format(", ".join(roles))
+                data += "Avatar: {}\n".format(user.avatar_url)
+                data += "```"
+                await self.bot.send_message(author, data)
+
     @commands.command(pass_context=True)
     @checks.mod_or_permissions(ban_members=True)
     async def toggleafk(self, ctx):
@@ -1064,4 +1084,5 @@ def setup(bot):
     check_files()
     n = Extra(bot)
     bot.add_listener(n.trigger, "on_message")
+    bot.add_listener(n.spy,'on_reaction_add')
     bot.add_cog(n)
