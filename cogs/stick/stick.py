@@ -454,44 +454,47 @@ class Stick:
         if ":" in message.content:
             output = re.compile(':(.*?):', re.DOTALL | re.IGNORECASE).findall(message.content)
             if output:
-                for stk in output:
-                    if stk in self.img["STICKER"]:
-                        self.img["STICKER"][stk]["POP"] += 1
+                if len(output) <= 3:
+                    for stk in output:
+                        if stk in self.img["STICKER"]:
+                            self.img["STICKER"][stk]["POP"] += 1
 
-                        if self.img["STICKER"][stk]["AFF"] == "URL":  # URL
-                            url = self.img["STICKER"][stk]["URL"]
-                            if url != None:
-                                await self.bot.send_message(channel, url)
-                            else:
-                                print("L'URL de l'image est indisponible.")
-
-                        elif self.img["STICKER"][stk]["AFF"] == "UPLOAD":  # UPLOAD
-                            chemin = self.img["STICKER"][stk]["CHEMIN"]
-                            try:
-                                await self.bot.send_file(channel, chemin)
-                            except Exception as e:
-                                print("Erreur, impossible d'upload l'image : {}".format(e))
-                                if self.img["STICKER"][stk]["URL"] != None:
-                                    await self.bot.send_message(channel, self.img["STICKER"][stk]["URL"])
+                            if self.img["STICKER"][stk]["AFF"] == "URL":  # URL
+                                url = self.img["STICKER"][stk]["URL"]
+                                if url != None:
+                                    await self.bot.send_message(channel, url)
                                 else:
-                                    print("Il n'y a pas d'URL lié au Sticker.")
+                                    print("L'URL de l'image est indisponible.")
 
-                        elif self.img["STICKER"][stk]["AFF"] == "INTEGRE":  # INTEGRE
-                            url = self.img["STICKER"][stk]["URL"]
-                            if url != None:
-                                couleur = self.user[author.id]["COLOR"]
-                                couleur = int(couleur, 16)
-                                em = discord.Embed(colour=couleur)
-                                em.set_image(url=url)
-                                await self.bot.send_message(channel, embed=em)
+                            elif self.img["STICKER"][stk]["AFF"] == "UPLOAD":  # UPLOAD
+                                chemin = self.img["STICKER"][stk]["CHEMIN"]
+                                try:
+                                    await self.bot.send_file(channel, chemin)
+                                except Exception as e:
+                                    print("Erreur, impossible d'upload l'image : {}".format(e))
+                                    if self.img["STICKER"][stk]["URL"] != None:
+                                        await self.bot.send_message(channel, self.img["STICKER"][stk]["URL"])
+                                    else:
+                                        print("Il n'y a pas d'URL lié au Sticker.")
+
+                            elif self.img["STICKER"][stk]["AFF"] == "INTEGRE":  # INTEGRE
+                                url = self.img["STICKER"][stk]["URL"]
+                                if url != None:
+                                    couleur = self.user[author.id]["COLOR"]
+                                    couleur = int(couleur, 16)
+                                    em = discord.Embed(colour=couleur)
+                                    em.set_image(url=url)
+                                    await self.bot.send_message(channel, embed=em)
+                                else:
+                                    print("Impossible d'afficher ce sticker.")
                             else:
-                                print("Impossible d'afficher ce sticker.")
-                        else:
-                            url = self.img["STICKER"][stk]["URL"]
-                            if url != None:
-                                await self.bot.send_message(channel, url)
-                            else:
-                                print("L'URL de l'image est indisponible (DEFAUT).")
+                                url = self.img["STICKER"][stk]["URL"]
+                                if url != None:
+                                    await self.bot.send_message(channel, url)
+                                else:
+                                    print("L'URL de l'image est indisponible (DEFAUT).")
+                else:
+                    await self.bot.send_message(message.author, "Spammer les stickers est interdit.")
 
 def check_folders():
     if not os.path.exists("data/stick"):
