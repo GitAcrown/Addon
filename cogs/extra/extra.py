@@ -64,7 +64,7 @@ class Extra:
         else:
             rand = random.choice(liste)
 
-    @commands.command(aliases= ["egg"], pass_context=True, hidden=True)
+    @commands.command(aliases= ["egg"], pass_context=True)
     async def guess(self, ctx):
         """Il ne sert à rien de chercher des secrets ici, il n'y en a pas."""
         logout = self.bot.get_channel("292033001121120256") #DevSpot SdP
