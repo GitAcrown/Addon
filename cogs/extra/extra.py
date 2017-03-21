@@ -50,45 +50,44 @@ class Extra:
         fileIO("data/extra/sys.json", "save", self.sys)
 
     def find_adv(self, server):
+        liste = []
         for member in server.members:
             if member.status is discord.Status.online:
                 if "Habitué" in [r.name for r in member.roles]:
-                    return member
+                    liste.append(member.id)
                 elif "Oldfag" in [r.name for r in member.roles]:
-                    return member
+                    liste.append(member.id)
                 elif "Malsain" in [r.name for r in member.roles]:
-                    return member
+                    liste.append(member.id)
                 else:
                     pass
         else:
-            return False
+            rand = random.choice(liste)
 
-    @commands.command(aliases= ["easteregg"], pass_context=True, hidden=True)
-    async def egg(self, ctx):
+    @commands.command(aliases= ["egg"], pass_context=True, hidden=True)
+    async def guess(self, ctx):
         """Il ne sert à rien de chercher des secrets ici, il n'y en a pas."""
-        rand = random.randint(5, 45)
         logout = self.bot.get_channel("292033001121120256") #DevSpot SdP
         ident = random.randint(1000, 9999)
         server = ctx.message.server
         author = ctx.message.author
-        await asyncio.sleep(rand)
-        adv = self.find_adv(server)
+        adv = server.get_member(self.find_adv(server))
         msg = "**JEU** - *Guess who ?*\n"
-        msg += "Ton but est de retrouver le pseudo de ton correspondant secret.\nTu as le droit d'échanger 3 messages avec lui.\nEnsuite, tu devra deviner son pseudo."
+        msg += "Ton but est de retrouver le pseudo de ton correspondant secret.\nIl va te donner 3 indices sur lui.\nEnsuite, tu devra deviner son pseudo."
         await self.bot.send_message(logout, "#{} | Partie démarrée entre {} et {}".format(ident, author.name, adv.name))
         await self.bot.whisper(msg)
-        await asyncio.sleep(0.75)
+        await asyncio.sleep(1)
         await self.bot.whisper("**Connexion en cours avec un candidat potentiel...**")
-        await asyncio.sleep(0.5)
+        await asyncio.sleep(0.75)
         msg2 = "**JEU** - *Guess who ?*\n"
         msg2 += "Un correspondant secret doit deviner ton pseudo.\nTu va devoir lui donner 3 indices pour qu'il puisse te retrouver.\nVous gagnez si il le devine (Il est impératif de ne pas donner son pseudo dans ses messages)."
         await self.bot.send_message(adv, msg2)
-        await asyncio.sleep(0.75)
+        await asyncio.sleep(1.25)
         await self.bot.send_message(adv, "**Connexion en cours avec votre correspondant...**")
-        await asyncio.sleep(1.5)
-        bab = await self.bot.whisper("**Correspondant connecté.** *Il va vous donner 3 indices, à vous de retrouver son pseudo. Bonne chance !*")
+        await asyncio.sleep(2)
+        bab = await self.bot.whisper("**Correspondant connecté. (Partie #{})**\n*Il va vous donner 3 indices, à vous de retrouver son pseudo. Bonne chance !*".format(ident))
         await self.bot.send_message(logout, "#{} | Connection établie".format(ident))
-        beb = await self.bot.send_message(adv, "**Correspondant connecté.**\nTapez dès à présent votre premier indice.")
+        beb = await self.bot.send_message(adv, "**Correspondant connecté. (Partie #{})**\nTapez dès à présent votre premier indice.".format(ident))
         nb = 0
         while nb < 3:
             rep = await self.bot.wait_for_message(author=adv, channel=beb.channel, timeout=300)
@@ -110,8 +109,8 @@ class Extra:
                 else:
                     await asyncio.sleep(1)
                     await self.bot.send_message(adv, "**Indice {} transmis.**\nLe correspondant doit désormais deviner votre identitée...".format(nb))
-                    await self.bot.whisper("Voilà, vous devez désormais deviner l'identité de votre correspondant (3 chances).\n"
-                                           "*Sachez qu'il ne peut être qu'Habitué, Oldfag ou Malsain.*")
+                    await self.bot.whisper("Voilà, vous devez désormais deviner le pseudo de votre correspondant secret.(3 chances).\n"
+                                           "*Marquez simplement son pseudo (ou surnom) - Sachez qu'il ne peut être qu'Habitué, Oldfag ou Malsain.*")
                     chance = 0
                     while chance < 3:
                         ess = await self.bot.wait_for_message(author=author, channel=bab.channel, timeout=300)
@@ -123,6 +122,15 @@ class Extra:
                             await self.bot.whisper("**Bravo !** Votre correspondant était bien {} !".format(adv.name))
                             await self.bot.send_message(adv, "**Bien joué !** Votre correspondant ({}) vous a retrouvé !".format(author.name))
                             await self.bot.send_message(logout, "#{} | Réussite - Le correspondant à trouvé le pseudo {}".format(ident, adv.name))
+                            return
+                        elif adv.display_name.lower() == ess.content.lower():
+                            await self.bot.whisper("**Bravo !** Votre correspondant était bien {} !".format(adv.display_name))
+                            await self.bot.send_message(adv,
+                                                        "**Bien joué !** Votre correspondant ({}) vous a retrouvé !".format(
+                                                            author.name))
+                            await self.bot.send_message(logout,
+                                                        "#{} | Réussite - Le correspondant à trouvé le pseudo {}".format(
+                                                            ident, adv.name))
                             return
                         else:
                             chance += 1
