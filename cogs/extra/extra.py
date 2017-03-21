@@ -82,7 +82,11 @@ class Extra:
         await asyncio.sleep(0.75)
         msg2 = "**JEU** - *Guess who ?*\n"
         msg2 += "Un correspondant secret doit deviner ton pseudo.\nTu va devoir lui donner 3 indices pour qu'il puisse te retrouver.\nVous gagnez si il le devine (Il est impératif de ne pas donner son pseudo dans ses messages)."
-        await self.bot.send_message(adv, msg2)
+        try:
+            await self.bot.send_message(adv, msg2)
+        except:
+            await self.bot.whisper("**Votre correspondant semble m'avoir bloqué.** Partie annulée...")
+            return
         await asyncio.sleep(1.25)
         await self.bot.send_message(adv, "**Connexion en cours avec votre correspondant...**")
         await asyncio.sleep(2)
