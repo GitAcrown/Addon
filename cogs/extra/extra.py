@@ -63,6 +63,7 @@ class Extra:
                     pass
         else:
             rand = random.choice(liste)
+            return rand
 
     @commands.command(aliases= ["egg"], pass_context=True)
     async def guess(self, ctx):
