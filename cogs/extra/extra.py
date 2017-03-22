@@ -24,6 +24,7 @@ class Extra:
         self.goulag = dataIO.load_json("data/extra/goulag.json")
         self.wiki = dataIO.load_json("data/extra/wiki.json")
         self.elect = dataIO.load_json("data/extra/elect.json")
+        self.mgdata = dataIO.load_json("data/extra/mgdata.json")
         if "AUTORISE" not in self.sys:
             self.old()  # Importe les anciennes données en ajoutant les nouvelles
 
@@ -49,25 +50,285 @@ class Extra:
         self.sys["AFK"] = afk
         fileIO("data/extra/sys.json", "save", self.sys)
 
-    def find_adv(self, server):
+    def find_adv(self, server, exc = []):
         liste = []
         for member in server.members:
-            if member.status is discord.Status.online:
-                if "Habitué" in [r.name for r in member.roles]:
-                    liste.append(member.id)
-                elif "Oldfag" in [r.name for r in member.roles]:
-                    liste.append(member.id)
-                elif "Malsain" in [r.name for r in member.roles]:
-                    liste.append(member.id)
-                else:
-                    pass
+            if member.id in self.mgdata:
+                if not member.id in exc:
+                    if self.mgdata[member.id]["ACTIF"] == True:
+                        liste.append(member.id)
         else:
             rand = random.choice(liste)
             return rand
 
+    @commands.command(aliases= ["mg"],pass_context=True, no_pm=True)
+    async def mini(self, ctx):
+        """Accès aux mini-jeux.
+
+        (Refonte de &egg)"""
+        logout = self.bot.get_channel("292033001121120256")  # DevSpot SdP
+        author = ctx.message.author
+        server = ctx.message.server
+        if author.id not in self.mgdata:
+            self.mgdata[author.id] = {"USER_ID": author.id,
+                                      "USER_NAME": author.name,
+                                      "ACTIF": True,
+                                      "MENU": True}
+            fileIO("data/extra/mgdata.json", "save", self.mgdata)
+            await self.bot.whisper("**Vous autorisez désormais le bot à vous convoquer pour un jeu**\nCette option est désactivable dans les paramètres.")
+        main = False
+        while main is False:
+            em = discord.Embed(title="MINI", color=0xa9b1cc)
+            msg = "GW = Guess Who ?\n"
+            msg += "----------------\n"
+            msg += "P = Paramètres\n"
+            msg += "Q = Quitter"
+            em.add_field(name="Menu", value=msg)
+            em.set_footer(text="Tapez le tag correspondant à votre choix pour continuer...")
+            menu = await self.bot.whisper(embed=em)
+            verif1 = False
+            while verif1 != True:
+                rep = await self.bot.wait_for_message(author=author, channel=menu.channel, timeout=45)
+                if rep == None:
+                    return
+                elif rep.content.lower() == "gw":
+                    verif1 = True
+                    if self.mgdata[author.id]["MENU"] is True:
+                        em = discord.Embed(title="Guess Who ?", color=0x72C53E)
+                        em.add_field(name="Règles", value="Votre but est de retrouver le pseudo de votre correspondant secret en 3 essais grâce à 3 indices qu'il vous donne sur lui.\n")
+                        em.add_field(name="Nb de joueurs", value="2")
+                        em.set_thumbnail(url="http://i.imgur.com/ttYSoBw.png")
+                        sousmenu = await self.bot.whisper(embed= em)
+                        await self.bot.add_reaction(sousmenu, "✔")
+                        await self.bot.add_reaction(sousmenu, "✖")
+                        await asyncio.sleep(0.25)
+                        gameplay = None
+                        rap = await self.bot.wait_for_reaction(["✔","✖"], message=sousmenu, user=author, timeout=60)
+                        if rap == None:
+                            await self.bot.whisper("*Retour au menu*")
+                        elif rap.reaction.emoji == "✔":
+                            gameplay = True
+                        elif rap.reaction.emoji == "":
+                            gameplay = False
+                        else:
+                            pass
+                    else:
+                        gameplay = True
+
+                    if gameplay == True:
+                        msg = "**JEU** - *Guess who ?*\n"
+                        msg += "Ton but est de retrouver le pseudo de ton correspondant secret.\nIl va te donner 3 indices sur lui.\nEnsuite, tu devra deviner son pseudo."
+                        await self.bot.whisper(msg)
+                        reset = False
+                        while reset == False:
+                            okay = False
+                            while okay != True:
+                                ident = random.randint(1000, 9999)
+                                adv = server.get_member(self.find_adv(server, [author.id]))
+                                await asyncio.sleep(1)
+                                await self.bot.whisper("**Connexion en cours avec un candidat potentiel...**")
+                                await asyncio.sleep(1)
+                                msg2 = "**JEU** - *Guess who ?*\n"
+                                msg2 += "Un correspondant secret doit deviner ton pseudo.\nTu va devoir lui donner 3 indices pour qu'il puisse te retrouver.\nVous gagnez si il le devine (Il est impératif de ne pas donner son pseudo dans ses messages)."
+                                try:
+                                    await self.bot.send_message(adv, msg2)
+                                    okay = True
+                                except:
+                                    await self.bot.whisper(
+                                        "**Votre correspondant semble m'avoir bloqué.**\nRecherche d'un nouveau correspondant...")
+                                    await asyncio.sleep(1)
+                            await self.bot.send_message(logout,
+                                                        "#{} | Partie démarrée entre {} et {}".format(ident,
+                                                                                                      author.name,
+                                                                                                      adv.name))
+                            await asyncio.sleep(1.25)
+                            await self.bot.send_message(adv, "**Connexion en cours avec votre correspondant...**")
+                            await asyncio.sleep(2)
+                            bab = await self.bot.whisper(
+                                "**Correspondant connecté. (Partie #{})**\n*Il va vous donner 3 indices, à vous de retrouver son pseudo. Bonne chance !*".format(
+                                    ident))
+                            await self.bot.send_message(logout, "#{} | Connection établie".format(ident))
+                            beb = await self.bot.send_message(adv,
+                                                              "**Correspondant connecté. (Partie #{})**\nTapez dès à présent votre premier indice.".format(
+                                                                  ident))
+                            nb = 0
+                            while nb < 3:
+                                rep = await self.bot.wait_for_message(author=adv, channel=beb.channel, timeout=180)
+                                if rep == None:
+                                    await self.bot.send_message(adv,
+                                                                "Vous n'avez pas répondu à temps. Partie annulée...")
+                                    back = await self.bot.whisper(
+                                        "**Le correspondant ({}) ne réponds pas.**\n*Voulez-vous un nouveau correspondant ? (o/n)*".format(
+                                            adv.name))
+                                    nep = await self.bot.wait_for_message(author=author, channel=back.channel,
+                                                                          timeout=60)
+                                    if nep == None:
+                                        await self.bot.whisper("Okay, bye :wave:")
+                                        return
+                                    elif nep.content.lower() == "o":
+                                        await self.bot.whisper("**Recherche d'un nouveau correspondant...**")
+                                        await asyncio.sleep(1)
+                                        nb = 3
+                                    else:
+                                        await self.bot.whisper("Okay, bye :wave:")
+                                        return
+                                elif adv.name.lower() in rep.content.lower():
+                                    await self.bot.whisper("Le correspondant à tenté de tricher. Partie annulée...")
+                                    await self.bot.send_message(adv,
+                                                                "Vous avez tenté de tricher. Partie annulée...")
+                                    await self.bot.send_message(logout,
+                                                                "#{} | Tentative de triche - Partie annulée".format(
+                                                                    ident))
+                                    return
+                                elif len(rep.content) > 3:
+                                    nb += 1
+                                    await self.bot.whisper("**Indice {}** - *{}*".format(nb, rep.content))
+                                    await self.bot.send_message(logout, "#{} | Indice #{}: *{}*".format(ident, nb,
+                                                                                                        rep.content))
+                                    if nb < 3:
+                                        await self.bot.send_message(adv,
+                                                                    "**Indice {} transmis.**\nVous pouvez taper le prochain.".format(
+                                                                        nb))
+                                    else:
+                                        await asyncio.sleep(1)
+                                        await self.bot.send_message(adv,
+                                                                    "**Indice {} transmis.**\nLe correspondant doit désormais deviner votre identitée...".format(
+                                                                        nb))
+                                        await self.bot.whisper(
+                                            "Voilà, vous devez désormais deviner le pseudo de votre correspondant secret.(3 chances).\n"
+                                            "*Marquez simplement son pseudo (ou surnom) - Sachez qu'il ne peut être qu'Habitué, Oldfag ou Malsain.*")
+                                        chance = 0
+                                        while chance < 3:
+                                            ess = await self.bot.wait_for_message(author=author,
+                                                                                  channel=bab.channel, timeout=300)
+                                            if ess == None:
+                                                await self.bot.whisper(
+                                                    "Vous avez mis trop de temps à répondre. Partie annulée...")
+                                                await self.bot.send_message(adv,
+                                                                            "Votre correspondant est absent. Partie annulée...")
+                                                return
+                                            elif adv.name.lower() == ess.content.lower():
+                                                await self.bot.whisper(
+                                                    "**Bravo !** Votre correspondant était bien {} !".format(
+                                                        adv.name))
+                                                await self.bot.send_message(adv,
+                                                                            "**Bien joué !** Votre correspondant ({}) vous a retrouvé !".format(
+                                                                                author.name))
+                                                await self.bot.send_message(logout,
+                                                                            "#{} | Réussite - Le correspondant à trouvé le pseudo {}".format(
+                                                                                ident, adv.name))
+                                                return
+                                            elif adv.display_name.lower() == ess.content.lower():
+                                                await self.bot.whisper(
+                                                    "**Bravo !** Votre correspondant était bien {} !".format(
+                                                        adv.display_name))
+                                                await self.bot.send_message(adv,
+                                                                            "**Bien joué !** Votre correspondant ({}) vous a retrouvé !".format(
+                                                                                author.name))
+                                                await self.bot.send_message(logout,
+                                                                            "#{} | Réussite - Le correspondant à trouvé le pseudo {}".format(
+                                                                                ident, adv.name))
+                                                return
+                                            else:
+                                                chance += 1
+                                                reste = 3 - chance
+                                                await self.bot.whisper(
+                                                    "Mauvaise réponse ! Vous avez encore {} chances.".format(reste))
+                                        await self.bot.whisper(
+                                            "**Perdu !** Votre correspondant était {}.".format(adv.name))
+                                        await self.bot.send_message(adv,
+                                                                    "**Dommage !** Votre correspondant était {}.".format(
+                                                                        author.name))
+                                        await self.bot.send_message(logout,
+                                                                    "#{} | Défaite - Le correspondant n'a pas trouvé le pseudo {}".format(
+                                                                        ident, adv.name))
+                                        return
+                                else:
+                                    await self.bot.send_message(adv,
+                                                                "Vous devez saisir plus de 3 caractères pour envoyer un indice valide.")
+                    else:
+                        await self.bot.whisper("*Retour au menu*")
+
+                elif rep.content.lower() == "p":
+                    verif1 = True
+                    param = False
+                    while param is False:
+                        em = discord.Embed(title="MINI", color=0xa9b1cc)
+                        msg = "C = Convocation pour jouer\n"
+                        msg += "D = Descriptions des jeux\n"
+                        msg += "----------------\n"
+                        msg += "R = Retour menu"
+                        em.add_field(name="Paramètres", value=msg)
+                        em.set_footer(text="Tapez le tag correspondant à votre choix pour continuer...")
+                        submenu = await self.bot.whisper(embed=em)
+                        verif2 = False
+                        while verif2 != True:
+                            rep = await self.bot.wait_for_message(author=author, channel=submenu.channel, timeout=45)
+                            if rep == None:
+                                return
+                            elif rep.content.lower() == "c":
+                                verif2 = True
+                                await self.bot.whisper("Voulez-vous être convoqué pour jouer à des jeux que les autres memrbes ont lancés ? (O/N)")
+                                need = False
+                                while need == False:
+                                    ans = await self.bot.wait_for_message(author=author, channel=submenu.channel, timeout=30)
+                                    if ans == None:
+                                        await self.bot.whisper("*Retour paramètres*")
+                                        need = True
+                                    elif ans.content.lower() == "o":
+                                        await self.bot.whisper("Vous pourrez être convoqué pour jouer.")
+                                        self.mgdata[author.id]["ACTIF"] = True
+                                        fileIO("data/extra/mgdata.json", "save", self.mgdata)
+                                        need = True
+                                    elif ans.content.lower() == "n":
+                                        await self.bot.whisper("Vous ne serez plus convoqué pour jouer.")
+                                        self.mgdata[author.id]["ACTIF"] = False
+                                        fileIO("data/extra/mgdata.json", "save", self.mgdata)
+                                        need = True
+                                    else:
+                                        await self.bot.whisper("Réponse invalide, réessayez.")
+                            elif rep.content.lower() == "d":
+                                verif2 = True
+                                await self.bot.whisper(
+                                    "Voulez-vous sauter les descriptions de jeu et jouer directement ? (O/N)")
+                                need = False
+                                while need == False:
+                                    ans = await self.bot.wait_for_message(author=author, channel=submenu.channel,
+                                                                          timeout=30)
+                                    if ans == None:
+                                        await self.bot.whisper("*Retour paramètres*")
+                                        need = True
+                                    elif ans.content.lower() == "o":
+                                        await self.bot.whisper("Les descriptions seront sautées.")
+                                        self.mgdata[author.id]["MENU"] = False
+                                        fileIO("data/extra/mgdata.json", "save", self.mgdata)
+                                        need = True
+                                    elif ans.content.lower() == "n":
+                                        await self.bot.whisper("Les descriptions s'afficheront avant de jouer.")
+                                        self.mgdata[author.id]["MENU"] = True
+                                        fileIO("data/extra/mgdata.json", "save", self.mgdata)
+                                        need = True
+                                    else:
+                                        await self.bot.whisper("Réponse invalide, réessayez.")
+                            elif rep.content.lower() == "r":
+                                verif2 = True
+                                await self.bot.whisper("*Retour menu*")
+                                param = True
+
+                elif rep.content.lower() == "q":
+                    await self.bot.whisper("Bye :wave:")
+                    return
+
+                else:
+                    await self.bot.whisper("**Tag invalide.** Réessayez.")
+
     @commands.command(aliases= ["egg"], pass_context=True)
     async def guess(self, ctx):
         """Il ne sert à rien de chercher des secrets ici, il n'y en a pas."""
+
+        await self.bot.whisper("Cette commande n'est plus accessible directement. Utilisez {}mini".format(ctx.prefix))
+        return
+
         logout = self.bot.get_channel("292033001121120256") #DevSpot SdP
         server = ctx.message.server
         author = ctx.message.author
@@ -1089,7 +1350,6 @@ def check_folders():
             print("Création du fichier " + folder)
             os.makedirs(folder)
 
-
 def check_files():
     if not os.path.isfile("data/extra/sys.json"):
         print("Création du fichier systeme Extra...")
@@ -1107,6 +1367,9 @@ def check_files():
         print("Création du fichier de prison...")
         fileIO("data/extra/goulag.json", "save", {})
 
+    if not os.path.isfile("data/extra/mgdata.json"):
+        print("Création du fichier pour les Mini-jeux...")
+        fileIO("data/extra/mgdata.json", "save", {})
 
 def setup(bot):
     check_folders()
