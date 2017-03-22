@@ -69,7 +69,6 @@ class Extra:
     async def guess(self, ctx):
         """Il ne sert à rien de chercher des secrets ici, il n'y en a pas."""
         logout = self.bot.get_channel("292033001121120256") #DevSpot SdP
-        ident = random.randint(1000, 9999)
         server = ctx.message.server
         author = ctx.message.author
         okay = False
@@ -79,8 +78,8 @@ class Extra:
         reset = False
         while reset == False:
             while okay != True:
+                ident = random.randint(1000, 9999)
                 adv = server.get_member(self.find_adv(server))
-                await self.bot.send_message(logout, "#{} | Partie démarrée entre {} et {}".format(ident, author.name, adv.name))
                 await asyncio.sleep(1)
                 await self.bot.whisper("**Connexion en cours avec un candidat potentiel...**")
                 await asyncio.sleep(1)
@@ -92,6 +91,8 @@ class Extra:
                 except:
                     await self.bot.whisper("**Votre correspondant semble m'avoir bloqué.**\nRecherche d'un nouveau correspondant...")
                     await asyncio.sleep(1)
+            await self.bot.send_message(logout,
+                                        "#{} | Partie démarrée entre {} et {}".format(ident, author.name, adv.name))
             await asyncio.sleep(1.25)
             await self.bot.send_message(adv, "**Connexion en cours avec votre correspondant...**")
             await asyncio.sleep(2)
@@ -102,7 +103,7 @@ class Extra:
             while nb < 3:
                 rep = await self.bot.wait_for_message(author=adv, channel=beb.channel, timeout=180)
                 if rep == None:
-                    await self.bot.whisper("**Le correspondant ({})ne réponds pas.**\n*Recherche d'un nouveau correspondant...*".format(adv.name))
+                    await self.bot.whisper("**Le correspondant ({}) ne réponds pas.**\n*Recherche d'un nouveau correspondant...*".format(adv.name))
                     await self.bot.send_message(adv, "Vous n'avez pas répondu à temps. Partie annulée...")
                     await asyncio.sleep(1)
                     nb = 3
