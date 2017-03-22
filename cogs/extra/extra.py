@@ -71,12 +71,12 @@ class Extra:
         logout = self.bot.get_channel("292033001121120256") #DevSpot SdP
         server = ctx.message.server
         author = ctx.message.author
-        okay = False
         msg = "**JEU** - *Guess who ?*\n"
         msg += "Ton but est de retrouver le pseudo de ton correspondant secret.\nIl va te donner 3 indices sur lui.\nEnsuite, tu devra deviner son pseudo."
         await self.bot.whisper(msg)
         reset = False
         while reset == False:
+            okay = False
             while okay != True:
                 ident = random.randint(1000, 9999)
                 adv = server.get_member(self.find_adv(server))
@@ -103,10 +103,19 @@ class Extra:
             while nb < 3:
                 rep = await self.bot.wait_for_message(author=adv, channel=beb.channel, timeout=180)
                 if rep == None:
-                    await self.bot.whisper("**Le correspondant ({}) ne réponds pas.**\n*Recherche d'un nouveau correspondant...*".format(adv.name))
                     await self.bot.send_message(adv, "Vous n'avez pas répondu à temps. Partie annulée...")
-                    await asyncio.sleep(1)
-                    nb = 3
+                    back = await self.bot.whisper("**Le correspondant ({}) ne réponds pas.**\n*Voulez-vous un nouveau correspondant ? (o/n)*".format(adv.name))
+                    nep = await self.bot.wait_for_message(author=author, channel=back.channel, timeout=60)
+                    if nep == None:
+                        await self.bot.whisper("Okay, bye :wave:")
+                        return
+                    elif nep.content.lower == "o":
+                        await self.bot.whisper("**Recherche d'un nouveau correspondant...**")
+                        await asyncio.sleep(1)
+                        nb = 3
+                    else:
+                        await self.bot.whisper("Okay, bye :wave:")
+                        return
                 elif adv.name.lower() in rep.content.lower():
                     await self.bot.whisper("Le correspondant à tenté de tricher. Partie annulée...")
                     await self.bot.send_message(adv, "Vous avez tenté de tricher. Partie annulée...")
