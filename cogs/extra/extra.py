@@ -100,7 +100,7 @@ class Extra:
             beb = await self.bot.send_message(adv, "**Correspondant connecté. (Partie #{})**\nTapez dès à présent votre premier indice.".format(ident))
             nb = 0
             while nb < 3:
-                rep = await self.bot.wait_for_message(author=adv, channel=beb.channel, timeout=300)
+                rep = await self.bot.wait_for_message(author=adv, channel=beb.channel, timeout=180)
                 if rep == None:
                     await self.bot.whisper("**Le correspondant ({})ne réponds pas.**\n*Recherche d'un nouveau correspondant...*".format(adv.name))
                     await self.bot.send_message(adv, "Vous n'avez pas répondu à temps. Partie annulée...")
