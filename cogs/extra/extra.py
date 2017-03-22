@@ -109,7 +109,7 @@ class Extra:
                     if nep == None:
                         await self.bot.whisper("Okay, bye :wave:")
                         return
-                    elif nep.content.lower == "o":
+                    elif nep.content.lower() == "o":
                         await self.bot.whisper("**Recherche d'un nouveau correspondant...**")
                         await asyncio.sleep(1)
                         nb = 3
