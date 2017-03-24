@@ -746,6 +746,8 @@ class Heist:
     def award_credits(self, deposits):
         for player in deposits:
             bank = self.bot.get_cog('Economy').bank
+            arc = self.bot.get_cog('Arcade').arc
+            arc.add_credits(player[0], 1)
             bank.deposit_credits(player[0], player[1])
 
     def subtract_costs(self, settings, author, cost):
