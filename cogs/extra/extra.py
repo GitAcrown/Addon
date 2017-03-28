@@ -631,7 +631,7 @@ class Extra:
 
     @commands.group(pass_context=True)
     async def gep(self, ctx):
-        """Outils Président."""
+        """Outils Staff/Président."""
         if ctx.invoked_subcommand is None:
             await send_cmd_help(ctx)
 
@@ -672,7 +672,7 @@ class Extra:
 
     @commands.command(pass_context=True)
     async def propose(self, ctx):
-        """[MP] Permet de proposer une idée au Président."""
+        """[MP] Permet de proposer une idée au Staff."""
         author = ctx.message.author
         if self.sys["GEP_ROLE"] != None:
             tag = str(self.sys["GEP_PTAG"])
@@ -734,114 +734,37 @@ class Extra:
 
             self.sys["GEP_IDEES"][tag] = {"TAG": tag, "CHECK": False, "AUTHOR": name, "IMAGE": image, "TITRE": titre,
                                           "TEXTE": idee, "COLOR": color, "TIME": ntime}
+
+            log = self.bot.get_channel("281261006297104385")
+            await asyncio.sleep(1)
+            if self.sys["GEP_IDEES"][tag]["AUTHOR"] is "Anonyme":
+                em = discord.Embed(colour=int(self.sys["GEP_IDEES"][tag]["COLOR"], 16), inline=False)
+                em.set_author(name="Anonyme", icon_url="http://i.imgur.com/iDZRdNk.png")
+                em.add_field(name=self.sys["GEP_IDEES"][tag]["TITRE"],
+                             value=self.sys["GEP_IDEES"][tag]["TEXTE"])
+                em.set_footer(text="Utilisez &gep bai pour consulter la boite à idées.")
+                await self.bot.send_message(log, embed=em)
+            else:
+                em = discord.Embed(colour=int(self.sys["GEP_IDEES"][tag]["COLOR"], 16), inline=False)
+                em.set_author(name=self.sys["GEP_IDEES"][tag]["AUTHOR"],
+                              icon_url=self.sys["GEP_IDEES"][tag]["IMAGE"])
+                em.add_field(name=self.sys["GEP_IDEES"][tag]["TITRE"],
+                             value=self.sys["GEP_IDEES"][tag]["TEXTE"])
+                em.set_footer(text="Utilisez &gep bai pour consulter la boite à idées.")
+                await self.bot.send_message(log, embed=em)
+
             fileIO("data/extra/sys.json", "save", self.sys)
         else:
             await self.bot.whisper("Aucun président n'est enregistré sur ce serveur !")
 
     @gep.command(pass_context=True, no_pm=True)
+    @checks.mod_or_permissions(kick_members=True)
     async def bai(self, ctx):
-        """Permet de voir les idées enregistrées dans la boite à idée."""
+        """Permet de voir les idées enregistrées dans la boite à idées."""
         author = ctx.message.author
         if not ctx.message.server:
-            await self.bot.whisper("Lancez cette commande sur le serveur où vous êtes Président.")
+            await self.bot.whisper("Lancez cette commande sur le serveur où vous êtes modérateur.")
             return
-        role = self.sys["GEP_ROLE"]
-        r = discord.utils.get(ctx.message.server.roles, name=role)
-        if role in [r.name for r in author.roles]:
-            retour = False
-            while retour == False:
-                em = discord.Embed(inline=False)
-                msg = ""
-                for i in self.sys["GEP_IDEES"]:
-                    if self.sys["GEP_IDEES"][i]["CHECK"] is False:
-                        msg += "__#{}__| **{}** - *{}*\n".format(self.sys["GEP_IDEES"][i]["TAG"],
-                                                                 self.sys["GEP_IDEES"][i]["AUTHOR"],
-                                                                 self.sys["GEP_IDEES"][i]["TITRE"])
-                    else:
-                        msg += "__@{}__| **{}** - *{}*\n".format(self.sys["GEP_IDEES"][i]["TAG"],
-                                                                 self.sys["GEP_IDEES"][i]["AUTHOR"],
-                                                                 self.sys["GEP_IDEES"][i]["TITRE"])
-                else:
-                    em.set_footer(text="Tapez un numéro pour en savoir plus ou tapez 'Q' pour quitter")
-                    if msg != "":
-                        em.add_field(name="__Boite à idées__", value=msg)
-                    else:
-                        em.add_field(name="__Boite à idées__", value="*La boite à idées est vide*")
-                    nec = await self.bot.whisper(embed=em)
-                    channel = nec.channel
-                verif = False
-                while verif != True:
-                    rep = await self.bot.wait_for_message(author=author, channel=channel, timeout=60)
-                    if rep == None:
-                        await self.bot.whisper("Réponse trop longue, bye :wave:")
-                        return
-                    if rep.content.lower() == "q":
-                        await self.bot.whisper("Bye :wave:")
-                        return
-                    if rep.content in self.sys["GEP_IDEES"]:
-                        num = rep.content
-                        verif = True
-                        if self.sys["GEP_IDEES"][num]["AUTHOR"] is "Anonyme":
-                            em = discord.Embed(colour=int(self.sys["GEP_IDEES"][num]["COLOR"], 16), inline=False)
-                            em.set_author(name="Anonyme", icon_url="http://i.imgur.com/iDZRdNk.png")
-                            em.add_field(name=self.sys["GEP_IDEES"][num]["TITRE"],
-                                         value=self.sys["GEP_IDEES"][num]["TEXTE"])
-                            em.set_footer(text="Soumise le: " + self.sys["GEP_IDEES"][num]["TIME"])
-                            msg = await self.bot.whisper(embed=em)
-                        else:
-                            em = discord.Embed(colour=int(self.sys["GEP_IDEES"][num]["COLOR"], 16), inline=False)
-                            em.set_author(name=self.sys["GEP_IDEES"][num]["AUTHOR"],
-                                          icon_url=self.sys["GEP_IDEES"][num]["IMAGE"])
-                            em.add_field(name=self.sys["GEP_IDEES"][num]["TITRE"],
-                                         value=self.sys["GEP_IDEES"][num]["TEXTE"])
-                            em.set_footer(text="Soumise le: " + self.sys["GEP_IDEES"][num]["TIME"])
-                            msg = await self.bot.whisper(embed=em)
-                        await asyncio.sleep(0.25)
-                        await self.bot.add_reaction(msg, "✔")  # Check
-                        await self.bot.add_reaction(msg, "✖")  # Supprimer
-                        await self.bot.add_reaction(msg, "🔙")  # Menu
-                        await self.bot.add_reaction(msg, "🔚")  # Quitter
-                        await asyncio.sleep(0.25)
-                        sec = False
-                        while sec != True:
-                            rep = await self.bot.wait_for_reaction(["✔", "✖", "🔙", "🔚"], message=msg, user=author)
-                            if rep.reaction.emoji == "✔":
-                                if self.sys["GEP_IDEES"][num]["CHECK"] is False:
-                                    await self.bot.whisper("Idée approuvée !")
-                                    self.sys["GEP_IDEES"][num]["CHECK"] = True
-                                    fileIO("data/extra/sys.json", "save", self.sys)
-                                else:
-                                    await self.bot.whisper("Idée désaprouvée !")
-                                    self.sys["GEP_IDEES"][num]["CHECK"] = False
-                                    fileIO("data/extra/sys.json", "save", self.sys)
-                            elif rep.reaction.emoji == "✖":
-                                await self.bot.whisper("Idée supprimée.")
-                                del self.sys["GEP_IDEES"][num]
-                                fileIO("data/extra/sys.json", "save", self.sys)
-                                sec = True
-                            elif rep.reaction.emoji == "🔙":
-                                sec = True
-                            elif rep.reaction.emoji == "🔚":
-                                await self.bot.whisper("Bye :wave: !")
-                                await asyncio.sleep(0.25)
-                                return
-                            else:
-                                await self.bot.whisper("Invalide")
-                    else:
-                        await self.bot.whisper("Invalide, réessayez.")
-        else:
-            await self.bot.whisper("Vous n'êtes pas président.")
-
-    @gep.command(pass_context=True, no_pm=True)
-    @checks.mod_or_permissions(administrator=True)
-    async def forcebai(self, ctx):
-        """[ADMIN] Permet de voir les idées enregistrées dans la boite à idée."""
-        author = ctx.message.author
-        if not ctx.message.server:
-            await self.bot.whisper("Lancez cette commande sur le serveur où vous êtes Admin.")
-            return
-        role = self.sys["GEP_ROLE"]
-        r = discord.utils.get(ctx.message.server.roles, name=role)
         retour = False
         while retour == False:
             em = discord.Embed(inline=False)
