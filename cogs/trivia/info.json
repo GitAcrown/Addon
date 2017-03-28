@@ -1,0 +1,8 @@
+{
+    "AUTHOR" : "Acrown",
+    "DESCRIPTION" : "Le grand retour de Trivia",
+    "DISABLED" : false,
+    "INSTALL_MSG" : "Utilisez help pour plus d'aide",
+    "NAME" : "horn",
+    "SHORT" : "Jeu de question/réponse automatique"
+}
