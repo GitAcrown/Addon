@@ -250,6 +250,7 @@ class Extra:
     async def forcecdt(self, ctx, pres: discord.Member, ast: discord.Member):
         """Force la candidature d'un candidat (MOD)"""
         server = ctx.message.server
+        author = ctx.message.author
         if self.np["STATUT"] == "open":
             if self.eligible(server, pres) and self.eligible(server, ast):
                 if pres.id in self.np["CANDIDATS"]:
