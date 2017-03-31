@@ -229,7 +229,7 @@ class Extra:
                 await asyncio.sleep(0.25)
                 await self.bot.whisper("Terminé, le candidat est inscrit aux présidentielles !")
             else:
-                await self.bot.say("Le candidat ou son suppléant ne sont pas éligible.")
+                await self.bot.say("Le candidat ou/et son assistant ne sont pas éligible.")
         else:
             await self.bot.say("Aucune élection n'est ouverte.")
 
@@ -269,7 +269,7 @@ class Extra:
                     pseudo = self.elect[cand]["USER_NAME"]
                     supp = self.elect[cand]["SUPP_NAME"]
                     msg += "__#{}__ | **{}** / *{}*\n".format(num, pseudo, supp)
-                em.add_field(name="__Candidats et suppléants__", value=msg)
+                em.add_field(name="__Candidats et assistants__", value=msg)
                 em.set_footer(text="Utilisez la commande '{}vote' pour voter !".format(ctx.prefix))
                 await asyncio.sleep(0.5)
                 await self.bot.say("**Listage et envoie des MP...**")
@@ -335,7 +335,7 @@ class Extra:
                         clean.reverse()
                         for e in clean:
                             res += "{} voix ({}%) | **{}** / *{}*\n".format(e[2], e[3], e[0], e[1])
-                        em.add_field(name="Votes (%) | Candidat / Suppléant", value=res)
+                        em.add_field(name="Votes (%) | Candidat / Assistant", value=res)
                         em.set_footer(
                             text="Merci d'avoir participé et félicitation aux gagnants ! [Total = {} votes]".format(
                                 total))
@@ -435,7 +435,7 @@ class Extra:
                                 pseudo = self.elect[cand]["USER_NAME"]
                                 supp = self.elect[cand]["SUPP_NAME"]
                                 msg += "__#{}__ | **{}** / *{}*\n".format(num, pseudo, supp)
-                            em.add_field(name="__Candidats et suppléants__", value=msg)
+                            em.add_field(name="__Candidats et Assistants__", value=msg)
                             em.set_footer(text="Suivez les indications ci-dessous pour voter".format(ctx.prefix))
                             await self.bot.whisper(embed=em)
                             await asyncio.sleep(1)
