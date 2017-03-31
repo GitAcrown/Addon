@@ -87,7 +87,7 @@ class Extra:
                         em = discord.Embed()
                         msg = ""
                         for cand in self.np["CANDIDATS"]:
-                            num = self.np["CANDIDATS"][cand]["NUMERO"]
+                            num = self.np["CANDIDATS"][cand]["NUM"]
                             pseudo = self.np["CANDIDATS"][cand]["USER_NAME"]
                             supp = self.np["CANDIDATS"][cand]["AST_NAME"]
                             msg += "__#{}__ | **{}** / *{}*\n".format(num, pseudo, supp)
@@ -134,9 +134,9 @@ class Extra:
                                         await self.bot.say("Retour au menu...")
                                         await asyncio.sleep(1)
                                         terc = True
-                            elif int(rep.content) in [self.np["CANDIDATS"][cand]["NUMERO"] for cand in self.np["CANDIDATS"]]:
+                            elif int(rep.content) in [self.np["CANDIDATS"][cand]["NUM"] for cand in self.np["CANDIDATS"]]:
                                 for c in self.np["CANDIDATS"]:
-                                    if self.np["CANDIDATS"][c]["NUMERO"] == int(rep.content):
+                                    if self.np["CANDIDATS"][c]["NUM"] == int(rep.content):
                                         verif = True
                                         em = discord.Embed()
                                         em.title = "Candidature de **{}**".format(self.np["CANDIDATS"][c]["USER_NAME"])
