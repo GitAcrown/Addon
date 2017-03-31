@@ -342,7 +342,7 @@ class Extra:
                     elif rep == None:
                         await self.bot.whisper("Annulation.. (Vous ne répondez pas). Au revoir :wave:")
                         return
-                    elif rep.csntent.lower() == "none":
+                    elif rep.content.lower() == "none":
                         await self.bot.whisper("Ignoré.")
                         verif = True
                     else:
