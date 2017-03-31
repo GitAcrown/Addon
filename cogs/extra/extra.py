@@ -68,6 +68,11 @@ class Extra:
             rand = random.choice(liste)
             return rand
 
+    @commands.command(hidden=True)
+    async def forcedown(self):
+        """Redémarre le bot"""
+        await self.bot.logout()
+
     # ELECT ##############################################################
 
     @commands.command(name="vote", pass_context=True)
