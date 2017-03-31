@@ -199,10 +199,10 @@ class Extra:
     async def toggle(self, ctx):
         """Démarre ou arrête l'inscription des candidats"""
         if self.np["STATUT"] == "close":
-            self.np["STATUT"] == "open"
+            self.np["STATUT"] = "open"
             await self.bot.say("**Les inscriptions pour la présidentielle sont ouvertes**")
         else:
-            self.np["STATUT"] == "close"
+            self.np["STATUT"] = "close"
             await self.bot.say("**Les elections sont terminés**")
         fileIO("data/extra/np.json", "save", self.np)
 
@@ -330,7 +330,7 @@ class Extra:
                         await self.bot.whisper("Invalide, le lien ne semble pas valide.")
                 await asyncio.sleep(0.5)
                 await self.bot.whisper(
-                    "**Veuillez fournir un URL valide et publique vers votre affiche**\n*Si vous en avez pas, tapez 'none'*")
+                    "**Veuillez fournir un URL valide (Lien DIRECT) et publique vers votre affiche**\n*Si vous en avez pas, tapez 'none'*")
                 verif = False
                 while verif != True:
                     rep = await self.bot.wait_for_message(author=author, channel=msg.channel, timeout=500)
