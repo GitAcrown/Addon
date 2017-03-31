@@ -347,8 +347,8 @@ class Extra:
                     self.np["MSGLOG"] = msg.id
                     fileIO("data/extra/np.json", "save", self.np)
                 else:
-                    channel = self.bot.get_channel("255082244123787274")
-                    msg = self.bot.get_message(channel, self.np["MSGLOG"])
+                    channel = await self.bot.get_channel("255082244123787274")
+                    msg = await self.bot.get_message(channel, self.np["MSGLOG"])
                     em = discord.Embed()
                     val = ""
                     for c in self.np["CANDIDATS"]:
@@ -491,8 +491,8 @@ class Extra:
                     self.np["MSGLOG"] = msg.id
                     fileIO("data/extra/np.json", "save", self.np)
                 else:
-                    channel = self.bot.get_channel("255082244123787274")
-                    msg = self.bot.get_message(channel, self.np["MSGLOG"])
+                    channel = await self.bot.get_channel("255082244123787274")
+                    msg = await self.bot.get_message(channel, self.np["MSGLOG"])
                     em = discord.Embed()
                     val = ""
                     for c in self.np["CANDIDATS"]:
