@@ -246,6 +246,123 @@ class Extra:
         fileIO("data/extra/np.json", "save", self.np)
 
     @elect_sys.command(pass_context=True)
+    @checks.admin_or_permissions(ban_members=True)
+    async def forcecdt(self, ctx, pres: discord.Member, ast: discord.Member):
+        """Force la candidature d'un candidat (MOD)"""
+        server = ctx.message.server
+        if self.np["STATUT"] == "open":
+            if self.eligible(server, pres) and self.eligible(server, ast):
+                if pres.id in self.np["CANDIDATS"]:
+                    await self.bot.whisper(
+                        "Il est déjà inscrit, ses informations sont donc remises à 0 pour une réinscription.")
+                if ast.id in self.np["CANDIDATS"]:
+                    await self.bot.whisper(
+                        "L'assistant est déjà inscrit comme candidat.")
+                    return
+                if ast.id in [self.np["CANDIDATS"][c]["AST_ID"] for c in self.np["CANDIDATS"]]:
+                    await self.bot.whisper("Votre assistant est déjà assistant pour un autre candidat.")
+                    return
+
+                self.np["CANDIDATS"][pres.id] = {"USER_NAME": pres.name,
+                                                   "USER_ID": pres.id,
+                                                   "AST_NAME": ast.name,
+                                                   "AST_ID": ast.id,
+                                                   "MOTTO": None,
+                                                   "PROG": None,
+                                                   "AFFICHE": None,
+                                                   "VOTES": 0}
+
+                msg = await self.bot.whisper(
+                    "**Veuillez fournir une phrase d'accroche**\n*Si vous en avez pas, tapez 'none'*")
+                verif = False
+                while verif != True:
+                    rep = await self.bot.wait_for_message(author=author, channel=msg.channel, timeout=120)
+                    if rep == None:
+                        await self.bot.whisper("Temps de réponse trop longue, au revoir :wave:")
+                    if len(rep.content) > 4:
+                        await self.bot.whisper("Enregistrée.")
+                        self.np["CANDIDATS"][pres.id]["MOTTO"] = rep.content
+                        fileIO("data/extra/np.json", "save", self.np)
+                        verif = True
+                    elif rep == None:
+                        await self.bot.whisper("Annulation.. (Vous ne répondez pas). Au revoir :wave:")
+                        return
+                    elif rep.content.lower() == "none":
+                        await self.bot.whisper("Ignoré.")
+                        verif = True
+                    else:
+                        await self.bot.whisper("Invalide, réessayez avec au moins 4 caractères.")
+                await asyncio.sleep(0.5)
+                await self.bot.whisper(
+                    "**Veuillez fournir un URL valide et publique vers votre programme**\n*Si vous en avez pas, tapez 'none'*")
+                verif = False
+                while verif != True:
+                    rep = await self.bot.wait_for_message(author=author, channel=msg.channel, timeout=500)
+                    if rep == None:
+                        await self.bot.whisper("Temps de réponse trop longue, au revoir :wave:")
+                    if "http" in rep.content:
+                        await self.bot.whisper("Enregistrée.")
+                        self.np["CANDIDATS"][pres.id]["PROG"] = rep.content
+                        fileIO("data/extra/np.json", "save", self.np)
+                        verif = True
+                    elif rep == None:
+                        await self.bot.whisper("Annulation.. (Vous ne répondez pas). Au revoir :wave:")
+                        return
+                    elif rep.content.lower() == "none":
+                        await self.bot.whisper("Ignoré.")
+                        verif = True
+                    else:
+                        await self.bot.whisper("Invalide, le lien ne semble pas valide.")
+                await asyncio.sleep(0.5)
+                await self.bot.whisper(
+                    "**Veuillez fournir un URL valide (Lien DIRECT) et publique vers votre affiche**\n*Si vous en avez pas, tapez 'none'*")
+                verif = False
+                while verif != True:
+                    rep = await self.bot.wait_for_message(author=author, channel=msg.channel, timeout=500)
+                    if rep == None:
+                        await self.bot.whisper("Temps de réponse trop longue, au revoir :wave:")
+                    if "http" in rep.content:
+                        await self.bot.whisper("Enregistrée.")
+                        self.np["CANDIDATS"][pres.id]["AFFICHE"] = rep.content
+                        fileIO("data/extra/np.json", "save", self.np)
+                        verif = True
+                    elif rep == None:
+                        await self.bot.whisper("Annulation.. (Vous ne répondez pas). Au revoir :wave:")
+                        return
+                    elif rep.content.lower() == "none":
+                        await self.bot.whisper("Ignoré.")
+                        verif = True
+                    else:
+                        await self.bot.whisper("Invalide, le lien ne semble pas valide.")
+                if "MSGLOG" not in self.np:
+                    self.np["MSGLOG"] = None
+                    fileIO("data/extra/np.json", "save", self.np)
+                if self.np["MSGLOG"] is None:
+                    channel = self.bot.get_channel("255082244123787274")
+                    em = discord.Embed()
+                    em.add_field(name="Candidats à la présidentielle", value="*{}* - {}".format(pres.name, ast.name))
+                    em.set_footer(text="Liste Officielle - Mise à jour en direct")
+                    msg = await self.bot.send_message(channel, embed=em)
+                    self.np["MSGLOG"] = msg.id
+                    fileIO("data/extra/np.json", "save", self.np)
+                else:
+                    channel = self.bot.get_channel("255082244123787274")
+                    msg = self.bot.get_message(channel, self.np["MSGLOG"])
+                    em = discord.Embed()
+                    val = ""
+                    for c in self.np["CANDIDATS"]:
+                        val += "*{}* - {}\n".format(self.np["CANDIDATS"][c]["USER_NAME"],
+                                                    self.np["CANDIDATS"][c]["AST_NAME"])
+                    em.add_field(name="Candidats à la présidentielle", value=val)
+                    em.set_footer(text="Liste Officielle - Mise à jour en direct")
+                    await self.bot.edit_message(msg, embed=em)
+
+                await asyncio.sleep(0.25)
+                await self.bot.whisper("Terminé, vous êtes inscrit aux présidentielles !")
+            else:
+                await self.bot.say("Le candidat ou/et son assistant ne sont pas éligible.")
+
+    @elect_sys.command(pass_context=True)
     async def cdt(self, ctx, ast : discord.Member):
         """Permet de soumettre sa candidature à la présidentielle.
 
@@ -378,7 +495,7 @@ class Extra:
                     em = discord.Embed()
                     val = ""
                     for c in self.np["CANDIDATS"]:
-                        val += "*{}* - {}".format(self.np["CANDIDATS"][c]["USER_NAME"], self.np["CANDIDATS"][c]["AST_NAME"])
+                        val += "*{}* - {}\n".format(self.np["CANDIDATS"][c]["USER_NAME"], self.np["CANDIDATS"][c]["AST_NAME"])
                     em.add_field(name="Candidats à la présidentielle", value=val)
                     em.set_footer(text="Liste Officielle - Mise à jour en direct")
                     await self.bot.edit_message(msg, embed=em)
