@@ -14,7 +14,7 @@ from __main__ import send_cmd_help, settings
 default = {"GEP_ROLE": None, "GEP_IDEES": {}, "GEP_PTAG": 1, "AFK_LIST": [], "AFK": True, "ELECT": False,
            "ROLELIST": [], "ELECT_START": False, "ELECT_NUM": 1, "VOTED": [], "BLANC": 0, "AUTORISE": []}
 
-newdef = {"CANDIDATS": {}, "STATUT" : "close", "VOTANTS": [], "A_VOTE": [], "BLANCS" : 0, "ROLES": None}
+newdef = {"CANDIDATS": {}, "STATUT" : "close", "VOTANTS": [], "A_VOTE": [], "BLANCS" : 0, "ROLES": None, "MSGLOG" : None}
 
 class Extra:
     """Module d'outils communautaire."""
@@ -203,7 +203,7 @@ class Extra:
             await self.bot.say("**Les inscriptions pour la présidentielle sont ouvertes**")
         else:
             self.np["STATUT"] == "close"
-            await self.bot.say("**Les inscriptions sont désormais fermées**")
+            await self.bot.say("**Les elections sont terminés**")
         fileIO("data/extra/np.json", "save", self.np)
 
     @elect.command(pass_context=True, no_pm=True, hidden=True)
@@ -215,7 +215,7 @@ class Extra:
         'soft' = Efface seulement les votes du tour"""
         if mode == "hard":
             lr = self.np["ROLES"]
-            self.np = {"CANDIDATS": {}, "STATUT" : "close", "VOTANTS": [], "A_VOTE": [], "BLANCS" : 0, "ROLES": None}
+            self.np = {"CANDIDATS": {}, "STATUT" : "close", "VOTANTS": [], "A_VOTE": [], "BLANCS" : 0, "ROLES": None, "MSGLOG" : None}
             self.np["ROLES"] = lr
             fileIO("data/extra/np.json", "save", self.np)
             await self.bot.say("Hard reset effectué. **Les élections sont terminées.**")
@@ -342,11 +342,29 @@ class Extra:
                     elif rep == None:
                         await self.bot.whisper("Annulation.. (Vous ne répondez pas). Au revoir :wave:")
                         return
-                    elif rep.content.lower() == "none":
+                    elif rep.csntent.lower() == "none":
                         await self.bot.whisper("Ignoré.")
                         verif = True
                     else:
                         await self.bot.whisper("Invalide, le lien ne semble pas valide.")
+                if self.np["MSGLOG"] is None:
+                    channel = self.bot.get_channel("255082244123787274")
+                    em = discord.Embed()
+                    em.add_field(name="Candidats à la présidentielle",value="*{}* - {}".format(author.name, ast.name))
+                    em.set_footer(text="Liste Officielle - Mise à jour en direct")
+                    msg = await self.bot.send_message(channel, embed=em)
+                    self.np["MSGLOG"] = msg.id
+                else:
+                    channel = self.bot.get_channel("255082244123787274")
+                    msg = self.bot.get_message(channel, self.np["MSGLOG"])
+                    em = discord.Embed()
+                    val = ""
+                    for c in self.np["CANDIDATS"]:
+                        val += "*{}* - {}".format(self.np["CANDIDATS"][c]["USER_NAME"], self.np["CANDIDATS"][c]["AST_NAME"])
+                    em.add_field(name="Candidats à la présidentielle", value=val)
+                    em.set_footer(text="Liste Officielle - Mise à jour en direct")
+                    await self.bot.edit_message(msg, embed=em)
+
                 await asyncio.sleep(0.25)
                 await self.bot.whisper("Terminé, vous êtes inscrit aux présidentielles !")
             else:
@@ -459,6 +477,7 @@ class Extra:
                                 self.np["CANDIDATS"][u]["VOTES"] = 0
                             self.np["A_VOTE"] = []
                             self.np["BLANCS"] = 0
+                            self.np["MSGLOG"] = None
                             fileIO("data/extra/np.json", "save", self.np)
                         else:
                             await self.bot.say("Annulation... (Vous n'avez rien mentionné)")
