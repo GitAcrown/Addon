@@ -118,8 +118,8 @@ class Extra:
                                     if hip == "o":
                                         await self.bot.whisper(
                                             "Vous votez Blanc !\nVotre vote à été pris en compte. Au revoir :wave:")
-                                        self.sys["BLANCS"] += 1
-                                        self.sys["A_VOTE"].append(author.id)
+                                        self.np["BLANCS"] += 1
+                                        self.np["A_VOTE"].append(author.id)
                                         fileIO("data/extra/np.json", "save", self.np)
                                         return
                                     elif hip == "n":
@@ -584,7 +584,7 @@ class Extra:
                 await self.bot.say("Annulation... (Invalide)")
                 return
             if ok is True:
-                self.sys["STATUT"] = "close"
+                self.np["STATUT"] = "close"
                 await self.bot.say("Mentionnez le(s) channel(s) où je dois poster les résulats")
                 rep = await self.bot.wait_for_message(author=ctx.message.author, channel=ctx.message.channel)
                 if rep.channel_mentions != []:
