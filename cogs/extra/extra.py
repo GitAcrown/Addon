@@ -529,42 +529,41 @@ class Extra:
                     except:
                         pass
 
-                em = discord.Embed(title="Election présidentielle - {}".format(mois), description="Tour {} - De 14h à 16h".format(tour))
-                msg = ""
-                await asyncio.sleep(0.5)
-                await self.bot.say("**Rédaction du message...**")
-                n = 1
-                for cand in self.np["CANDIDATS"]:
-                    pseudo = self.np["CANDIDATS"][cand]["USER_NAME"]
-                    supp = self.np["CANDIDATS"][cand]["AST_NAME"]
-                    msg += "__#{}__ | **{}** / *{}*\n".format(n, pseudo, supp)
-                    self.np["CANDIDATS"][cand]["NUM"] = n
-                    fileIO("data/extra/np.json", "save", self.np)
-                    n += 1
-                em.add_field(name="__Candidats et assistants__", value=msg)
-                em.set_footer(text="Utilisez la commande '{}vote' sur ce MP pour voter !".format(ctx.prefix))
-                await asyncio.sleep(0.75)
-                await self.bot.say("**Listage et envoie des MP...**")
-                erreur = []
-                for user in to_mp:
-                    member = server.get_member(user)
-                    self.np["VOTANTS"].append(member.id)
-                    try:
-                        await self.bot.send_message(member, embed=em)
-                    except:
-                        erreur.append(str(member))
-                await asyncio.sleep(0.50)
-                if erreur == []:
-                    await self.bot.say("**L'ensemble des MP ont été correctement envoyés**")
-                else:
-                    liste = ""
-                    for u in erreur:
-                        liste += "- *{}*\n".format(u)
-                    await self.bot.say(
-                        "**Les MP ont étés envoyés.**\nQuelques personnes peuvent ne pas avoir reçu le MP (Banni, bloqué, etc...):\n{}".format(
-                            liste))
+            em = discord.Embed(title="Election présidentielle - {}".format(mois), description="Tour {} - De 14h à 16h".format(tour))
+            msg = ""
+            await asyncio.sleep(0.5)
+            await self.bot.say("**Rédaction du message...**")
+            n = 1
+            for cand in self.np["CANDIDATS"]:
+                pseudo = self.np["CANDIDATS"][cand]["USER_NAME"]
+                supp = self.np["CANDIDATS"][cand]["AST_NAME"]
+                msg += "__#{}__ | **{}** / *{}*\n".format(n, pseudo, supp)
+                self.np["CANDIDATS"][cand]["NUM"] = n
                 fileIO("data/extra/np.json", "save", self.np)
-                fileIO("data/extra/sys.json", "save", self.sys)
+                n += 1
+            em.add_field(name="__Candidats et assistants__", value=msg)
+            em.set_footer(text="Utilisez la commande '{}vote' sur ce MP pour voter !".format(ctx.prefix))
+            await asyncio.sleep(0.75)
+            await self.bot.say("**Listage et envoie des MP...**")
+            erreur = []
+            for user in to_mp:
+                member = server.get_member(user)
+                self.np["VOTANTS"].append(member.id)
+                try:
+                    await self.bot.send_message(member, embed=em)
+                except:
+                    erreur.append(str(member))
+            await asyncio.sleep(0.50)
+            if erreur == []:
+                await self.bot.say("**L'ensemble des MP ont été correctement envoyés**")
+            else:
+                liste = ""
+                for u in erreur:
+                    liste += "- *{}*\n".format(u)
+                await self.bot.say(
+                    "**Les MP ont étés envoyés.**\nQuelques personnes peuvent ne pas avoir reçu le MP (Banni, bloqué, etc...):\n{}".format(
+                        liste))
+            fileIO("data/extra/np.json", "save", self.np)
             else:
                 await self.bot.say("Voulez-vous arrêter ce tour d'élection ? (O/N)\n*Souvenez-vous que pour arrêter entièrement les elections vous devez utiliser 'resetp'*")
                 rep = await self.bot.wait_for_message(author=ctx.message.author, channel=ctx.message.channel,
