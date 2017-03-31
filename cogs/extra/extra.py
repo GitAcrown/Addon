@@ -196,7 +196,7 @@ class Extra:
 
     @elect.command(pass_context=True, no_pm=True)
     @checks.admin_or_permissions(ban_members=True)
-    async def trigger(self, ctx):
+    async def toggle(self, ctx):
         """Démarre ou arrête l'inscription des candidats"""
         if self.np["STATUT"] == "close":
             self.np["STATUT"] == "open"
