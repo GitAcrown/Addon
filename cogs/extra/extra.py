@@ -347,6 +347,9 @@ class Extra:
                         verif = True
                     else:
                         await self.bot.whisper("Invalide, le lien ne semble pas valide.")
+                if "MSGLOG" not in self.np:
+                    self.np["MSGLOG"] = None
+                    fileIO("data/extra/np.json", "save", self.np)
                 if self.np["MSGLOG"] is None:
                     channel = self.bot.get_channel("255082244123787274")
                     em = discord.Embed()
@@ -354,6 +357,7 @@ class Extra:
                     em.set_footer(text="Liste Officielle - Mise à jour en direct")
                     msg = await self.bot.send_message(channel, embed=em)
                     self.np["MSGLOG"] = msg.id
+                    fileIO("data/extra/np.json", "save", self.np)
                 else:
                     channel = self.bot.get_channel("255082244123787274")
                     msg = self.bot.get_message(channel, self.np["MSGLOG"])
