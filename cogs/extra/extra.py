@@ -206,15 +206,16 @@ class Extra:
             await self.bot.say("**Les elections sont terminés**")
         fileIO("data/extra/np.json", "save", self.np)
 
-    @elect_sys.command(pass_context=True, no_pm=True, hidden=True)
+    @elect_sys.command(pass_context=True, no_pm=True)
     @checks.admin_or_permissions(ban_members=True)
-    async def reset(self, ctx, mode: str = "soft"):
+    async def resetp(self, ctx, mode: str = "soft"):
         """Permet de lancer un reset des données pour les élections.
 
         'hard' = Efface entièrement les données saisies
         'soft' = Efface seulement les votes du tour"""
         if mode == "hard":
             lr = self.np["ROLES"]
+            self.np = {}
             self.np = {"CANDIDATS": {}, "STATUT" : "close", "VOTANTS": [], "A_VOTE": [], "BLANCS" : 0, "ROLES": None, "MSGLOG" : None}
             self.np["ROLES"] = lr
             fileIO("data/extra/np.json", "save", self.np)
@@ -442,7 +443,7 @@ class Extra:
                 fileIO("data/extra/np.json", "save", self.np)
                 fileIO("data/extra/sys.json", "save", self.sys)
             else:
-                await self.bot.say("Voulez-vous arrêter ce tour d'élection ? (O/N)\n*Souvenez-vous que pour arrêter entièrement les elections vous devez utiliser 'reset'*")
+                await self.bot.say("Voulez-vous arrêter ce tour d'élection ? (O/N)\n*Souvenez-vous que pour arrêter entièrement les elections vous devez utiliser 'resetp'*")
                 rep = await self.bot.wait_for_message(author=ctx.message.author, channel=ctx.message.channel,
                                                       timeout=20)
                 hip = rep.content.lower()
