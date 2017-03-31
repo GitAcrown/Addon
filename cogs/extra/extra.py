@@ -518,7 +518,7 @@ class Extra:
     async def ready(self, ctx, mois: str, tour:int):
         """Permet de démarrer/terminer les élections présidentielles."""
         server = ctx.message.server
-        if self.np["STATUT"] is "open" or "vote":
+        if self.np["STATUT"] is "open":
             self.np["STATUT"] = "vote"
             to_mp = []
             roles = self.np["ROLES"]
@@ -564,65 +564,64 @@ class Extra:
                     "**Les MP ont étés envoyés.**\nQuelques personnes peuvent ne pas avoir reçu le MP (Banni, bloqué, etc...):\n{}".format(
                         liste))
             fileIO("data/extra/np.json", "save", self.np)
-            else:
-                await self.bot.say("Voulez-vous arrêter ce tour d'élection ? (O/N)\n*Souvenez-vous que pour arrêter entièrement les elections vous devez utiliser 'resetp'*")
-                rep = await self.bot.wait_for_message(author=ctx.message.author, channel=ctx.message.channel,
-                                                      timeout=20)
-                hip = rep.content.lower()
-                ok = False
-                if hip == "o":
-                    await self.bot.say("Arrêt des éléctions...")
-                    ok = True
-                elif hip == "n":
-                    await self.bot.say("Annulation...")
-                    return
-                elif rep == None:
-                    await self.bot.say("Annulation... (Temps de réponse trop long)")
-                    return
-                else:
-                    await self.bot.say("Annulation... (Invalide)")
-                    return
-                if ok is True:
-                    self.sys["STATUT"] = "close"
-                    await self.bot.say("Mentionnez le(s) channel(s) où je dois poster les résulats")
-                    rep = await self.bot.wait_for_message(author=ctx.message.author, channel=ctx.message.channel)
-                    if rep.channel_mentions != []:
-                        em = discord.Embed(title="Résultats des élections")
-                        res = ""
-                        clean = []
-                        total = self.np["BLANCS"]
-                        for cand in self.np["CANDIDATS"]:
-                            total += self.np["CANDIDATS"][cand]["VOTES"]
-                        for cand in self.np["CANDIDATS"]:
-                            prc = (self.np["CANDIDATS"][cand]["VOTES"] / total) * 100
-                            prc = round(prc, 2)
-                            clean.append([self.np["CANDIDATS"][cand]["USER_NAME"], self.np["CANDIDATS"][cand]["AST_NAME"],
-                                          self.np["CANDIDATS"][cand]["VOTES"], prc])
-                        prc = (self.np["BLANCS"] / total) * 100
-                        prc = round(prc, 2)
-                        clean.append(["Blanc", "X", self.np["BLANCS"], prc])
 
-                        clean = sorted(clean, key=operator.itemgetter(2))
-                        clean.reverse()
-                        for e in clean:
-                            res += "{} voix ({}%) | **{}** / *{}*\n".format(e[2], e[3], e[0], e[1])
-                        em.add_field(name="Votes (%) | Candidat / Assistant", value=res)
-                        em.set_footer(
-                            text="Merci d'avoir participé et félicitation aux gagnants ! [Total = {} votes]".format(
-                                total))
-                        for chan in rep.channel_mentions:
-                            await asyncio.sleep(0.25)
-                            await self.bot.send_message(chan, embed=em)
-                        for u in self.np["CANDIDATS"]:
-                            self.np["CANDIDATS"][u]["VOTES"] = 0
-                        self.np["A_VOTE"] = []
-                        self.np["BLANCS"] = 0
-                        self.np["MSGLOG"] = None
-                        fileIO("data/extra/np.json", "save", self.np)
-                    else:
-                        await self.bot.say("Annulation... (Vous n'avez rien mentionné)")
+        elif self.np["STATUT"] is "vote":
+            await self.bot.say("Voulez-vous arrêter ce tour d'élection ? (O/N)\n*Souvenez-vous que pour arrêter entièrement les elections vous devez utiliser 'resetp'*")
+            rep = await self.bot.wait_for_message(author=ctx.message.author, channel=ctx.message.channel,
+                                                  timeout=20)
+            hip = rep.content.lower()
+            ok = False
+            if hip == "o":
+                await self.bot.say("Arrêt des éléctions...")
+                ok = True
+            elif hip == "n":
+                await self.bot.say("Annulation...")
+                return
+            elif rep == None:
+                await self.bot.say("Annulation... (Temps de réponse trop long)")
+                return
+            else:
+                await self.bot.say("Annulation... (Invalide)")
+                return
+            if ok is True:
+                self.sys["STATUT"] = "close"
+                await self.bot.say("Mentionnez le(s) channel(s) où je dois poster les résulats")
+                rep = await self.bot.wait_for_message(author=ctx.message.author, channel=ctx.message.channel)
+                if rep.channel_mentions != []:
+                    em = discord.Embed(title="Résultats des élections")
+                    res = ""
+                    clean = []
+                    total = self.np["BLANCS"]
+                    for cand in self.np["CANDIDATS"]:
+                        total += self.np["CANDIDATS"][cand]["VOTES"]
+                    for cand in self.np["CANDIDATS"]:
+                        prc = (self.np["CANDIDATS"][cand]["VOTES"] / total) * 100
+                        prc = round(prc, 2)
+                        clean.append([self.np["CANDIDATS"][cand]["USER_NAME"], self.np["CANDIDATS"][cand]["AST_NAME"],
+                                      self.np["CANDIDATS"][cand]["VOTES"], prc])
+                    prc = (self.np["BLANCS"] / total) * 100
+                    prc = round(prc, 2)
+                    clean.append(["Blanc", "X", self.np["BLANCS"], prc])
+
+                    clean = sorted(clean, key=operator.itemgetter(2))
+                    clean.reverse()
+                    for e in clean:
+                        res += "{} voix ({}%) | **{}** / *{}*\n".format(e[2], e[3], e[0], e[1])
+                    em.add_field(name="Votes (%) | Candidat / Assistant", value=res)
+                    em.set_footer(
+                        text="Merci d'avoir participé et félicitation aux gagnants ! [Total = {} votes]".format(
+                            total))
+                    for chan in rep.channel_mentions:
+                        await asyncio.sleep(0.25)
+                        await self.bot.send_message(chan, embed=em)
+                    for u in self.np["CANDIDATS"]:
+                        self.np["CANDIDATS"][u]["VOTES"] = 0
+                    self.np["A_VOTE"] = []
+                    self.np["BLANCS"] = 0
+                    self.np["MSGLOG"] = None
+                    fileIO("data/extra/np.json", "save", self.np)
                 else:
-                    pass
+                    await self.bot.say("Annulation... (Vous n'avez rien mentionné)")
         else:
             await self.bot.say("Aucune élection n'est ouverte.")
 
