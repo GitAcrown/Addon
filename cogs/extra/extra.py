@@ -188,13 +188,13 @@ class Extra:
             await self.bot.whisper(
                 "Les votes ne sont pas encore ouverts ! Vous recevrez un MP si c'est le cas.")
 
-    @commands.group(pass_context=True)
-    async def elect(self, ctx):
+    @commands.group(name = "elect", pass_context=True)
+    async def elect_sys(self, ctx):
         """Commandes pour les élections"""
         if ctx.invoked_subcommand is None:
             await send_cmd_help(ctx)
 
-    @elect.command(pass_context=True, no_pm=True)
+    @elect_sys.command(pass_context=True, no_pm=True)
     @checks.admin_or_permissions(ban_members=True)
     async def toggle(self, ctx):
         """Démarre ou arrête l'inscription des candidats"""
@@ -206,7 +206,7 @@ class Extra:
             await self.bot.say("**Les elections sont terminés**")
         fileIO("data/extra/np.json", "save", self.np)
 
-    @elect.command(pass_context=True, no_pm=True, hidden=True)
+    @elect_sys.command(pass_context=True, no_pm=True, hidden=True)
     @checks.admin_or_permissions(ban_members=True)
     async def reset(self, ctx, mode: str = "soft"):
         """Permet de lancer un reset des données pour les élections.
@@ -228,7 +228,7 @@ class Extra:
         else:
             await self.bot.say("Mode de reset inconnu, essayez 'soft' ou 'hard'")
 
-    @elect.command(pass_context=True, no_pm=True)
+    @elect_sys.command(pass_context=True, no_pm=True)
     @checks.admin_or_permissions(ban_members=True)
     async def rolelist(self, ctx):
         """Permet de régler les rôles pour la candidature."""
@@ -244,7 +244,7 @@ class Extra:
             await self.bot.say("Vous devez mentionner au moins un rôle dans votre commande.")
         fileIO("data/extra/np.json", "save", self.np)
 
-    @elect.command(pass_context=True)
+    @elect_sys.command(pass_context=True)
     async def cdt(self, ctx, ast : discord.Member):
         """Permet de soumettre sa candidature à la présidentielle.
 
@@ -372,121 +372,121 @@ class Extra:
         else:
             await self.bot.say("Aucune élection n'est ouverte.")
 
-        @elect.command(pass_context=True, no_pm=True)
-        @checks.admin_or_permissions(ban_members=True)
-        async def ready(self, ctx, mois: str, tour:int):
-            """Permet de démarrer/terminer les élections présidentielles."""
-            server = ctx.message.server
-            if self.np["STATUT"] is "open" or "vote":
-                self.np["STATUT"] = "vote"
-                to_mp = []
-                roles = self.np["ROLES"]
-                for member in server.members:
-                    if self.compare_role(member, roles):
-                        try:
-                            to_mp.append(member.id)
-                        except:
-                            pass
-
-                    em = discord.Embed(title="Election présidentielle - {}".format(mois), description="Tour {} - De 14h à 16h".format(tour))
-                    msg = ""
-                    await asyncio.sleep(0.5)
-                    await self.bot.say("**Rédaction du message...**")
-                    n = 1
-                    for cand in self.np["CANDIDATS"]:
-                        pseudo = self.np["CANDIDATS"][cand]["USER_NAME"]
-                        supp = self.np["CANDIDATS"][cand]["AST_NAME"]
-                        msg += "__#{}__ | **{}** / *{}*\n".format(n, pseudo, supp)
-                        self.np["CANDIDATS"][cand]["NUM"] = n
-                        fileIO("data/extra/np.json", "save", self.np)
-                        n += 1
-                    em.add_field(name="__Candidats et assistants__", value=msg)
-                    em.set_footer(text="Utilisez la commande '{}vote' sur ce MP pour voter !".format(ctx.prefix))
-                    await asyncio.sleep(0.75)
-                    await self.bot.say("**Listage et envoie des MP...**")
-                    erreur = []
-                    for user in to_mp:
-                        member = server.get_member(user)
-                        self.np["VOTANTS"].append(member.id)
-                        try:
-                            await self.bot.send_message(member, embed=em)
-                        except:
-                            erreur.append(str(member))
-                    await asyncio.sleep(0.50)
-                    if erreur == []:
-                        await self.bot.say("**L'ensemble des MP ont été correctement envoyés**")
-                    else:
-                        liste = ""
-                        for u in erreur:
-                            liste += "- *{}*\n".format(u)
-                        await self.bot.say(
-                            "**Les MP ont étés envoyés.**\nQuelques personnes peuvent ne pas avoir reçu le MP (Banni, bloqué, etc...):\n{}".format(
-                                liste))
-                    fileIO("data/extra/np.json", "save", self.np)
-                    fileIO("data/extra/sys.json", "save", self.sys)
-                else:
-                    await self.bot.say("Voulez-vous arrêter les élections ? (O/N)")
-                    rep = await self.bot.wait_for_message(author=ctx.message.author, channel=ctx.message.channel,
-                                                          timeout=20)
-                    hip = rep.content.lower()
-                    ok = False
-                    if hip == "o":
-                        await self.bot.say("Arrêt des éléctions...")
-                        ok = True
-                    elif hip == "n":
-                        await self.bot.say("Annulation...")
-                        return
-                    elif rep == None:
-                        await self.bot.say("Annulation... (Temps de réponse trop long)")
-                        return
-                    else:
-                        await self.bot.say("Annulation... (Invalide)")
-                        return
-                    if ok is True:
-                        self.sys["STATUT"] = "close"
-                        await self.bot.say("Mentionnez le(s) channel(s) où je dois poster les résulats")
-                        rep = await self.bot.wait_for_message(author=ctx.message.author, channel=ctx.message.channel)
-                        if rep.channel_mentions != []:
-                            em = discord.Embed(title="Résultats des élections")
-                            res = ""
-                            clean = []
-                            total = self.np["BLANCS"]
-                            for cand in self.np["CANDIDATS"]:
-                                total += self.np["CANDIDATS"][cand]["VOTES"]
-                            for cand in self.np["CANDIDATS"]:
-                                prc = (self.np["CANDIDATS"][cand]["VOTES"] / total) * 100
-                                prc = round(prc, 2)
-                                clean.append([self.np["CANDIDATS"][cand]["USER_NAME"], self.np["CANDIDATS"][cand]["AST_NAME"],
-                                              self.np["CANDIDATS"][cand]["VOTES"], prc])
-                            prc = (self.np["BLANCS"] / total) * 100
-                            prc = round(prc, 2)
-                            clean.append(["Blanc", "X", self.np["BLANCS"], prc])
-
-                            clean = sorted(clean, key=operator.itemgetter(2))
-                            clean.reverse()
-                            for e in clean:
-                                res += "{} voix ({}%) | **{}** / *{}*\n".format(e[2], e[3], e[0], e[1])
-                            em.add_field(name="Votes (%) | Candidat / Assistant", value=res)
-                            em.set_footer(
-                                text="Merci d'avoir participé et félicitation aux gagnants ! [Total = {} votes]".format(
-                                    total))
-                            for chan in rep.channel_mentions:
-                                await asyncio.sleep(0.25)
-                                await self.bot.send_message(chan, embed=em)
-                            for u in self.np["CANDIDATS"]:
-                                self.np["CANDIDATS"][u]["VOTES"] = 0
-                            self.np["A_VOTE"] = []
-                            self.np["BLANCS"] = 0
-                            self.np["MSGLOG"] = None
-                            fileIO("data/extra/np.json", "save", self.np)
-                        else:
-                            await self.bot.say("Annulation... (Vous n'avez rien mentionné)")
-                    else:
+    @elect_sys.command(pass_context=True, no_pm=True)
+    @checks.admin_or_permissions(ban_members=True)
+    async def ready(self, ctx, mois: str, tour:int):
+        """Permet de démarrer/terminer les élections présidentielles."""
+        server = ctx.message.server
+        if self.np["STATUT"] is "open" or "vote":
+            self.np["STATUT"] = "vote"
+            to_mp = []
+            roles = self.np["ROLES"]
+            for member in server.members:
+                if self.compare_role(member, roles):
+                    try:
+                        to_mp.append(member.id)
+                    except:
                         pass
-            else:
-                await self.bot.say("Aucune élection n'est ouverte.")
 
-    @elect.command(pass_context=True)
+                em = discord.Embed(title="Election présidentielle - {}".format(mois), description="Tour {} - De 14h à 16h".format(tour))
+                msg = ""
+                await asyncio.sleep(0.5)
+                await self.bot.say("**Rédaction du message...**")
+                n = 1
+                for cand in self.np["CANDIDATS"]:
+                    pseudo = self.np["CANDIDATS"][cand]["USER_NAME"]
+                    supp = self.np["CANDIDATS"][cand]["AST_NAME"]
+                    msg += "__#{}__ | **{}** / *{}*\n".format(n, pseudo, supp)
+                    self.np["CANDIDATS"][cand]["NUM"] = n
+                    fileIO("data/extra/np.json", "save", self.np)
+                    n += 1
+                em.add_field(name="__Candidats et assistants__", value=msg)
+                em.set_footer(text="Utilisez la commande '{}vote' sur ce MP pour voter !".format(ctx.prefix))
+                await asyncio.sleep(0.75)
+                await self.bot.say("**Listage et envoie des MP...**")
+                erreur = []
+                for user in to_mp:
+                    member = server.get_member(user)
+                    self.np["VOTANTS"].append(member.id)
+                    try:
+                        await self.bot.send_message(member, embed=em)
+                    except:
+                        erreur.append(str(member))
+                await asyncio.sleep(0.50)
+                if erreur == []:
+                    await self.bot.say("**L'ensemble des MP ont été correctement envoyés**")
+                else:
+                    liste = ""
+                    for u in erreur:
+                        liste += "- *{}*\n".format(u)
+                    await self.bot.say(
+                        "**Les MP ont étés envoyés.**\nQuelques personnes peuvent ne pas avoir reçu le MP (Banni, bloqué, etc...):\n{}".format(
+                            liste))
+                fileIO("data/extra/np.json", "save", self.np)
+                fileIO("data/extra/sys.json", "save", self.sys)
+            else:
+                await self.bot.say("Voulez-vous arrêter ce tour d'élection ? (O/N)\n*Souvenez-vous que pour arrêter entièrement les elections vous devez utiliser 'reset'*")
+                rep = await self.bot.wait_for_message(author=ctx.message.author, channel=ctx.message.channel,
+                                                      timeout=20)
+                hip = rep.content.lower()
+                ok = False
+                if hip == "o":
+                    await self.bot.say("Arrêt des éléctions...")
+                    ok = True
+                elif hip == "n":
+                    await self.bot.say("Annulation...")
+                    return
+                elif rep == None:
+                    await self.bot.say("Annulation... (Temps de réponse trop long)")
+                    return
+                else:
+                    await self.bot.say("Annulation... (Invalide)")
+                    return
+                if ok is True:
+                    self.sys["STATUT"] = "close"
+                    await self.bot.say("Mentionnez le(s) channel(s) où je dois poster les résulats")
+                    rep = await self.bot.wait_for_message(author=ctx.message.author, channel=ctx.message.channel)
+                    if rep.channel_mentions != []:
+                        em = discord.Embed(title="Résultats des élections")
+                        res = ""
+                        clean = []
+                        total = self.np["BLANCS"]
+                        for cand in self.np["CANDIDATS"]:
+                            total += self.np["CANDIDATS"][cand]["VOTES"]
+                        for cand in self.np["CANDIDATS"]:
+                            prc = (self.np["CANDIDATS"][cand]["VOTES"] / total) * 100
+                            prc = round(prc, 2)
+                            clean.append([self.np["CANDIDATS"][cand]["USER_NAME"], self.np["CANDIDATS"][cand]["AST_NAME"],
+                                          self.np["CANDIDATS"][cand]["VOTES"], prc])
+                        prc = (self.np["BLANCS"] / total) * 100
+                        prc = round(prc, 2)
+                        clean.append(["Blanc", "X", self.np["BLANCS"], prc])
+
+                        clean = sorted(clean, key=operator.itemgetter(2))
+                        clean.reverse()
+                        for e in clean:
+                            res += "{} voix ({}%) | **{}** / *{}*\n".format(e[2], e[3], e[0], e[1])
+                        em.add_field(name="Votes (%) | Candidat / Assistant", value=res)
+                        em.set_footer(
+                            text="Merci d'avoir participé et félicitation aux gagnants ! [Total = {} votes]".format(
+                                total))
+                        for chan in rep.channel_mentions:
+                            await asyncio.sleep(0.25)
+                            await self.bot.send_message(chan, embed=em)
+                        for u in self.np["CANDIDATS"]:
+                            self.np["CANDIDATS"][u]["VOTES"] = 0
+                        self.np["A_VOTE"] = []
+                        self.np["BLANCS"] = 0
+                        self.np["MSGLOG"] = None
+                        fileIO("data/extra/np.json", "save", self.np)
+                    else:
+                        await self.bot.say("Annulation... (Vous n'avez rien mentionné)")
+                else:
+                    pass
+        else:
+            await self.bot.say("Aucune élection n'est ouverte.")
+
+    @elect_sys.command(pass_context=True)
     @checks.admin_or_permissions(ban_members=True)
     async def stats(self, ctx):
         """Permet de voir les statistiques (Modération/Administration)"""
