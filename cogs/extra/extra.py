@@ -255,7 +255,14 @@ class Extra:
             if self.eligible(server, author) and self.eligible(server, ast):
                 if author.id in self.np["CANDIDATS"]:
                     await self.bot.whisper(
-                        "Vous êtes déjà inscrit, vos informations sont donc remises à 0 pour une réinscription.")
+                        "Vous êtes déjà inscrits, vos informations sont donc remises à 0 pour une réinscription.")
+                if ast.id in self.np["CANDIDATS"]:
+                    await self.bot.whisper(
+                        "Votre assistant est déjà inscrit comme candidat.")
+                    return
+                if ast.id in [self.np["CANDIDATS"][c]["AST_ID"] for c in self.np["CANDIDATS"]]:
+                    await self.bot.whisper("Votre assistant est déjà assistant pour un autre candidat.")
+                    return
                 await self.bot.whisper("Je vais d'abord demander à votre Assistant si il confirme cette candidature... *Patientez*")
                 em = discord.Embed(color=0x667399)
                 em.add_field(name="Candidature",
@@ -296,6 +303,8 @@ class Extra:
                 verif = False
                 while verif != True:
                     rep = await self.bot.wait_for_message(author=author, channel=msg.channel, timeout=120)
+                    if rep == None:
+                        await self.bot.whisper("Temps de réponse trop longue, au revoir :wave:")
                     if len(rep.content) > 4:
                         await self.bot.whisper("Enregistrée.")
                         self.np["CANDIDATS"][author.id]["MOTTO"] = rep.content
@@ -315,6 +324,8 @@ class Extra:
                 verif = False
                 while verif != True:
                     rep = await self.bot.wait_for_message(author=author, channel=msg.channel, timeout=500)
+                    if rep == None:
+                        await self.bot.whisper("Temps de réponse trop longue, au revoir :wave:")
                     if "http" in rep.content:
                         await self.bot.whisper("Enregistrée.")
                         self.np["CANDIDATS"][author.id]["PROG"] = rep.content
@@ -334,6 +345,8 @@ class Extra:
                 verif = False
                 while verif != True:
                     rep = await self.bot.wait_for_message(author=author, channel=msg.channel, timeout=500)
+                    if rep == None:
+                        await self.bot.whisper("Temps de réponse trop longue, au revoir :wave:")
                     if "http" in rep.content:
                         await self.bot.whisper("Enregistrée.")
                         self.np["CANDIDATS"][author.id]["AFFICHE"] = rep.content
