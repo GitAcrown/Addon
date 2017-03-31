@@ -461,7 +461,7 @@ class Stick:
                 if len(output) <= 2:
                     for stk in output:
                         if stk in self.img["STICKER"]:
-                            await self.bot.send_message(channel, "http://i.imgur.com/W2vrsha.gif")
+                            await self.bot.send_message(channel, "https://giphy.com/gifs/rickroll-rick-astley-never-gonna-give-you-up-Vuw9m5wXviFIQ")
                             return
                             self.img["STICKER"][stk]["POP"] += 1
 
