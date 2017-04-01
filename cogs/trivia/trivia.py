@@ -115,10 +115,10 @@ class Trivia:
         """Aide pour ajouter une liste"""
         msg = "**La liste doit suivre les règles suivantes :**\n"
         msg += "- Le fichier doit absolument être en '.txt' et le nom du document correspond au nom de votre liste sur le jeu.\n"
-        msg += "- La question commence par une majuscule et se termine par un point d'exclamation.\n"
-        msg += "- Les réponses sont séparés par des + et il ne doit y avoir aucun espace entre chaque réponse.\n"
-        msg += "- Pensez à rentrer plusieurs formats et plusieures réponses à votre question.\n"
-        msg += "- Enfin, il doit y avoir qu'une seule réponse par ligne dans le document. Vous êtes théoriquement limités à 800 questions par fichier texte.\n"
+        msg += "- La question commence par une majuscule et se termine par un point d'interrogation.\n"
+        msg += "- Les réponses sont séparées par des + et il ne doit y avoir aucun espace entre chaque réponse.\n"
+        msg += "- Pensez à rentrer plusieurs formats de réponses à chacune de vos questions.\n"
+        msg += "- Enfin, il doit y avoir qu'une seule question par ligne dans le document. Vous êtes théoriquement limités à 800 questions par fichier texte.\n"
         msg += "Exemple : http://i.imgur.com/RhdTDXL.png"
         await self.bot.say(msg)
 
