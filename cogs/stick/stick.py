@@ -435,10 +435,10 @@ class Stick:
                                 return
                         elif rep.content.lower() in [self.img["STICKER"][s]["NOM"].lower() for s in self.img["STICKER"]]:
                             verif = True
+                            msg = "**RECHERCHE - STICKER**\n"
+                            msg += "*Résultats pour {}*\n\n".format(rep.content.lower())
+                            a = 1
                             for stk in self.img["STICKER"]:
-                                msg = "**RECHERCHE - STICKER**\n"
-                                msg += "*Résultats pour {}*\n\n".format(rep.content.lower())
-                                a = 1
                                 if rep.content.lower() in self.img["STICKER"][stk]["NOM"]:
                                     msg += "**{}** - *{}*\n".format(self.img["STICKER"][stk]["NOM"],self.img["STICKER"][stk]["CAT"])
                                     if len(msg) >= 1950 * a:
@@ -453,7 +453,7 @@ class Stick:
                             await self.bot.whisper("Au revoir :wave:")
                             return
                         else:
-                            await self.bot.whisper("La recherche ne donne rien. Dites 'q' pour quitter")
+                            await self.bot.whisper("La recherche ne donne rien. Réessayez ou dîtes 'q' pour quitter")
                 else:
                     await self.bot.whisper("Invalide")
 
