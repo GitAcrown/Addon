@@ -59,6 +59,7 @@ class Stick:
             await self.bot.say("Votre url n'est pas valide. Ce doit être une image (jpg, png, jpeg) ou un gif")
 
     @stk.command(pass_context=True)
+    @checks.mod_or_permissions(kick_members=True)
     async def stop(self, ctx, user : discord.Member):
         """Permet de modifier son sticker :custom: personnel"""
         if user.id in self.prs:
