@@ -433,7 +433,7 @@ class Stick:
                                 for msg in lmsg:
                                     await self.bot.whisper(msg)
                                 return
-                        elif rep.content in self.img["STICKER"]:
+                        elif rep.content.lower() in [self.img["STICKER"][s]["NOM"].lower() for s in self.img["STICKER"]]:
                             verif = True
                             for stk in self.img["STICKER"]:
                                 msg = "**RECHERCHE - STICKER**\n"
