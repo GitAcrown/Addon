@@ -17,6 +17,7 @@ class Stick:
     def __init__(self, bot):
         self.bot = bot
         self.img = dataIO.load_json("data/stick/img.json")
+        self.prs = dataIO.load_json("data/stick/prs.json")
         self.import_old()
 
     def import_old(self):
@@ -431,7 +432,7 @@ class Stick:
                                 for msg in lmsg:
                                     await self.bot.whisper(msg)
                                 return
-                        else:
+                        elif rep.content in self.img["STICKER"]:
                             for stk in self.img["STICKER"]:
                                 msg = "**RECHERCHE - STICKER**\n"
                                 msg += "*Résultats pour {}*\n\n".format(rep.content.lower())
@@ -446,6 +447,7 @@ class Stick:
                                 for msg in lmsg:
                                     await self.bot.whisper(msg)
                                 return
+                        else:
                 else:
                     await self.bot.whisper("Invalide")
 
@@ -458,8 +460,9 @@ class Stick:
         if ":" in message.content:
             output = re.compile(':(.*?):', re.DOTALL | re.IGNORECASE).findall(message.content)
             if output:
-                if len(output) <= 2:
+                if len(output) <= 3:
                     for stk in output:
+                        if stk == "custom"
                         if stk in self.img["STICKER"]:
                             self.img["STICKER"][stk]["POP"] += 1
 
@@ -513,6 +516,10 @@ def check_files():
     if not os.path.isfile("data/stick/img.json"):
         print("Creation du fichier de Stick img.json...")
         fileIO("data/stick/img.json", "save", {"STICKER": {}, "CATEGORIE": {}})
+
+    if not os.path.isfile("data/stick/prs.json"):
+        print("Creation du fichier de Stick prs.json...")
+        fileIO("data/stick/prs.json", "save", {})
 
 def setup(bot):
     check_folders()
