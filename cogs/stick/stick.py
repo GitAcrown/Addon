@@ -417,6 +417,7 @@ class Stick:
                             await self.bot.whisper("Annulation... (Timeout)\nBye :wave:")
                             return
                         if rep.content.upper() in self.img["CATEGORIE"]:
+                            verif = True
                             cat = rep.content.upper()
                             msg = "**RECHERCHE - INVENTAIRE**\n"
                             msg += "*Stickers de l'inventaire de {}*\n\n".format(cat.title())
@@ -433,6 +434,7 @@ class Stick:
                                     await self.bot.whisper(msg)
                                 return
                         elif rep.content in self.img["STICKER"]:
+                            verif = True
                             for stk in self.img["STICKER"]:
                                 msg = "**RECHERCHE - STICKER**\n"
                                 msg += "*Résultats pour {}*\n\n".format(rep.content.lower())
@@ -447,7 +449,11 @@ class Stick:
                                 for msg in lmsg:
                                     await self.bot.whisper(msg)
                                 return
+                        elif rep.content.lower() == "q":
+                            await self.bot.whisper("Au revoir :wave:")
+                            return
                         else:
+                            await self.bot.whisper("La recherche ne donne rien. Dites 'q' pour quitter")
                 else:
                     await self.bot.whisper("Invalide")
 
@@ -462,7 +468,6 @@ class Stick:
             if output:
                 if len(output) <= 3:
                     for stk in output:
-                        if stk == "custom"
                         if stk in self.img["STICKER"]:
                             self.img["STICKER"][stk]["POP"] += 1
 
