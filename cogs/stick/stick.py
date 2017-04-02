@@ -41,6 +41,38 @@ class Stick:
         if ctx.invoked_subcommand is None:
             await send_cmd_help(ctx)
 
+    @stk.command(pass_context=True)
+    async def custom(self, ctx, url:str):
+        """Permet de modifier son sticker :custom: personnel"""
+        author = ctx.message.author
+        if not author.id in self.prs:
+            self.prs[author.id] = {"PSEUDO": author.name,
+                                   "ID": author.id,
+                                   "CUSTOMIRL": None}
+            fileIO("data/stick/prs.json", "save", self.prs)
+        if ".jpg" or ".png" or ".jpeg" or ".gif" in url:
+            if not self.prs[author.id]["CUSTOMIRL"] == False:
+                self.prs[author.id]["CUSTOMIRL"] = url
+                fileIO("data/stick/prs.json", "save", self.prs)
+                await self.bot.say("Votre sticker customisé à été changé.")
+        else:
+            await self.bot.say("Votre url n'est pas valide. Ce doit être une image (jpg, png, jpeg) ou un gif")
+
+    @stk.command(pass_context=True)
+    async def stop(self, ctx, user : discord.Member):
+        """Permet de modifier son sticker :custom: personnel"""
+        if user.id in self.prs:
+            if self.prs[user.id]["CUSTOMIRL"] == False:
+                self.prs[user.id]["CUSTOMIRL"] = None
+                fileIO("data/stick/prs.json", "save", self.prs)
+                await self.bot.say("L'utilisateur pourra de nouveau mettre un sticker customisé.")
+            else:
+                self.prs[user.id]["CUSTOMIRL"] = False
+                fileIO("data/stick/prs.json", "save", self.prs)
+                await self.bot.say("L'utilisateur ne pourra plus mettre de sticker customisé.")
+        else:
+            await self.bot.say("Inutile, l'utilisateur n'a même pas reglé de sticker custom.")
+
     @stk.command(aliases=["s"], pass_context=True)
     async def submit(self, ctx, nom: str, url: str):
         """Permet de soumettre une idée de sticker au Staff
@@ -468,6 +500,17 @@ class Stick:
             if output:
                 if len(output) <= 3:
                     for stk in output:
+                        if stk == "custom":
+                            if author.id in self.prs:
+                                if self.prs[author.id]["CUSTOMIRL"] != None:
+                                    await self.bot.send_message(channel, self.prs[author.id]["CUSTOMIRL"])
+                                else:
+                                    pass
+                            else:
+                                self.prs[author.id] = {"PSEUDO": author.name,
+                                                       "ID": author.id,
+                                                       "CUSTOMIRL": None}
+                                fileIO("data/stick/prs.json", "save", self.prs)
                         if stk in self.img["STICKER"]:
                             self.img["STICKER"][stk]["POP"] += 1
 
