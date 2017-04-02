@@ -504,7 +504,10 @@ class Stick:
                         if stk == "custom":
                             if author.id in self.prs:
                                 if self.prs[author.id]["CUSTOMIRL"] != None:
-                                    await self.bot.send_message(channel, self.prs[author.id]["CUSTOMIRL"])
+                                    if self.prs[author.id]["CUSTOMIRL"] != False:
+                                        await self.bot.send_message(channel, self.prs[author.id]["CUSTOMIRL"])
+                                    else:
+                                        pass
                                 else:
                                     pass
                             else:
