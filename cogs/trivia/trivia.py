@@ -257,7 +257,7 @@ class TriviaSession():
         self.status = "waiting for answer"
         self.count += 1
         self.timer = int(time.perf_counter())
-        msg = "**Question numéro {} !**\n\n{}".format(str(self.count), self.current_q["QUESTION"])
+        msg = "**Question #{} !**\n\n{}".format(str(self.count), self.current_q["QUESTION"])
         try:
             await trivia_manager.bot.say(msg)
         except:
@@ -278,9 +278,9 @@ class TriviaSession():
         elif self.status == "stop":
             return True
         else:
-            msg = randchoice(self.gave_answer).format(self.current_q["ANSWERS"][0])
+            msg = randchoice(self.gave_answer).format(self.current_q["ANSWERS"][0].title())
             if self.settings["TRIVIA_BOT_PLAYS"]:
-                msg += " **+1** for me!"
+                msg += " **+1** pour moi !"
                 self.add_point(trivia_manager.bot.user.name)
             self.current_q["ANSWERS"] = []
             try:
@@ -309,7 +309,7 @@ class TriviaSession():
             self.timeout = time.perf_counter()
             if self.current_q is not None:
                 for answer in self.current_q["ANSWERS"]:
-                    if answer in message.content.lower():
+                    if answer.lower() in message.content.lower():
                         self.current_q["ANSWERS"] = []
                         self.status = "correct answer"
                         self.add_point(message.author.name)
