@@ -309,7 +309,7 @@ class TriviaSession():
             self.timeout = time.perf_counter()
             if self.current_q is not None:
                 for answer in self.current_q["ANSWERS"]:
-                    if answer.lower() in message.content.lower():
+                    if answer.lower() == message.content.lower():
                         self.current_q["ANSWERS"] = []
                         self.status = "correct answer"
                         self.add_point(message.author.name)
