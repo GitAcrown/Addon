@@ -154,6 +154,8 @@ class Arc:
         """Système ARC - Regroupe les mini-jeux sous un même menu et retrace les statistiques."""
         author = ctx.message.author
         bank = self.bot.get_cog('Economy').bank
+        if self.arc.get_by_id(author.id) == False:
+            await self.bot.whisper("**Première connexion - Création de votre compte ARC**")
         prf = self.arc.get_user(author)
         main = False
         while main is False:
