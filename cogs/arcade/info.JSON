@@ -1,7 +1,7 @@
 {
     "AUTHOR" : "Acrown",
     "INSTALL_MSG" : "Utilisez help pour en savoir plus sur les commandes",
-    "NAME" : "Arcade",
-    "SHORT" : "Rassemble les jeux sous un même module",
-    "DESCRIPTION" : "Ce module est nécéssaire au fonctionnement normal des autres jeux tirés de Addon"
+    "NAME" : "Arc",
+    "SHORT" : "Rassemble les jeux sous un mÃªme module",
+    "DESCRIPTION" : "Ce module est nÃ©cÃ©ssaire au fonctionnement normal des autres jeux tirÃ©s de Addon"
 }
