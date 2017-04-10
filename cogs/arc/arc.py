@@ -160,6 +160,7 @@ class Arc:
             balance = bank.get_balance(author)
             em = discord.Embed(title="ARC", color=0xDDDDDD)
             msg = "GW = Guess Who ?\n"
+            msg += "PI = Post-it\n"
             msg += "----------------\n"
             msg += "B = Badges\n"
             msg += "P = Paramètres\n"
@@ -200,6 +201,43 @@ class Arc:
                         stat = self.arc.get_game_stats(author, "GUESS")
                         if stat != False:
                             em = discord.Embed(title="Guess Who ?", color=0xDC3737)
+                            msg = "Parties réussies - *{}*\n".format(stat["P_REUSSI"])
+                            msg += "Parties perdues - *{}*".format(stat["P_PERDU"])
+                            em.add_field(name="**Statistiques**", value=msg)
+                            await asyncio.sleep(2)
+                        else:
+                            await self.bot.whisper("Vous n'avez pas de stats pour ce jeu.")
+                            await asyncio.sleep(1)
+                    else:
+                        pass
+
+                elif rep.content.lower() == "pi":
+                    verif1 = True
+                    em = discord.Embed(title="Post-it", color=0x3F72AF)
+                    em.add_field(name="Règles",
+                                 value="Votre but est de deviner ou faire deviner le personnage de votre choix attribué à votre correspondant en quelques questions.")
+                    em.add_field(name="Nb de joueurs", value="2")
+                    em.add_field(name="Commande directe", value="{}postit".format(ctx.prefix))
+                    em.set_thumbnail(url="http://i.imgur.com/oBv0ace.png")
+                    sousmenu = await self.bot.whisper(embed=em)
+                    await self.bot.add_reaction(sousmenu, "✔")
+                    await self.bot.add_reaction(sousmenu, "✖")
+                    await self.bot.add_reaction(sousmenu, "📈")
+                    await asyncio.sleep(0.25)
+                    rap = await self.bot.wait_for_reaction(["✔", "✖", "📈"], message=sousmenu, user=author, timeout=60)
+                    if rap == None:
+                        await self.bot.whisper("*Retour au menu*")
+                    elif rap.reaction.emoji == "✔":
+                        await asyncio.sleep(0.25)
+                        new_message = deepcopy(ctx.message)
+                        new_message.content = ctx.prefix + "guess"
+                        await self.bot.process_commands(new_message)
+                        return
+                    elif rap.reaction.emoji == "📈":
+                        await asyncio.sleep(0.25)
+                        stat = self.arc.get_game_stats(author, "POSTIT")
+                        if stat != False:
+                            em = discord.Embed(title="Post-it", color=0x3F72AF)
                             msg = "Parties réussies - *{}*\n".format(stat["P_REUSSI"])
                             msg += "Parties perdues - *{}*".format(stat["P_PERDU"])
                             em.add_field(name="**Statistiques**", value=msg)
@@ -445,7 +483,190 @@ class Arc:
         """Arc - Post-it
         
         Tentez de faire deviner un personnage à votre coéquipier !"""
-        await self.bot.say("Jeu en développement - Bientôt disponible")
+        author = ctx.message.author
+        server = ctx.message.server
+        if not self.arc.get_user(author):
+            await self.bot.whisper("*Premier lancement* - Création de votre profil **ARC**...")
+            await asyncio.sleep(1)
+        await self.bot.whisper(msg)
+        reset = False
+        while reset == False:
+            adv = server.get_member(self.arc.convoc(server, [author.id]))
+            mode = random.randint(0, 1)
+            if mode == 0:
+                j1 = author
+                j2 = adv
+            else:
+                j1 = adv
+                j2 = author
+            await asyncio.sleep(1)
+            await self.bot.whisper("**Connexion en cours avec un joueur potentiel...**")
+            await asyncio.sleep(1)
+            msg = "**JEU** - *Post-it*\n"
+            msg += "Tu dois choisir et faire deviner le personnage (réel ou fictif) de ton correspondant (**{}**).\nIl a le droit de te poser autant de question qu'il veut\nTu peux à tout moment décider d'arrêter de recevoir des questions et le forcer à donner le personnage qu'il pense être. Bonne chance !".format(j2.name)
+            try:
+                await self.bot.send_message(j1, msg)
+            except:
+                await self.bot.send_message(j2,
+                    "**Votre correspondant semble m'avoir bloqué.**\nPartie annulée.")
+                return
+            msg = "**JEU** - *Post-it*\n"
+            msg += "Ton correspondant (**{}**) va choisir ton personnage.\nTon but est d'essayer de le deviner en lui posant des questions.\nAu bout d'un moment, ton correspondant va te demander de lui donner le personne que tu pense être. Bonne chance !.".format(j1.name)
+            try:
+                await self.bot.send_message(j2, msg2)
+            except:
+                await self.bot.send_message(j1,
+                                         "**Votre correspondant semble m'avoir bloqué.**\nPartie annulée.")
+                return
+            men = await self.bot.send_message(j1, "Choisissez le personnage que votre correspondant doit incarner :")
+            perso = await self.bot.wait_for_message(author=j1, channel = men.channel, timeout=120)
+            if perso == None:
+                await self.bot.send_message(j1 ,"Timeout atteint, partie annulée.")
+                await self.bot.send_message(j2, "Votre correspondant est absent, partie annulée.")
+                return
+            else:
+                perso = perso.content
+                await self.bot.send_message(j1, "Votre correspondant incarne **{}**\n".format(perso.title()))
+                await self.bot.send_message(j2, "Votre correspondant à choisi votre personnage. Vous allez pouvoir lui poser des questions...")
+                await asyncio.sleep(1)
+                await self.bot.send_message(j1, "Il va vous poser des questions.\nSi vous ne voulez pas répondre à la question (Car elle demande un nom, trop compliquée...) vous pouvez dire 'refuse'\nDès que vous voudrez lui demander à quel personnage il pense, dîtes 'stop'. Rappellez-vous qu'il n'a le droit qu'a une seule chance !")
+            stop = False
+            q = 0
+            while stop == False:
+                q += 1
+                rem = await self.bot.send_message(j2, "Rentrez votre question (#{}) :".format(q))
+                verif = False
+                while verif == False:
+                    rep = await self.bot.send_message(author=j2, channel=rem.channel, timeout=180)
+                    if rep == None:
+                        await self.bot.send_message(j2, "Timeout atteint, Partie annulée...")
+                        await self.bot.send_message(j1, "Votre correspondant est inactif, partie annulée...")
+                        return
+                    elif "?" in rep.content:
+                        verif = True
+                        await self.bot.send_message(j2, "Question #{} envoyée.\n*En attente d'une réponse*".format(q))
+                        nmsg = await self.bot.send_message(j1, "**Question #{} :**\n*{}*\n\n- Pour refuser d'y répondre, répondez 'refuse'\n- Pour répondre et demander le personnage, répondez 'stop'".format(q, rep.content))
+                        verif2 = False
+                        while verif2 == False:
+                            rap = await self.bot.wait_for_message(author=j1, channel=nmsg.channel, timeout=180)
+                            if rap == None:
+                                await self.bot.send_message(j1, "Timeout atteint, Partie annulée...")
+                                await self.bot.send_message(j2, "Votre correspondant est inactif, partie annulée...")
+                                return
+                            elif rap.content.lower() == "refuse":
+                                await self.bot.send_message(j1, "Vous refusez de répondre à la question #{}...".format(q))
+                                await self.bot.send_message(j2, "Votre correspondant à décidé de ne pas répondre à cette question.")
+                                verif2 = True
+                            elif rap.content.lower() == "stop":
+                                verif2 = True
+                                stop = True
+                                await self.bot.send_message(j1, "Rentrez la réponse à cette dernière question avant de stopper (Tapez 'refuse' si vous voulez passez cette étape)")
+                                verif3 = False
+                                while verif3 == False:
+                                    rup = await self.bot.wait_for_message(author=j1, channel=nmsg.channel, timeout=180)
+                                    if rup == None:
+                                        await self.bot.send_message(j1, "Timeout atteint, Partie annulée...")
+                                        await self.bot.send_message(j2,
+                                                                    "Votre correspondant est inactif, partie annulée...")
+                                        return
+                                    elif rup.content.lower() == "refuse":
+                                        await self.bot.send_message(j1,
+                                                                    "Vous refusez de répondre à la question #{}...".format(
+                                                                        q))
+                                        await self.bot.send_message(j2,
+                                                                    "Votre correspondant à décidé de ne pas répondre à cette question.")
+                                        verif3 = True
+                                    else:
+                                        await self.bot.send_message(j2, "**Réponse à la question #{} :**\n*{}*".format(q, rup.content))
+                                        verif3 = True
+                                else:
+                                    await self.bot.send_message(j2, "**Réponse à la question #{} :**\n*{}*".format(q,
+                                                                                                                   rup.content))
+                                    verif3 = True
+                    else:
+                        await self.bot.send_message(j2, "Votre question n'est pas valide, elle doit comporter un point d'interrogation. Réessayez...")
+            await asyncio.sleep(1.5)
+            jchan = await self.bot.send_message(j2, "Votre correspondant exige de savoir à quel personnage vous pensez. Rentrez son nom :")
+            await self.bot.send_message(j1, "En attente d'une réponse de votre correspondant à propos du nom de son personnage...")
+            rep = await self.bot.wait_for_message(author=j2, channel=jchan.channel, timeout=300)
+            if rep == None:
+                await self.bot.send_message(j2, "Timeout atteint, Partie annulée...")
+                await self.bot.send_message(j1, "Votre correspondant est inactif, partie annulée...")
+                return
+            elif rep.content.lower == perso.lower():
+                await self.bot.send_message(j1, "Votre correspondant à trouvé parfaitement le personnage qu'il incarnait ! (*{}*)".format(perso.title()))
+                self.arc.add_respect(j1)
+                if self.arc.get_game_stats(j1, "POSTIT") == False:
+                    bib = {"P_REUSSI": 1, "P_PERDU": 0}
+                    self.arc.update_game(j1, "POSTIT", bib)
+                else:
+                    bib = self.arc.get_game_stats(j1, "POSTIT")
+                    bib["P_REUSSI"] += 1
+                    self.arc.update_game(j1, "POSTIT", bib)
+
+                await self.bot.send_message(j2, "Bravo ! C'est exactement ce personnage là !")
+                self.arc.add_respect(j2)
+                if self.arc.get_game_stats(j2, "POSTIT") == False:
+                    bib = {"P_REUSSI": 1, "P_PERDU": 0}
+                    self.arc.update_game(j2, "POSTIT", bib)
+                else:
+                    bib = self.arc.get_game_stats(j2, "POSTIT")
+                    bib["P_REUSSI"] += 1
+                    self.arc.update_game(j2, "POSTIT", bib)
+                return
+            else:
+                chan = await self.bot.send_message(j1, "Votre correspondant propose *{}*\nEst-ce à ce personnage là que vous pensiez ? (O/N)".format(rep.content))
+                verif = False
+                while verif == False:
+                    rap = await self.bot.wait_for_message(author= j1, channel=chan.channel, timeout=120)
+                    if rap == None:
+                        await self.bot.send_message(j1, "Timeout atteint, Partie annulée...")
+                        await self.bot.send_message(j2, "Votre correspondant est inactif, partie annulée...")
+                        return
+                    elif rap.content.lower() == "o":
+                        await self.bot.send_message(j1,
+                                                    "Votre correspondant à trouvé le personnage qu'il incarnait ! (*{}*)".format(
+                                                        perso.title()))
+                        self.arc.add_respect(j1)
+                        if self.arc.get_game_stats(j1, "POSTIT") == False:
+                            bib = {"P_REUSSI": 1, "P_PERDU": 0}
+                            self.arc.update_game(j1, "POSTIT", bib)
+                        else:
+                            bib = self.arc.get_game_stats(j1, "POSTIT")
+                            bib["P_REUSSI"] += 1
+                            self.arc.update_game(j1, "POSTIT", bib)
+                        await self.bot.send_message(j2, "Bravo ! C'est ce personnage là !")
+                        self.arc.add_respect(j2)
+                        if self.arc.get_game_stats(j2, "POSTIT") == False:
+                            bib = {"P_REUSSI": 1, "P_PERDU": 0}
+                            self.arc.update_game(j2, "POSTIT", bib)
+                        else:
+                            bib = self.arc.get_game_stats(j2, "POSTIT")
+                            bib["P_REUSSI"] += 1
+                            self.arc.update_game(j2, "POSTIT", bib)
+                        return
+                    else:
+                        await self.bot.send_message(j1,
+                                                    "Votre correspondant n'a pas trouvé le personnage qu'il incarnait. (*{}*)".format(
+                                                        perso.title()))
+                        if self.arc.get_game_stats(j1, "POSTIT") == False:
+                            bib = {"P_REUSSI": 0, "P_PERDU": 1}
+                            self.arc.update_game(j1, "POSTIT", bib)
+                        else:
+                            bib = self.arc.get_game_stats(j1, "POSTIT")
+                            bib["P_REUSSI"] -= 1
+                            self.arc.update_game(j1, "POSTIT", bib)
+                        await self.bot.send_message(j2, "Perdu ! Ce n'était pas ce personnage là mais *{}* !".format(perso.title()))
+                        self.arc.sub_respect(j2)
+                        if self.arc.get_game_stats(j2, "POSTIT") == False:
+                            bib = {"P_REUSSI": 0, "P_PERDU": 1}
+                            self.arc.update_game(j2, "POSTIT", bib)
+                        else:
+                            bib = self.arc.get_game_stats(j2, "POSTIT")
+                            bib["P_REUSSI"] -= 1
+                            self.arc.update_game(j2, "POSTIT", bib)
+                        return
+
 
 def check_folders():
     folders = ("data", "data/arc/")
