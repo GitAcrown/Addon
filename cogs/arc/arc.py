@@ -63,6 +63,36 @@ class ArcSys:
         stats = self.user[id]["STATS"]
         return Profil(pseudo, id, badges, convoc, respect, stats)
 
+    def update_game(self, user, game:str, bibli):
+        game = game.upper()
+        if user.id in self.user:
+            self.user[user.id]["STATS"][game] = bibli
+            self.savesys()
+        else:
+            return False
+
+    def get_game_stats(self, user, game:str):
+        game = game.upper()
+        if user.id in self.user:
+            if game in self.user[user.id]["STATS"]:
+                return self.user[user.id]["STATS"][game]
+            else:
+                return False
+        else:
+            return False
+
+    def replace_stats(self, user, game:str, arep:str, after):
+        game = game.upper()
+        arep = arep.lower()
+        if user in self.user:
+            if game in self.user[user.id]["STATS"]:
+                self.user[user.id]["STATS"][game][arep] = after
+                self.savesys()
+            else:
+                return False
+        else:
+            return False
+
     def convoc(self, server, exc = []):
         liste = []
         for member in server.members:
@@ -149,20 +179,34 @@ class Arc:
                     em.add_field(name="Règles",
                                  value="Votre but est de retrouver le pseudo de votre correspondant secret en 3 essais grâce à 3 indices qu'il vous donne sur lui.\n")
                     em.add_field(name="Nb de joueurs", value="2")
+                    em.add_field(name="Commande directe", value="{}guess".format(ctx.prefix))
                     em.set_thumbnail(url="http://i.imgur.com/ttYSoBw.png")
                     sousmenu = await self.bot.whisper(embed=em)
                     await self.bot.add_reaction(sousmenu, "✔")
                     await self.bot.add_reaction(sousmenu, "✖")
+                    await self.bot.add_reaction(sousmenu, "📈")
                     await asyncio.sleep(0.25)
-                    rap = await self.bot.wait_for_reaction(["✔", "✖"], message=sousmenu, user=author, timeout=60)
+                    rap = await self.bot.wait_for_reaction(["✔", "✖", "📈"], message=sousmenu, user=author, timeout=60)
                     if rap == None:
                         await self.bot.whisper("*Retour au menu*")
                     elif rap.reaction.emoji == "✔":
-                        await asyncio.sleep(0.5)
+                        await asyncio.sleep(0.25)
                         new_message = deepcopy(ctx.message)
                         new_message.content = ctx.prefix + "guess"
                         await self.bot.process_commands(new_message)
                         return
+                    elif rap.reaction.emoji == "📈":
+                        await asyncio.sleep(0.25)
+                        stat = self.arc.get_game_stats(author, "GUESS")
+                        if stat != False:
+                            em = discord.Embed(title="Guess Who ?", color=0xDC3737)
+                            msg = "Parties réussies - *{}*\n".format(stat["P_REUSSI"])
+                            msg += "Parties perdues - *{}*".format(stat["P_PERDU"])
+                            em.add_field(name="**Statistiques**", value=msg)
+                            await asyncio.sleep(2)
+                        else:
+                            await self.bot.whisper("Vous n'avez pas de stats pour ce jeu.")
+                            await asyncio.sleep(1)
                     else:
                         pass
 
@@ -220,6 +264,7 @@ class Arc:
                                         await self.bot.whisper("Réponse invalide, réessayez.")
                             elif rep.content.lower() == "n":
                                 verif2 = True
+                                await self.bot.whisper("Utilisez {}playrole pour modifier ce paramètre\n*J'ai changé la valeur pour vous.*".format(ctx.prefix))
                                 await asyncio.sleep(0.5)
                                 new_message = deepcopy(ctx.message)
                                 new_message.content = ctx.prefix + "playrole"
@@ -302,8 +347,8 @@ class Arc:
                 elif adv.name.lower() in rep.content.lower():
                     await self.bot.whisper("Le correspondant à tenté de tricher. Partie annulée...")
                     await self.bot.send_message(adv,
-                                                "Vous avez tenté de tricher. Partie annulée... (**-1** Respect)")
-                    self.arc.sub_respect(adv)
+                                                "Vous avez tenté de tricher. Partie annulée... (**-5** Respect)")
+                    self.arc.sub_respect(adv, 5)
                     return
                 elif len(rep.content) > 3:
                     nb += 1
@@ -344,9 +389,26 @@ class Arc:
                                 await self.bot.whisper(
                                     "**Bravo !** Votre correspondant était bien {} !".format(
                                         adv.display_name))
+
+                                if self.arc.get_game_stats(author, "GUESS") == False:
+                                    bib = {"P_REUSSI": 1, "P_PERDU" : 0}
+                                    self.arc.update_game(author, "GUESS", bib)
+                                else:
+                                    bib = self.arc.get_game_stats(author, "GUESS")
+                                    bib["P_REUSSI"] += 1
+                                    self.arc.update_game(author, "GUESS", bib)
+
                                 await self.bot.send_message(adv,
                                                             "**Bien joué !** Votre correspondant ({}) vous a retrouvé !".format(
                                                                 author.name))
+                                if self.arc.get_game_stats(adv, "GUESS") == False:
+                                    bib = {"P_REUSSI": 1, "P_PERDU" : 0}
+                                    self.arc.update_game(adv, "GUESS", bib)
+                                else:
+                                    bib = self.arc.get_game_stats(adv, "GUESS")
+                                    bib["P_REUSSI"] += 1
+                                    self.arc.update_game(adv, "GUESS", bib)
+
                                 return
                             else:
                                 chance += 1
@@ -355,10 +417,24 @@ class Arc:
                                     "Mauvaise réponse ! Vous avez encore {} chances.".format(reste))
                         await self.bot.whisper(
                             "**Perdu !** Votre correspondant était {}. (**-1** Respect)".format(adv.name))
+                        if self.arc.get_game_stats(author, "GUESS") == False:
+                            bib = {"P_REUSSI": 0, "P_PERDU": 1}
+                            self.arc.update_game(author, "GUESS", bib)
+                        else:
+                            bib = self.arc.get_game_stats(author, "GUESS")
+                            bib["P_PERDU"] += 1
+                            self.arc.update_game(author, "GUESS", bib)
                         self.arc.sub_respect(author)
                         await self.bot.send_message(adv,
                                                     "**Dommage !** Votre correspondant était {}.".format(
                                                         author.name))
+                        if self.arc.get_game_stats(adv, "GUESS") == False:
+                            bib = {"P_REUSSI": 0, "P_PERDU": 1}
+                            self.arc.update_game(adv, "GUESS", bib)
+                        else:
+                            bib = self.arc.get_game_stats(adv, "GUESS")
+                            bib["P_PERDU"] += 1
+                            self.arc.update_game(adv, "GUESS", bib)
                         return
                 else:
                     await self.bot.send_message(adv,
