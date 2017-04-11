@@ -101,8 +101,11 @@ class ArcSys:
                     if self.user[member.id]["CONVOC"] == True:
                         liste.append(member.id)
         else:
-            rand = random.choice(liste)
-            return rand
+            if liste != []:
+                rand = random.choice(liste)
+                return rand
+            else:
+                return False
 
     def set_respect(self, user, sum: int):
         if user.id in self.user:
@@ -341,7 +344,11 @@ class Arc:
             okay = False
             while okay != True:
                 ident = random.randint(1000, 9999)
-                adv = server.get_member(self.arc.convoc(server, [author.id]))
+                convoc = self.arc.convoc(server, [author.id])
+                if convoc == False:
+                    await self.bot.whisper("Il n'y a personne pour jouer avec vous...")
+                    return
+                adv = server.get_member(convoc)
                 await asyncio.sleep(1)
                 await self.bot.whisper("**Connexion en cours avec un candidat potentiel...**")
                 await asyncio.sleep(1)
@@ -493,7 +500,11 @@ class Arc:
         await self.bot.whisper(msg)
         reset = False
         while reset == False:
-            adv = server.get_member(self.arc.convoc(server, [author.id]))
+            convoc = self.arc.convoc(server, [author.id])
+            if convoc == False:
+                await self.bot.whisper("Il n'y a personne pour jouer avec vous...")
+                return
+            adv = server.get_member(convoc)
             mode = random.randint(0, 1)
             if mode == 0:
                 j1 = author
