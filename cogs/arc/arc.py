@@ -550,7 +550,7 @@ class Arc:
                 rem = await self.bot.send_message(j2, "Rentrez votre question (#{}) :".format(q))
                 verif = False
                 while verif == False:
-                    rep = await self.bot.send_message(author=j2, channel=rem.channel, timeout=180)
+                    rep = await self.bot.wait_for_message(author=j2, channel=rem.channel, timeout=180)
                     if rep == None:
                         await self.bot.send_message(j2, "Timeout atteint, Partie annulée...")
                         await self.bot.send_message(j1, "Votre correspondant est inactif, partie annulée...")
