@@ -592,10 +592,10 @@ class Arc:
                                     else:
                                         await self.bot.send_message(j2, "**Réponse à la question #{} :**\n*{}*".format(q, rup.content))
                                         verif3 = True
-                                else:
-                                    await self.bot.send_message(j2, "**Réponse à la question #{} :**\n*{}*".format(q,
-                                                                                                                   rup.content))
-                                    verif3 = True
+                            else:
+                                verif2 = True
+                                await self.bot.send_message(j2, "**Réponse à la question #{} :**\n*{}*".format(q,
+                                                                                                               rup.content))
                     else:
                         await self.bot.send_message(j2, "Votre question n'est pas valide, elle doit comporter un point d'interrogation. Réessayez...")
             await asyncio.sleep(1.5)
