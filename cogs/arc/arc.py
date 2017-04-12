@@ -236,7 +236,7 @@ class Arc:
                     elif rap.reaction.emoji == "✔":
                         await asyncio.sleep(0.25)
                         new_message = deepcopy(ctx.message)
-                        new_message.content = ctx.prefix + "guess"
+                        new_message.content = ctx.prefix + "postit"
                         await self.bot.process_commands(new_message)
                         return
                     elif rap.reaction.emoji == "📈":
@@ -498,7 +498,6 @@ class Arc:
         if not self.arc.get_user(author):
             await self.bot.whisper("*Premier lancement* - Création de votre profil **ARC**...")
             await asyncio.sleep(1)
-        await self.bot.whisper(msg)
         reset = False
         while reset == False:
             convoc = self.arc.convoc(server, [author.id])
@@ -524,8 +523,8 @@ class Arc:
                 await self.bot.send_message(j2,
                     "**Votre correspondant semble m'avoir bloqué.**\nPartie annulée.")
                 return
-            msg = "**JEU** - *Post-it* \n"
-            msg += "Ton correspondant (**{}**) va choisir ton personnage.\nTon but est d'essayer de le deviner en lui posant des questions.\nAu bout d'un moment, ton correspondant va te demander de lui donner le personne que tu pense être. Bonne chance !.".format(j1.name)
+            msg2 = "**JEU** - *Post-it* \n"
+            msg2 += "Ton correspondant (**{}**) va choisir ton personnage.\nTon but est d'essayer de le deviner en lui posant des questions.\nAu bout d'un moment, ton correspondant va te demander de lui donner le personne que tu pense être. Bonne chance !.".format(j1.name)
             try:
                 await self.bot.send_message(j2, msg2)
             except:
