@@ -96,10 +96,11 @@ class ArcSys:
     def convoc(self, server, exc = []):
         liste = []
         for member in server.members:
-            if member.id in self.user:
-                if not member.id in exc:
-                    if self.user[member.id]["CONVOC"] == True:
-                        liste.append(member.id)
+            if member.status is discord.Status.online:
+                if member.id in self.user:
+                    if not member.id in exc:
+                        if self.user[member.id]["CONVOC"] == True:
+                            liste.append(member.id)
         else:
             if liste != []:
                 rand = random.choice(liste)
@@ -352,7 +353,7 @@ class Arc:
                 await asyncio.sleep(1)
                 await self.bot.whisper("**Connexion en cours avec un candidat potentiel...**")
                 await asyncio.sleep(1)
-                msg2 = "**JEU** - *Guess who ?*\n"
+                msg2 = "**JEU** - *Guess who ?* \n"
                 msg2 += "Un correspondant secret doit deviner ton pseudo.\nTu va devoir lui donner 3 indices pour qu'il puisse te retrouver.\nVous gagnez si il le devine (Il est impératif de ne pas donner son pseudo dans ses messages)."
                 try:
                     await self.bot.send_message(adv, msg2)
@@ -515,7 +516,7 @@ class Arc:
             await asyncio.sleep(1)
             await self.bot.whisper("**Connexion en cours avec un joueur potentiel...**")
             await asyncio.sleep(1)
-            msg = "**JEU** - *Post-it*\n"
+            msg = "**JEU** - *Post-it* \n"
             msg += "Tu dois choisir et faire deviner le personnage (réel ou fictif) de ton correspondant (**{}**).\nIl a le droit de te poser autant de question qu'il veut\nTu peux à tout moment décider d'arrêter de recevoir des questions et le forcer à donner le personnage qu'il pense être. Bonne chance !".format(j2.name)
             try:
                 await self.bot.send_message(j1, msg)
@@ -523,7 +524,7 @@ class Arc:
                 await self.bot.send_message(j2,
                     "**Votre correspondant semble m'avoir bloqué.**\nPartie annulée.")
                 return
-            msg = "**JEU** - *Post-it*\n"
+            msg = "**JEU** - *Post-it* \n"
             msg += "Ton correspondant (**{}**) va choisir ton personnage.\nTon but est d'essayer de le deviner en lui posant des questions.\nAu bout d'un moment, ton correspondant va te demander de lui donner le personne que tu pense être. Bonne chance !.".format(j1.name)
             try:
                 await self.bot.send_message(j2, msg2)
