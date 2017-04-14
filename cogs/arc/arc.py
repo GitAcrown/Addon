@@ -147,6 +147,20 @@ class ArcSys:
         else:
             return False
 
+    def online_users(self, server, exc = []):
+        liste = []
+        for member in server.members:
+            if member.status is discord.Status.online:
+                if member.id in self.user:
+                    if not member.id in exc:
+                        if self.user[member.id]["CONVOC"] == True:
+                            liste.append([member.id, member.name])
+        else:
+            if liste != []:
+                return liste
+            else:
+                return False
+
 class Arc:
     """Extension regroupant les jeux du serveur."""
     def __init__(self, bot):
@@ -157,6 +171,7 @@ class Arc:
     async def arc_profil(self, ctx):
         """Système ARC - Regroupe les mini-jeux sous un même menu et retrace les statistiques."""
         author = ctx.message.author
+        server = ctx.message.server
         bank = self.bot.get_cog('Economy').bank
         if self.arc.get_by_id(author.id) == False:
             await self.bot.whisper("**Première connexion - Création de votre compte ARC**")
@@ -168,6 +183,7 @@ class Arc:
             msg = "GW = Guess Who ?\n"
             msg += "PI = Post-it\n"
             msg += "----------------\n"
+            msg += "L = Liste des connectés\n"
             msg += "B = Badges\n"
             msg += "P = Paramètres\n"
             msg += "Q = Quitter"
@@ -263,6 +279,25 @@ class Arc:
                             await asyncio.sleep(1)
                     else:
                         pass
+
+                elif rep.content.lower() == "l":
+                    verif1 = True
+                    em = discord.Embed(title="ARC", color=0xDDDDDD)
+                    liste = self.arc.online_users(server, [author.id])
+                    msg = ""
+                    for u in liste:
+                        prf = self.arc.get_user(server.get_member(u[0]))
+                        if prf.convoc == None:
+                            msg += "*#{}*\n".format(u[1])
+                        else:
+                            msg += "*@{}*\n".format(u[1])
+                    if msg != "":
+                        em.add_field(name="**Liste des connectés**", value=msg)
+                        em.set_footer(text="@ = Connexion permanente | # = Connexion dynamique (Voir paramètres)")
+                    else:
+                        em.add_field(name="**Liste des connectés**", value="Il n'y a pas d'autres connectés que vous en cette période.")
+                    await self.bot.whisper(embed=em)
+                    await asyncio.sleep(2)
 
                 elif rep.content.lower() == "b":
                     verif1 = True
