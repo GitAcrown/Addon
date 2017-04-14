@@ -210,6 +210,7 @@ class Arc:
                             msg = "Parties réussies - *{}*\n".format(stat["P_REUSSI"])
                             msg += "Parties perdues - *{}*".format(stat["P_PERDU"])
                             em.add_field(name="**Statistiques**", value=msg)
+                            await self.bot.whisper(embed=em)
                             await asyncio.sleep(2)
                         else:
                             await self.bot.whisper("Vous n'avez pas de stats pour ce jeu.")
@@ -247,6 +248,7 @@ class Arc:
                             msg = "Parties réussies - *{}*\n".format(stat["P_REUSSI"])
                             msg += "Parties perdues - *{}*".format(stat["P_PERDU"])
                             em.add_field(name="**Statistiques**", value=msg)
+                            await self.bot.whisper(embed=em)
                             await asyncio.sleep(2)
                         else:
                             await self.bot.whisper("Vous n'avez pas de stats pour ce jeu.")
@@ -548,6 +550,7 @@ class Arc:
             while stop == False:
                 q += 1
                 rem = await self.bot.send_message(j2, "Rentrez votre question (#{}) :".format(q))
+                await self.bot.send_message(j1, "En attente de la question #{}...".format(q))
                 verif = False
                 while verif == False:
                     rep = await self.bot.wait_for_message(author=j2, channel=rem.channel, timeout=180)
@@ -595,7 +598,7 @@ class Arc:
                             else:
                                 verif2 = True
                                 await self.bot.send_message(j2, "**Réponse à la question #{} :**\n*{}*".format(q,
-                                                                                                               rup.content))
+                                                                                                               rap.content))
                     else:
                         await self.bot.send_message(j2, "Votre question n'est pas valide, elle doit comporter un point d'interrogation. Réessayez...")
             await asyncio.sleep(1.5)
