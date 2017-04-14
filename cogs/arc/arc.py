@@ -175,7 +175,7 @@ class Arc:
             if prf.convoc == None:
                 mem = True
                 self.arc.set_convoc(author, True)
-                msg += "\n*Vous êtes connecté sur ARC pour 5m - Quittez pour vous déconnecter*"
+                msg += "\n\n*Vous êtes connecté sur ARC pour 5m - Quittez pour vous déconnecter*"
             em.add_field(name="Menu", value=msg)
             em.set_footer(text="Crédits : {}§ - Respect : {}%".format(balance, prf.respect))
             menu = await self.bot.whisper(embed=em)
