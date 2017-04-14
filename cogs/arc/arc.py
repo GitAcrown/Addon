@@ -171,13 +171,21 @@ class Arc:
             msg += "B = Badges\n"
             msg += "P = Paramètres\n"
             msg += "Q = Quitter"
+            mem = False
+            if prf.convoc == None:
+                mem = True
+                self.arc.set_convoc(author, True)
+                msg += "\n*Vous êtes connecté sur ARC pour 5m - Quittez pour vous déconnecter*"
             em.add_field(name="Menu", value=msg)
             em.set_footer(text="Crédits : {}§ - Respect : {}%".format(balance, prf.respect))
             menu = await self.bot.whisper(embed=em)
             verif1 = False
             while verif1 != True:
-                rep = await self.bot.wait_for_message(author=author, channel=menu.channel, timeout=45)
+                rep = await self.bot.wait_for_message(author=author, channel=menu.channel, timeout=300)
                 if rep == None:
+                    if mem != False:
+                        await self.bot.whisper("**Déconnexion de ARC**\nBye :wave:")
+                        self.arc.set_convoc(author, None)
                     return
 
                 elif rep.content.lower() == "gw":
@@ -290,7 +298,7 @@ class Arc:
                             elif rep.content.lower() == "c":
                                 verif2 = True
                                 await self.bot.whisper(
-                                    "Voulez-vous être convoqué pour jouer à des jeux que les autres membres ont lancés ? (O/N)")
+                                    "Voulez-vous être convoqué pour jouer à des jeux que les autres membres ont lancés ? (O/N/D)\n*D = Dynamique, vous serez connecté tant que vous avez le Menu ARC ouvert.*")
                                 need = False
                                 while need == False:
                                     ans = await self.bot.wait_for_message(author=author, channel=submenu.channel,
@@ -305,6 +313,10 @@ class Arc:
                                     elif ans.content.lower() == "n":
                                         await self.bot.whisper("Vous ne serez plus convoqué pour jouer.")
                                         self.arc.set_convoc(author, False)
+                                        need = True
+                                    elif ans.content.lower() == "d":
+                                        await self.bot.whisper("Vous serez convoqué seulement si vous êtes sur ARC au lancement d'un jeu.")
+                                        self.arc.set_convoc(author, None)
                                         need = True
                                     else:
                                         await self.bot.whisper("Réponse invalide, réessayez.")
