@@ -717,7 +717,7 @@ class Arc:
                             self.arc.update_game(j1, "POSTIT", bib)
                         else:
                             bib = self.arc.get_game_stats(j1, "POSTIT")
-                            bib["P_REUSSI"] -= 1
+                            bib["P_PERDU"] += 1
                             self.arc.update_game(j1, "POSTIT", bib)
                         await self.bot.send_message(j2, "Perdu ! Ce n'était pas ce personnage là mais *{}* !".format(perso.title()))
                         self.arc.sub_respect(j2)
@@ -726,7 +726,7 @@ class Arc:
                             self.arc.update_game(j2, "POSTIT", bib)
                         else:
                             bib = self.arc.get_game_stats(j2, "POSTIT")
-                            bib["P_REUSSI"] -= 1
+                            bib["P_PERDU"] += 1
                             self.arc.update_game(j2, "POSTIT", bib)
                         return
 
