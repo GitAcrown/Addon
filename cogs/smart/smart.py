@@ -81,11 +81,11 @@ class Smart:
                         usd_to_eur = int(w)* 0.94
                         eur_to_usd = int(w)/ 0.94
                         await self.bot.send_message(chan ,"{}$ = {}€ | {}€ = {}$ (Environ)".format(int(w), round(usd_to_eur, 2), int(w), round(eur_to_usd, 2)))
-            elif self.appro(ct, ["quel", "est", "id"]):
+            elif self.appro(ct, ["quel", "est", "id"]) or self.appro(ct, ["quoi", "id"]):
                 if mentions != []:
                     if len(mentions) == 1:
                         await self.bot.send_message(chan, "L'ID de ce membre est {}".format(mentions[0].id))
-            elif self.appro(ct, ["quel", "est", "url", "avatar"]):
+            elif self.appro(ct, ["quoi","url", "avatar"]) or self.appro(ct, ["quel","url", "avatar"]):
                 if mentions != []:
                     if len(mentions) == 1:
                         await self.bot.send_message(chan, "L'avatar de ce membre est disponible à cet URL : {}".format(mentions[0].avatar_url))
