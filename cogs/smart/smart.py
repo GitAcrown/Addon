@@ -18,6 +18,11 @@ class Smart:
     def __init__(self, bot):
         self.bot = bot
         self.sys = dataIO.load_json("data/smart/sys.json")
+        self.ball = ["A ce que je vois, oui.", "C'est certain.", "J'hésite.", "Plutôt oui.", "Il semble que oui.",
+                     "Les esprits penchent pour un oui.", "Sans aucun doute.", "Oui.", "Oui - C'est sûr.",
+                     "Tu peux compter dessus.", "Je ne sais pas.",
+                     "Ta question n'est pas très interessante...", "Je ne vais pas te le dire.","N'y comptes pas.", "Ma réponse est non.",
+                     "Des sources fiables assurent que oui.", "J'en doute.","Non, clairement."]
 
     @commands.command(pass_context=True, no_pm=True)
     @checks.admin_or_permissions(ban_members=True)
@@ -53,8 +58,18 @@ class Smart:
         if self.sys["ACTIVE"] is True:
             if len(mentions) == 1:
                 if mentions[0].id == self.bot.user.id:
-                    await self.bot.send_typing(chan)
-                    await self.bot.send_message(chan, str(random.choice(["Oui ? Besoin d'un truc ?","Tu sais que tu va me saouler rapidement avec tes mentions toi.","MAIS QUOI BON SANG ?! :reee:", "Quoi ?","Oui je suis là","Que puis-je faire pour vous ?", "QUOI ENCORE ?!?", "Pourquoi vous me mentionnez ? Je suis pas votre ami.", "Vous avez besoin d'attention ou quoi ?", "Arrêtez de me mentionner svp; j'ai pas que ça à faire."])))
+                    hors = ct.split()
+                    hors.remove(hors[0])
+                    if hors == []:
+                        await self.bot.send_typing(chan)
+                        await self.bot.send_message(chan, str(random.choice(["Oui ? Besoin d'un truc ?","Tu sais que tu va me saouler rapidement avec tes mentions toi.","MAIS QUOI BON SANG ?! :reee:", "Quoi ?","Oui je suis là","Que puis-je faire pour vous ?", "QUOI ENCORE ?!?", "Pourquoi vous me mentionnez ? Je suis pas votre ami.", "Vous avez besoin d'attention ou quoi ?", "Arrêtez de me mentionner svp; j'ai pas que ça à faire."])))
+                    else:
+                        question = " ".join(ct)
+                        if question.endswith("?") and question != "?":
+                            await self.bot.send_typing(chan)
+                            await self.bot.send_message(chan, random.choice(self.ball))
+                        else:
+                            pass
             await asyncio.sleep(0.25)
             if self.appro(ct, ["what", "my", "purpose", "?"]):
                 await self.bot.send_message(chan, "You pass butter.")
