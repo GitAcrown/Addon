@@ -53,7 +53,7 @@ class Smart:
 
     async def listen(self, message):
         mentions = message.mentions
-        ct = message.content
+        ct = message.content.lower()
         chan = message.channel
         if self.sys["ACTIVE"] is True:
             if len(mentions) == 1:
