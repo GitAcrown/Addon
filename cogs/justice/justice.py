@@ -53,12 +53,11 @@ class Justice:
 
     @prs.command(pass_context=True, no_pm=True)
     @checks.mod_or_permissions(kick_members=True)
-    async def apply(self, ctx, user: discord.Member, temps: int = 5, mute: bool = False):
+    async def apply(self, ctx, user: discord.Member, temps: int = 5):
         """Ajoute ou retire une personne de prison.
         > Paramètres :
         - user : Utilisateur visé (Mention ou Pseudo exact)
         - temps : Temps en prison, par défaut 5 minutes.
-        - mute : True/False, indique si la personne doit être mutée vocalement, par défaut False.
         """
         server = ctx.message.server
         id = user.id
@@ -75,13 +74,6 @@ class Justice:
             sortie = now + sec
             if role not in [r.name for r in user.roles]:
                 await self.bot.add_roles(user, r)
-                if mute is True:
-                    try:
-                        self.bot.server_voice_state(user, mute=True)
-                    except:
-                        pass
-                else:
-                    pass
                 await self.bot.say("{} est désormais en prison pour {} minute(s).".format(user.mention, temps))
                 await self.bot.send_message(user, "__Vous êtes désormais en prison pour {} minute(s).__\nVous avez désormais accès au salon *Goulag* pour toute contestation.".format(temps))
                 self.case[user.id]["SORTIE_PRS"] = sortie
@@ -91,13 +83,6 @@ class Justice:
                 if role in [r.name for r in user.roles]:
                     try:
                         await self.bot.remove_roles(user, r)
-                        if mute is True:
-                            try:
-                                self.bot.server_voice_state(user, mute=False)
-                            except:
-                                pass
-                        else:
-                            pass
                         await self.bot.say("{} est désormais libre.".format(user.mention))
                         await self.bot.send_message(user, "__Vous êtes désormais libre.__")
                         self.case[user.id]["SORTIE_PRS"] = None
