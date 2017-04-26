@@ -20,8 +20,8 @@ class Mrkv:
         """Ce n'est pas ce que vous voulez."""
 
         user = ctx.message.author
-        channel = ctx.message.channel
         server = user.server
+        channel = server.get_channel("204585334925819904")
 
         if not user.bot:
             if server.id not in self.model:
