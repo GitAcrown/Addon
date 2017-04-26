@@ -1,0 +1,8 @@
+{
+    "AUTHOR" : "Acrown",
+    "DESCRIPTION" : "Apprend sur vous et tente de sortir des phrases basées dessus.",
+    "DISABLED" : false,
+    "INSTALL_MSG" : "Pour plus d'aide, utilisez [p]loop",
+    "NAME" : "mrkv",
+    "SHORT" : "Module de discussion [BETA]"
+}
