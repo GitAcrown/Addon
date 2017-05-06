@@ -19,6 +19,20 @@ class Chill:
         self.factory = dataIO.load_json("data/chill/factory.json")
 
     @commands.command(pass_context=True, no_pm=True)
+    async def decodex(self, ctx, *question):
+        """Pose une question au decodex"""
+        q = " ".join(question)
+        if "?" in q:
+            await self.bot.send_typing(ctx.message.channel)
+            r = random.choice(["http://i.imgur.com/FpdvBHC.png","http://i.imgur.com/MvloOKT.png","http://i.imgur.com/VnEK487.png"])
+            em = discord.Embed()
+            em.set_image(url=r)
+            em.set_footer(text=q)
+            await self.bot.send_message(ctx.message.channel, embed=em)
+        else:
+            await self.bot.say("Tapez une question !")
+
+    @commands.command(pass_context=True, no_pm=True)
     @checks.admin_or_permissions(kick_members=True)
     async def gomod(self, ctx, user: discord.Member, temps: int = 5, mute=None):
         """Ajoute/Enlève une personne en prison"""
