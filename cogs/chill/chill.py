@@ -8,7 +8,7 @@ from cogs.utils.dataIO import fileIO, dataIO
 from __main__ import send_cmd_help
 from copy import deepcopy
 
-default = {"ACQUIS": [], "PREFIX": "&", "FACTORY_PREFIX": ">","FACTORY_ACTIF" : True, "INTERDIT" : [], "NUMERO" : 1}
+default = {"ACQUIS": [], "PREFIX": "&", "FACTORY_PREFIX": ">","FACTORY_ACTIF" : True, "INTERDIT" : [], "NUMERO" : 1, "SPOIL_DB" : []}
 
 class Chill:
     """Module vraiment très fun."""
@@ -126,241 +126,37 @@ class Chill:
         self.sys["ACQUIS"] = []
         fileIO("data/chill/sys.json", "save", self.sys)
 
-    # FACTORY ================================================================
-
-    @commands.group(pass_context=True)
-    @checks.admin_or_permissions(kick_members=True)
-    async def fry(self, ctx):
-        """Gestion des commandes personnalisées."""
-        if ctx.invoked_subcommand is None:
-            await send_cmd_help(ctx)
-
-    @fry.command(pass_context=True)
-    @checks.admin_or_permissions(ban_members=True)
-    async def set(self, ctx, prefixe: str = None):
-        """Régler le préfixe Factory
-
-        Ne rien rentrer désactive Factory"""
-        if prefixe != None:
-            self.sys["FACTORY_ACTIF"] = True
-            self.sys["PREFIX"] = str(ctx.prefix)
-            self.sys["FACTORY_PREFIX"] = prefixe
-            fileIO("data/chill/sys.json", "save", self.sys)
-            await self.bot.say("Fait")
-        else:
-            await self.bot.say("Factory désactivé")
-            self.sys["FACTORY_ACTIF"] = False
-            fileIO("data/chill/sys.json", "save", self.sys)
-
-    @commands.command(pass_context=True, hidden=True)
-    @checks.admin_or_permissions(ban_members=True)
-    async def rollback(self, ctx):
-        try:
-            if self.sys["LIMITE"]:
-                del self.sys["LIMITE"]
-            if self.sys["ULTRAD_PREFIX"]:
-                self.sys["FACTORY_PREFIX"] = self.sys["ULTRAD_PREFIX"]
-                del self.sys["ULTRAD_PREFIX"]
-            if self.sys["ULTRAD_ACTIF"]:
-                self.sys["FACTORY_ACTIF"] = self.sys["ULTRAD_ACTIF"]
-                del self.sys["ULTRAD_ACTIF"]
-            fileIO("data/chill/sys.json", "save", self.sys)
-        except:
-            await self.bot.say("Non disponible")
-            return
-        await self.bot.say("Fait")
-
-    @commands.command(pass_context=True, hidden=True)
-    @checks.admin_or_permissions(ban_members=True)
-    async def fwipe(self, ctx):
-        """Efface l'ensemble des bannis de Factory"""
-        self.sys["FACTORY_PREFIX"] = "!"
-        self.sys["FACTORY_ACTIF"] = True
-        self.sys["INTERDIT"] = []
-        fileIO("data/chill/sys.json", "save", self.sys)
-        await self.bot.say("Fait")
-
-    @fry.command(pass_context=True)
-    @checks.admin_or_permissions(kick_members=True)
-    async def interdit(self, ctx, user: discord.Member = None):
-        """Exclut/Inclut les personnes ayant les droits d'utiliser Factory
-
-        Ne rien rentrer donne une liste des utilisateurs exclus."""
-        server = ctx.message.server
-        if user != None:
-            if user.id not in self.sys["INTERDIT"]:
-                self.sys["INTERDIT"].append(user.id)
-                await self.bot.say("{} ne pourra plus utiliser Factory.".format(user.name))
-                fileIO("data/chill/sys.json", "save", self.sys)
-            else:
-                self.sys["INTERDIT"].remove(user.id)
-                await self.bot.say("{} peut de nouveau utiliser Factory.".format(user.name))
-                fileIO("data/chill/sys.json", "save", self.sys)
-        else:
-            msg = "**Utilisateurs exclus :**\n"
-            for u in self.sys["INTERDIT"]:
-                user = self.bot.get_member(u)
-                msg += "- *{}*\n".format(user.name)
-            else:
-                await self.bot.say(msg)
-
-    @fry.command(pass_context=True)
-    @checks.admin_or_permissions(kick_members=True)
-    async def make(self, ctx):
-        """Permet de créer une commande Factory."""
-        author = ctx.message.author
-        dispo = "✉ Message seul\n👥 Interaction"
-        em = discord.Embed(inline=False)
-        em.add_field(name="Canvas",value=dispo)
-        em.set_footer(text="Choisissez le canvas de votre commande")
-        menu = await self.bot.say(embed=em)
-        await self.bot.add_reaction(menu, "✉")
-        await self.bot.add_reaction(menu, "👥")
-        await self.bot.add_reaction(menu, "🔚")
-        await asyncio.sleep(0.25)
-        rep = await self.bot.wait_for_reaction(["✉", "👥", "🔚"], message=menu, user=author)
-        if rep.reaction.emoji == "🔚":
-            await self.bot.say("Votre commande n'est pas conservée. Bye :wave:")
-        elif rep.reaction.emoji == "✉":
-            await self.bot.clear_reactions(menu)
-            em = discord.Embed(inline=False)
-            em.add_field(name="Nom", value="Donnez un nom à votre commande")
-            em.set_footer(text="Il ne doit être composé que d'un seul mot")
-            await self.bot.edit_message(menu, embed=em)
-            verif = False
-            while verif == False:
-                sec = await self.bot.wait_for_message(author=author, channel=menu.channel)
-                sec = sec.content
-                if len(sec) >= 3:
-                    verif = True
-                    nom = sec
-                    self.factory[nom] = {"AUTHOR": author.name, "NOM": nom, "TYPE": "message", "COMMANDE": None}
-                    fileIO("data/chill/factory.json", "save", self.factory)
-                elif sec == "q":
-                    await self.bot.say("Bye :wave:")
-                else:
-                    await self.bot.say("Réessayez, le nom doit avoir plus de 3 caractères.")
-
-            await self.bot.clear_reactions(menu)
-            em = discord.Embed(inline=False)
-            em.add_field(name="Message", value="Tapez le message désiré")
-            em.set_footer(text="Ce message sera envoyé lorsque la commande sera executée")
-            await self.bot.edit_message(menu, embed=em)
-            verif = False
-            while verif == False:
-                sec = await self.bot.wait_for_message(author=author, channel=menu.channel)
-                sec = sec.content
-                if len(sec) >= 5:
-                    verif = True
-                    self.factory[nom]["COMMANDE"] = sec
-                    forme = self.sys["FACTORY_PREFIX"] + self.factory[nom]["NOM"]
-                    em = discord.Embed(inline=False)
-                    em.add_field(name="Terminé", value="Votre commande est bien enregistrée")
-                    em.set_footer(text="Vous pouvez y accéder avec {}".format(forme))
-                    await self.bot.edit_message(menu, embed=em)
-                    fileIO("data/chill/factory.json", "save", self.factory)
-                elif sec == "q":
-                    await self.bot.say("Bye :wave:")
-                else:
-                    await self.bot.say("Réessayez, le message doit avoir plus de 5 caractères.")
-
-        elif rep.reaction.emoji == "👥":
-            await self.bot.clear_reactions(menu)
-            em = discord.Embed(inline=False)
-            em.add_field(name="Nom", value="Donnez un nom à votre commande")
-            em.set_footer(text="Il ne doit être composé que d'un seul mot")
-            await self.bot.edit_message(menu, embed=em)
-            verif = False
-            while verif == False:
-                sec = await self.bot.wait_for_message(author=author, channel=menu.channel)
-                sec = sec.content
-                if len(sec) >= 3:
-                    verif = True
-                    nom = sec
-                    self.factory[nom] = {"AUTHOR": author.name, "NOM": nom, "TYPE": "interaction", "COMMANDE": None}
-                    fileIO("data/chill/factory.json", "save", self.factory)
-                elif sec == "q":
-                    await self.bot.say("Bye :wave:")
-                else:
-                    await self.bot.say("Réessayez, le nom doit avoir plus de 3 caractères.")
-
-            await self.bot.clear_reactions(menu)
-            em = discord.Embed(inline=False)
-            em.add_field(name="Interaction", value="Tapez le message désiré\n\n*@a* = Auteur de la commande\n*@v* = Personne visée\n*/* = Faire plusieur versions du message")
-            em.set_footer(text="Exemple: @a est frappé par @v/@v se fait descendre par @a/(etc...)")
-            await self.bot.edit_message(menu, embed=em)
-            verif = False
-            while verif == False:
-                sec = await self.bot.wait_for_message(author=author, channel=menu.channel)
-                sec = sec.content
-                test = sec.split("/")
-                accord = True
-                for e in test:
-                    if "@a" and "@v" in e:
-                        pass
-                    else:
-                        accord = False
-                if accord is True:
-                    sec = sec.replace("@a","{0}")
-                    sec = sec.replace("@v","{1}")
-                    sec = sec.split("/")
-                    verif = True
-                    self.factory[nom]["COMMANDE"] = sec
-                    forme = self.sys["FACTORY_PREFIX"] + self.factory[nom]["NOM"]
-                    em = discord.Embed(inline=False)
-                    em.add_field(name="Terminé", value="Votre commande est bien enregistrée")
-                    em.set_footer(text="Vous pouvez y accéder avec {} @pseudo".format(forme))
-                    await self.bot.edit_message(menu, embed=em)
-                    fileIO("data/chill/factory.json", "save", self.factory)
-                elif sec == "q":
-                    await self.bot.say("Bye :wave:")
-                else:
-                    await self.bot.say("Réessayez, il doit y avoir *@a* et *@v* dans chaque version du message.")
-        else:
-            await self.bot.say("Invalide, arrêt.")
-
-    @fry.command(pass_context=True)
-    @checks.admin_or_permissions(kick_members=True)
-    async def remove(self, ctx, commande: str):
-        """Retire une commande Factory."""
-        if commande in self.factory:
-            del self.factory[commande]
-            fileIO("data/chill/factory.json", "save", self.factory)
-            await self.bot.say("Effacée avec succès.")
-        else:
-            await self.bot.say("Cette commande n'existe pas.")
-
-    @commands.command(name = "fl", pass_context=True)
-    async def factory_list(self, ctx):
-        """Permet de voir les commandes autorisées par préfixe secondaire."""
-        author = ctx.message.author
-        if author.id not in self.sys["INTERDIT"]:
-            msg = "**Commandes disponibles :**\n"
-            for e in self.factory:
-                msg += "- *{}*\n".format(self.factory[e]["NOM"])
-            else:
-                await self.bot.whisper(msg)
-        else:
-            await self.bot.say("Vous n'êtes pas autorisé à utiliser le préfixe secondaire.")
-
-    async def custom(self, message):
-        msg = message.content
+    async def spoil(self, message):
         channel = message.channel
-        if message.author.id not in self.sys["INTERDIT"]:
-            if self.sys["FACTORY_ACTIF"]:
-                if msg.startswith(self.sys["FACTORY_PREFIX"]):
-                    command = msg.split(" ")[0][1:]
-                    if command in self.factory:
-                        canvas = self.factory[command]["TYPE"]
-                        if canvas == "message":
-                            await self.bot.send_message(channel, self.factory[command]["COMMANDE"])
-                        elif canvas == "interaction":
-                            msg = random.choice(self.factory[command]["COMMANDE"])
-                            vise = message.mentions[0]
-                            msg = msg.format(message.author.name, vise.name)
-                            await self.bot.send_message(channel, msg)
-                        else:
-                            pass
+        text = message.content
+        author = message.author
+        if text.startswith("§"):
+            await self.bot.delete_message(message)
+            text = text.replace("§", "")
+            if not "SPOIL_DB" in self.sys:
+                self.sys["SPOIL_DB"] = []
+                fileIO("data/chill/sys.json", "save", self.sys)
+            else:
+                em = discord.Embed(color= author.color)
+                em.set_author(name=author.display_name, url=author.avatar_url)
+                em.add_field(name="Spoil", value="Un message est caché par son auteur.")
+                em.set_footer(text="-- Cliquez sur la cloche pour recevoir le message --")
+                msg = await self.bot.send_message(channel, embed=em)
+                await self.bot.add_reaction(msg, "🔔")
+                self.sys["SPOIL_DB"].append([msg.id, text, author.display_name, author.avatar_url])
+
+    async def spoilreact(self, reaction, user):
+        message = reaction.message
+        if reaction.emoji == "🔔":
+            for msg in self.sys["SPOIL_DB"]:
+                if message.id == msg[0]:
+                    em = discord.Embed(color=user.color)
+                    em.set_author(name=msg[2], url=msg[3])
+                    em.add_field(name="Message dévoilé", value=msg[1])
+                    try:
+                        await self.bot.send_message(user, embed=em)
+                    except:
+                        pass
 
 def check_folders():
     folders = ("data", "data/chill/")
@@ -374,13 +170,10 @@ def check_files():
         print("Création du fichier systeme Chill...")
         fileIO("data/chill/sys.json", "save", default)
 
-    if not os.path.isfile("data/chill/factory.json"):
-        print("Création du fichier Factory...")
-        fileIO("data/chill/factory.json", "save", {})
-
 def setup(bot):
     check_folders()
     check_files()
     n = Chill(bot)
-    bot.add_listener(n.custom, "on_message")
+    bot.add_listener(n.spoil, "on_message")
+    bot.add_listener(n.spoilreact, "on_reaction_add")
     bot.add_cog(n)
