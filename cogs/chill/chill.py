@@ -32,6 +32,28 @@ class Chill:
         else:
             await self.bot.say("Tapez une question !")
 
+    @commands.command(aliases = ["rf"], pass_context=True, no_pm=True)
+    async def reactflood(self, ctx, channel: discord.Channel, msgid, text: str):
+        """Rajoute automatiquement les réactions qui correspondent au texte fournis sur un message."""
+        authormess = ctx.message
+        emojis = [s for s in "🇦🇧🇨🇩🇪🇫🇬🇭🇮🇯🇰🇱🇲🇳🇴🇵🇶🇷🇸🇹🇺🇻🇼🇽🇾🇿"]
+        letters = [a for a in "abcdefghijklmnopqrstuvwxyz"]
+        msg = await self.bot.get_message(channel, msgid)
+        classment = [f for f in text.lower()]
+        try:
+            await self.bot.delete_message(authormess)
+        except:
+            pass
+        for e in classment:
+            if e in letters:
+                input = letters.index(e)
+                output = emojis[input]
+                try:
+                    await self.bot.add_reaction(msg, output)
+                except:
+                    pass
+
+
     @commands.command(pass_context=True, no_pm=True)
     @checks.admin_or_permissions(kick_members=True)
     async def gomod(self, ctx, user: discord.Member, temps: int = 5, mute=None):
@@ -130,20 +152,21 @@ class Chill:
         channel = message.channel
         text = message.content
         author = message.author
-        if text.startswith("§"):
+        if "§" in text:
             await self.bot.delete_message(message)
-            text = text.replace("§", "")
+            text = text.split("§")
             if not "SPOIL_DB" in self.sys:
                 self.sys["SPOIL_DB"] = []
                 fileIO("data/chill/sys.json", "save", self.sys)
             else:
                 em = discord.Embed(color= author.color)
                 em.set_author(name=author.display_name, url=author.avatar_url)
-                em.add_field(name="Spoil", value="Un message est caché par son auteur.")
-                em.set_footer(text="-- Cliquez sur la cloche pour recevoir le message --")
+                em.add_field(name=text[0] if not "" else "Sans titre", value="Un spoil à été caché par {}".format(author.display_name))
+                em.set_footer(text="-- Cliquez sur la cloche pour voir le spoil --")
                 msg = await self.bot.send_message(channel, embed=em)
                 await self.bot.add_reaction(msg, "🔔")
-                self.sys["SPOIL_DB"].append([msg.id, text, author.display_name, author.avatar_url])
+                self.sys["SPOIL_DB"].append([msg.id, text[1], text[0], author.display_name])
+                fileIO("data/chill/sys.json", "save", self.sys)
 
     async def spoilreact(self, reaction, user):
         message = reaction.message
@@ -151,12 +174,15 @@ class Chill:
             for msg in self.sys["SPOIL_DB"]:
                 if message.id == msg[0]:
                     em = discord.Embed(color=user.color)
-                    em.set_author(name=msg[2], url=msg[3])
-                    em.add_field(name="Message dévoilé", value=msg[1])
+                    em.set_author(name=msg[3])
+                    em.add_field(name=msg[2] if not "" else "Sans titre", value=msg[1] if not "" else "~~Vide~~")
                     try:
                         await self.bot.send_message(user, embed=em)
                     except:
                         pass
+                    if len(self.sys["SPOIL_DB"]) > 30:
+                        self.sys["SPOIL_DB"].pop(0)
+                        fileIO("data/chill/sys.json", "save", self.sys)
 
 def check_folders():
     folders = ("data", "data/chill/")
