@@ -161,7 +161,7 @@ class Chill:
             else:
                 em = discord.Embed(color= author.color)
                 em.set_author(name=author.display_name, url=author.avatar_url)
-                em.add_field(name=text[0] if not "" else "Sans titre", value="Un spoil à été caché par {}".format(author.display_name))
+                em.add_field(name=text[0] if text[0] != "" else "Sans titre", value="Un spoil à été caché par {}".format(author.display_name))
                 em.set_footer(text="-- Cliquez sur la cloche pour voir le spoil --")
                 msg = await self.bot.send_message(channel, embed=em)
                 await self.bot.add_reaction(msg, "🔔")
@@ -175,7 +175,7 @@ class Chill:
                 if message.id == msg[0]:
                     em = discord.Embed(color=user.color)
                     em.set_author(name=msg[3])
-                    em.add_field(name=msg[2] if not "" else "Sans titre", value=msg[1] if not "" else "~~Vide~~")
+                    em.add_field(name=msg[2] if msg[2] != "" else "Sans titre", value=msg[1] if msg[1] != "" else "~~Vide~~")
                     try:
                         await self.bot.send_message(user, embed=em)
                     except:
