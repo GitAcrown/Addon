@@ -153,8 +153,10 @@ class Chill:
         text = message.content
         author = message.author
         if "§" in text:
-            await self.bot.delete_message(message)
             text = text.split("§")
+            if text[0].endswith("\\"):
+                return
+            await self.bot.delete_message(message)
             if not "SPOIL_DB" in self.sys:
                 self.sys["SPOIL_DB"] = []
                 fileIO("data/chill/sys.json", "save", self.sys)
