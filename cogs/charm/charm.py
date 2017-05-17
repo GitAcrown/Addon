@@ -67,12 +67,13 @@ class Charm:
                 fileIO("data/charm/stk.json", "save", self.stk)
                 await self.bot.say("Image importée avec succès !")
             except:
-                await self.bot.say("Je ne peux pas importer cette image, elle n'est plus disponible ou ses données sont corrompues.\nVous pouvez la réajouter manuellement avec &stk submit.\n*Voici l'URL fournie lors de sa première création :* {}".format(url))
+                await self.bot.say("Je ne peux pas importer cette image, elle n'est plus disponible (Sticker de 1ere gen.) ou ses données sont corrompues.\nVous pouvez la réajouter manuellement avec &stk submit.\n*Voici l'URL fournie lors de sa première création :* {}".format(url))
                 return
         else:
             await self.bot.say("Ce nom n'existe pas dans mes anciens fichiers de sticker. Désolé !")
 
     @charm_stk.command(aliases=["d"], pass_context=True)
+    @checks.mod_or_permissions(kick_members=True)
     async def delete(self, ctx, nom):
         """Supprime définitivement un sticker."""
         nom = nom.lower()
