@@ -134,11 +134,11 @@ class Charm:
             await self.bot.say("Ce sticker n'existe pas.")
 
     @charm_stk.command(aliases=["s"], pass_context=True)
-    async def submit(self, ctx, nom: str, url: str, format: str = "INTEGRE"):
+    async def submit(self, ctx, nom: str, url: str, format: str = "UPLOAD"):
         """Propose l'ajout d'un sticker.
         == Paramètres ==
         Nom - Le nom de votre sticker ('custom' si personnel)
-        Url - Url du sticker (Noelshack ou Imgur de préférence)
+        Url - Url du sticker (Noelshack, Imgur ou Giphy de préférence)
         Format (Optionnel) - Format d'affichage (URL, INTEGRE ou UPLOAD)
         
         Les membres du Staff peuvent directement appliquer un sticker."""
@@ -153,8 +153,9 @@ class Charm:
             return
         if "imgur" not in url.lower():
             if "noelshack" not in url.lower():
-                await self.bot.say("Votre lien doit provenir de Imgur ou Noelshack\n*Ces sites n'imposent pas de cookies, ce qui permet un téléchargement correct de l'image*")
-                return
+                if "giphy" not in url.lower():
+                    await self.bot.say("Votre lien doit provenir de Imgur, Giphy ou Noelshack\n*Ces sites n'imposent pas de cookies, ce qui permet un téléchargement correct de l'image*")
+                    return
 
         if not author.id in self.stk["USERS"]:
             self.stk["USERS"][author.id] = {"ID": author.id,
@@ -217,7 +218,7 @@ class Charm:
                                              "FORMAT": format}
                 self.stk["USERS"][author.id]["COLLECTION"].append(nom)
                 fileIO("data/charm/stk.json", "save", self.stk)
-                await self.bot.say("L'Image **{}** à été enregistrée correctement.\nVous pouvez désormais l'utilser avec :{}:.".format(filename, nom))
+                await self.bot.say("L'Image **{}** à été enregistrée correctement.\nVous pouvez désormais l'utilser avec *:{}:*".format(filename, nom))
             except Exception as e:
                 print("Impossible de télécharger une image : {}".format(e))
                 await self.bot.say(
