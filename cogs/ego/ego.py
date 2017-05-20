@@ -136,7 +136,9 @@ class Ego:
         em.add_field(name= "Age du compte", value= str(passed) + " jours")
         passed = (ctx.message.timestamp - user.joined_at).days
         em.add_field(name= "Nb de Jours", value= "{} jours (EGO: {})".format(passed, epoch))
-        em.add_field(name= "Roles", value= [r.name for r in user.roles])
+        rolelist = [r.name for r in user.roles]
+        rolelist.remove('@everyone')
+        em.add_field(name= "Roles", value= rolelist)
 
         if epoch == 0:
             epoch = 1
