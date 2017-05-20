@@ -10,6 +10,8 @@ from discord.ext import commands
 import time
 from .utils.dataIO import fileIO, dataIO
 
+#Enregistrement depuis le
+
 class EgoAPI:
     """API Ego | Utilisable sur toutes les extensions compatibles"""
 
@@ -146,8 +148,11 @@ class Ego:
             round(ego.stats["MESSAGES"] / epoch, 2))))
         try:
             most = server.get_member(self.ego.plus_smth(user, "MENTIONS")[0])
-            mostchan = server.get_channel(self.ego.plus_smth(user, "CHANNELS")[0])
             em.add_field(name="Meilleur ami", value="{}".format(str(most)))
+        except:
+            pass
+        try:
+            mostchan = server.get_channel(self.ego.plus_smth(user, "CHANNELS")[0])
             em.add_field(name="Channel favoris", value="#{}".format(mostchan.name))
         except:
             pass
