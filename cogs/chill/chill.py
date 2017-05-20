@@ -38,8 +38,9 @@ class Chill:
         nom = " ".join(nom)
         nom += ".txt"
         channel = ctx.message.channel
-        if nom in os.listdir("data/audio/playlists/"):
-            chemin = "data/audio/playlists/{}".format(nom)
+        server = ctx.message.server.id
+        if nom in os.listdir("data/audio/playlists/{}/".format(server)):
+            chemin = "data/audio/playlists/{}/{}".format(server, nom)
             try:
                 await self.bot.send_file(channel, chemin)
             except:
