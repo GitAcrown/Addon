@@ -142,10 +142,13 @@ class Ego:
             epoch = 1
         em.add_field(name="Ratio de messages", value="{}/jour".format(str(
             round(ego.stats["MESSAGES"] / epoch, 2))))
-        most = server.get_member(self.ego.plus_smth(user, "MENTIONS")[0])
-        em.add_field(name="Meilleur ami", value="{}".format(str(most)))
-        mostchan = server.get_channel(self.ego.plus_smth(user, "CHANNELS")[0])
-        em.add_field(name="Channel favoris", value="#{}".format(mostchan.name))
+        try:
+            most = server.get_member(self.ego.plus_smth(user, "MENTIONS")[0])
+            mostchan = server.get_channel(self.ego.plus_smth(user, "CHANNELS")[0])
+            em.add_field(name="Meilleur ami", value="{}".format(str(most)))
+            em.add_field(name="Channel favoris", value="#{}".format(mostchan.name))
+        except:
+            pass
         em.set_footer(text="Certaines stats proviennent de EGO et sont enregistrées depuis votre inscription.")
         await self.bot.say(embed=em)
 
