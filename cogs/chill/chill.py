@@ -32,6 +32,21 @@ class Chill:
         else:
             await self.bot.say("Tapez une question !")
 
+    @commands.command(pass_context=True)
+    async def recup(self, ctx, *nom):
+        """Permet de récupérer le fichier texte d'une playlist Audio"""
+        nom = " ".join(nom)
+        nom += ".txt"
+        channel = ctx.message.channel
+        if nom in os.listdir("data/audio/playlists/"):
+            chemin = "data/audio/playlists/{}".format(nom)
+            try:
+                await self.bot.send_file(channel, chemin)
+            except:
+                await self.bot.say("Impossible d'upload le fichier de playlist.")
+        else:
+            await self.bot.say("Désolé mais je n'ai pas trouvé cette playlist")
+
     @commands.command(aliases = ["rf"], pass_context=True, no_pm=True)
     async def reactflood(self, ctx, channel: discord.Channel, msgid, text: str):
         """Rajoute automatiquement les réactions qui correspondent au texte fournis sur un message."""
