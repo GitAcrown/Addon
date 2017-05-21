@@ -166,7 +166,7 @@ class Ego:
             pail = "Paillassonné par {}".format(server.get_member(self.ego.paille(user)[0]))
         except:
             pass
-        em.add_field(name="Popularité", value="*{}*\n*{}*".format(str(most), str(pail)))
+        em.add_field(name="Relations", value="*{}*\n*{}*".format(str(most), str(pail)))
         try:
             mostchan = server.get_channel(self.ego.plus_smth(user, "CHANNELS")[0])
             em.add_field(name="Channel favoris", value="#{}".format(mostchan.name))
