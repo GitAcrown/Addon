@@ -87,6 +87,18 @@ class EgoAPI:
             else:
                 return [ident, post]
 
+    def paille(self, user):
+        post = 0
+        ident = None
+        for p in self.user:
+            if p in self.user[p]["STATS"]["MENTIONS"]:
+                if self.user[p]["STATS"]["MENTIONS"][p]["NB"] > post:
+                    post = self.user[p]["STATS"]["MENTIONS"][p]["NB"]
+                    ident = self.user[p]["STATS"]["MENTIONS"][p]["ID"]
+        else:
+            return [ident, post]
+
+
     def epoch(self, user, format = None):
         ego = self.logged(user)
         if ego != None:
@@ -148,7 +160,8 @@ class Ego:
             round(ego.stats["MESSAGES"] / epoch, 2))))
         try:
             most = server.get_member(self.ego.plus_smth(user, "MENTIONS")[0])
-            em.add_field(name="Meilleur ami", value="{}".format(str(most)))
+            pail = server.get_member(self.ego.paille(user)[0])
+            em.add_field(name="Popularité", value="*Paillasson de* {}\n*Paillassonné par* {}".format(str(most), str(pail)))
         except:
             pass
         try:
