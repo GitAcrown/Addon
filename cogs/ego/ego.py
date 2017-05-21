@@ -91,15 +91,14 @@ class EgoAPI:
         post = 0
         ident = None
         for p in self.user:
-            if p in self.user[p]["STATS"]["MENTIONS"]:
-                if self.user[p]["STATS"]["MENTIONS"][p]["NB"] > post:
-                    post = self.user[p]["STATS"]["MENTIONS"][p]["NB"]
-                    ident = self.user[p]["STATS"]["MENTIONS"][p]["ID"]
+            if user.id in self.user[p]["STATS"]["MENTIONS"]:
+                if self.user[p]["STATS"]["MENTIONS"][user.id]["NB"] > post:
+                    post = self.user[p]["STATS"]["MENTIONS"][user.id]["NB"]
+                    ident = self.user[p]["STATS"]["MENTIONS"][user.id]["ID"]
         else:
             return [ident, post]
 
-
-    def epoch(self, user, format = None):
+    def epoch(self, user, format=None):
         ego = self.logged(user)
         if ego != None:
             s = time.time() - ego.stats["CREATION"]
@@ -108,16 +107,15 @@ class EgoAPI:
             sj = sh/24 #en jours
             sa = sj/364.25 #en années
             if format == "année":
-                return int(sa) if sa > 0 else 1
+                return int(sa)
             elif format == "jour":
-                return int(sj) if sj > 0 else 1
+                return int(sj)
             elif format == "heure":
-                return int(sh) if sm > 0 else 1
+                return int(sh)
             elif format == "minute":
-                return int(sm) if sm > 0 else 1
+                return int(sm)
             else:
                 return int(s)
-
 
 class Ego:
     """Système EGO : Assistant personnel [EN CONSTRUCTION]"""
@@ -149,7 +147,7 @@ class Ego:
         passed = (ctx.message.timestamp - user.created_at).days
         em.add_field(name= "Age du compte", value= str(passed) + " jours")
         passed = (ctx.message.timestamp - user.joined_at).days
-        em.add_field(name= "Nb de Jours", value= "{} jours (EGO: {})".format(passed, epoch))
+        em.add_field(name= "Nb de Jours", value= "{} jours (Ego/{})".format(passed, epoch))
         rolelist = [r.name for r in user.roles]
         rolelist.remove('@everyone')
         em.add_field(name= "Roles", value= rolelist)
@@ -176,6 +174,7 @@ class Ego:
     async def stats_listener(self, message):
         author = message.author
         channel = message.channel
+        text = message.content
         if not self.ego.logged(author):
             self.ego.create(author)
             await asyncio.sleep(0.25)
@@ -207,6 +206,7 @@ class Ego:
                 else:
                     ego[u.id]["NB"] += 1
                 self.ego.edit(author, "STATS", "MENTIONS", ego)
+
 
 def check_folders():
     if not os.path.exists("data/ego"):
