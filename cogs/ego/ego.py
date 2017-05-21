@@ -156,8 +156,8 @@ class Ego:
             epoch = 1
         em.add_field(name="Ratio de messages", value="{}/jour".format(str(
             round(ego.stats["MESSAGES"] / epoch, 2))))
-        most = "M.I."
-        pail = "M.I."
+        most = "Pas de données"
+        pail = "Pas de données"
         try:
             most = "Paillasson de {}".format(server.get_member(self.ego.plus_smth(user, "MENTIONS")[0]))
         except:
@@ -166,13 +166,13 @@ class Ego:
             pail = "Paillassonné par {}".format(server.get_member(self.ego.paille(user)[0]))
         except:
             pass
-        em.add_field(name="Relations", value="*{}*\n*{}*".format(str(most), str(pail)))
+        em.add_field(name="Relations", value="- *{}*\n- *{}*".format(str(most), str(pail)))
         try:
             mostchan = server.get_channel(self.ego.plus_smth(user, "CHANNELS")[0])
             em.add_field(name="Channel favoris", value="#{}".format(mostchan.name))
         except:
             pass
-        em.set_footer(text="Certaines stats proviennent de EGO et sont enregistrées depuis votre inscription.")
+        em.set_footer(text="Certaines informations proviennent du Système Ego | V1.1")
         await self.bot.say(embed=em)
 
 # LISTENERS & SYSTEME =============================================
