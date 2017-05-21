@@ -156,12 +156,17 @@ class Ego:
             epoch = 1
         em.add_field(name="Ratio de messages", value="{}/jour".format(str(
             round(ego.stats["MESSAGES"] / epoch, 2))))
+        most = "M.I."
+        pail = "M.I."
         try:
             most = server.get_member(self.ego.plus_smth(user, "MENTIONS")[0])
-            pail = server.get_member(self.ego.paille(user)[0])
-            em.add_field(name="Popularité", value="*Paillasson de* {}\n*Paillassonné par* {}".format(str(most), str(pail)))
         except:
             pass
+        try:
+            pail = server.get_member(self.ego.paille(user)[0])
+        except:
+            pass
+        em.add_field(name="Popularité", value="*Paillasson de* {}\n*Paillassonné par* {}".format(str(most), str(pail)))
         try:
             mostchan = server.get_channel(self.ego.plus_smth(user, "CHANNELS")[0])
             em.add_field(name="Channel favoris", value="#{}".format(mostchan.name))
