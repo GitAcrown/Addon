@@ -159,14 +159,14 @@ class Ego:
         most = "M.I."
         pail = "M.I."
         try:
-            most = server.get_member(self.ego.plus_smth(user, "MENTIONS")[0])
+            most = "Paillasson de {}".format(server.get_member(self.ego.plus_smth(user, "MENTIONS")[0]))
         except:
             pass
         try:
-            pail = server.get_member(self.ego.paille(user)[0])
+            pail = "Paillassonné par {}".format(server.get_member(self.ego.paille(user)[0]))
         except:
             pass
-        em.add_field(name="Popularité", value="*Paillasson de* {}\n*Paillassonné par* {}".format(str(most), str(pail)))
+        em.add_field(name="Popularité", value="*{}*\n*{}*".format(str(most), str(pail)))
         try:
             mostchan = server.get_channel(self.ego.plus_smth(user, "CHANNELS")[0])
             em.add_field(name="Channel favoris", value="#{}".format(mostchan.name))
