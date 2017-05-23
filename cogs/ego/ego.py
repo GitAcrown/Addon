@@ -28,7 +28,6 @@ class EgoAPI:
                               "LEVEL" : 0,
                               "STATS" : {}}
         self.user[user.id]["STATS"]["CREATION"] = time.time()
-        #TODO Possibilité de faire concorder la date de création du compte avec la date d'arrivée sur le serveur
         self.save()
         return self.personnal(user)
 
@@ -87,14 +86,15 @@ class EgoAPI:
             else:
                 return [ident, post]
 
-    def paille(self, user):
+    def paille(self, search):
         post = 0
         ident = None
         for p in self.user:
-            if user.id in self.user[p]["STATS"]["MENTIONS"]:
-                if self.user[p]["STATS"]["MENTIONS"][user.id]["NB"] > post:
-                    post = self.user[p]["STATS"]["MENTIONS"][user.id]["NB"]
-                    ident = self.user[p]["STATS"]["MENTIONS"][user.id]["ID"]
+            if "MENTIONS" in self.user[p]["STATS"]:
+                if search.id in self.user[p]["STATS"]["MENTIONS"]:
+                    if self.user[p]["STATS"]["MENTIONS"][search.id]["NB"] > post:
+                        post = self.user[p]["STATS"]["MENTIONS"][search.id]["NB"]
+                        ident = self.user[p]["STATS"]["MENTIONS"][search.id]["ID"]
         else:
             return [ident, post]
 
@@ -156,8 +156,8 @@ class Ego:
             epoch = 1
         em.add_field(name="Ratio de messages", value="{}/jour".format(str(
             round(ego.stats["MESSAGES"] / epoch, 2))))
-        most = "Pas de données"
-        pail = "Pas de données"
+        most = "Paillasson de (?)"
+        pail = "Paillassonné par (?)"
         try:
             most = "Paillasson de {}".format(server.get_member(self.ego.plus_smth(user, "MENTIONS")[0]))
         except:
@@ -172,7 +172,7 @@ class Ego:
             em.add_field(name="Channel favoris", value="#{}".format(mostchan.name))
         except:
             pass
-        em.set_footer(text="Certaines informations proviennent du Système Ego | V1.1")
+        em.set_footer(text="Certaines informations proviennent du Système Ego | V1.12")
         await self.bot.say(embed=em)
 
 # LISTENERS & SYSTEME =============================================
