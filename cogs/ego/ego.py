@@ -158,21 +158,24 @@ class Ego:
             round(ego.stats["MESSAGES"] / epoch, 2))))
         most = "Paillasson de (?)"
         pail = "Paillassonné par (?)"
+        cuck = "Cuck par (?)"
         try:
             most = "Paillasson de {}".format(server.get_member(self.ego.plus_smth(user, "MENTIONS")[0]))
+            pp = server.get_member(self.ego.plus_smth(user, "MENTIONS")[0])
+            cuck = "Cuck par {}".format(server.get_member(self.ego.plus_smth(pp, "MENTIONS")[0]))
         except:
             pass
         try:
             pail = "Paillassonné par {}".format(server.get_member(self.ego.paille(user)[0]))
         except:
             pass
-        em.add_field(name="Relations", value="- *{}*\n- *{}*".format(str(most), str(pail)))
+        em.add_field(name="Relations", value="- *{}*\n- *{}*\n- *{}*".format(str(most), str(pail), str(cuck)))
         try:
             mostchan = server.get_channel(self.ego.plus_smth(user, "CHANNELS")[0])
             em.add_field(name="Channel favoris", value="#{}".format(mostchan.name))
         except:
             pass
-        em.set_footer(text="Certaines informations proviennent du Système Ego | V1.13")
+        em.set_footer(text="Certaines informations proviennent du Système Ego | V1.14")
         msg = await self.bot.say(embed=em)
 
         await self.bot.add_reaction(msg, "➕")
