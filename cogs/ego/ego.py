@@ -172,14 +172,38 @@ class Ego:
             em.add_field(name="Channel favoris", value="#{}".format(mostchan.name))
         except:
             pass
-        em.set_footer(text="Certaines informations proviennent du Système Ego | V1.12")
-        await self.bot.say(embed=em)
+        em.set_footer(text="Certaines informations proviennent du Système Ego | V1.13")
+        msg = await self.bot.say(embed=em)
+
+        await self.bot.add_reaction(msg, "➕")
+        await asyncio.sleep(0.25)
+        rap = await self.bot.wait_for_reaction("➕", message=msg, timeout=10)
+        if rap == None:
+            pass
+        elif rap.reaction.emoji == "➕":
+            em = discord.Embed(title="Plus sur {}".format(str(user)), color=user.color)
+            if "ENTREES" in ego.stats:
+                em.add_field(name="Entrées", value=ego.stats["ENTREES"])
+            else:
+                em.add_field(name="Entrées", value=0)
+            if "SORTIES" in ego.stats:
+                em.add_field(name="Sorties", value=ego.stats["SORTIES"])
+            else:
+                em.add_field(name="Sorties", value=0)
+            em.add_field(name="Nb messages", value="{}".format(ego.stats["MESSAGES"]))
+            total = 0
+            for e in ego.stats["MENTIONS"]:
+                total += 1
+            em.add_field(name="Nb mentions", value="{}".format(total))
+            em.set_footer(text="Informations relatives à l'inscription Ego. Ces informations ne sont pas protégées et relèvent du public.")
+            await self.bot.say(embed=em)
+        else:
+            pass
 
 # LISTENERS & SYSTEME =============================================
     async def stats_listener(self, message):
         author = message.author
         channel = message.channel
-        text = message.content
         if not self.ego.logged(author):
             self.ego.create(author)
             await asyncio.sleep(0.25)
@@ -212,6 +236,19 @@ class Ego:
                     ego[u.id]["NB"] += 1
                 self.ego.edit(author, "STATS", "MENTIONS", ego)
 
+    async def entree_listen(self, user):
+        if not self.ego.logged(user):
+            self.ego.create(user)
+            await asyncio.sleep(0.25)
+        out = self.ego.get(user, "STATS", "ENTREES", 0) + 1
+        self.ego.edit(user, "STATS", "ENTREES", out)
+
+    async def sortie_listen(self, user):
+        if not self.ego.logged(user):
+            self.ego.create(user)
+            await asyncio.sleep(0.25)
+        out = self.ego.get(user, "STATS", "SORTIES", 0) + 1
+        self.ego.edit(user, "STATS", "SORTIES", out)
 
 def check_folders():
     if not os.path.exists("data/ego"):
@@ -228,4 +265,6 @@ def setup(bot):
     check_files()
     n = Ego(bot)
     bot.add_listener(n.stats_listener, "on_message")
+    bot.add_listener(n.entree_listen, "on_member_join")
+    bot.add_listener(n.sortie_listen, "on_member_remove")
     bot.add_cog(n)
