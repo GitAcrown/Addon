@@ -1985,7 +1985,7 @@ class Audio:
             for u in self.surv["USERS"]:
                 self.surv["USERS"][u]["TICKETS"] = self.surv["SYS"]["MAX_TICKETS"]
             dataIO.save_json('data/audio/surv.json', self.surv)
-            await asyncio.sleep(60)
+            await asyncio.sleep(86400)
 
     def is_playing(self, server):
         if not self.voice_connected(server):
