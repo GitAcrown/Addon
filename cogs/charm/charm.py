@@ -323,7 +323,7 @@ class Charm:
             channel = self.bot.get_channel(self.sys["NOTIF_CHANNEL"])
             await self.bot.send_message(channel, "{} **est parti(e)**".format(str(user)))
 
-    async def member_leave(self, user :discord.Member):
+    async def member_ban(self, user :discord.Member):
         if "NOTIF_CHANNEL" not in self.sys:
             self.sys["NOTIF_CHANNEL"] = "204585334925819904"
         if not self.sys["NOTIF_CHANNEL"] is None:
