@@ -30,6 +30,33 @@ class Charm:
         else:
             return False
 
+# TRIGGERS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>><
+
+    @commands.group(name="wel", pass_context=True, no_pm=True)
+    @checks.mod_or_permissions(kick_members=True)
+    async def charm_wel(self, ctx):
+        """Gestion Welcome"""
+        if ctx.invoked_subcommand is None:
+            await send_cmd_help(ctx)
+
+    @charm_wel.command(pass_context=True)
+    async def message(self, ctx, *message):
+        """Permet de définir un message à envoyer à un membre venant d'arriver sur le serveur."""
+        message = " ".join(message)
+        self.sys["WELCOME_MSG"] = message
+        fileIO("data/charm/sys.json", "save", self.sys)
+        await self.bot.say("Message réglé. Vous allez recevoir un aperçu.")
+        await self.bot.whisper("Voici un aperçu de ce que devrait voir un utilisateur arrivant sur le serveur:\n\n{}".format(message))
+
+    @charm_wel.command(pass_context=True)
+    async def channel(self, ctx, channel: discord.Channel):
+        """Permet de définir le channel où sera affiché les messages d'arrivées et de départ."""
+        self.sys["NOTIF_CHANNEL"] = channel.id
+        fileIO("data/charm/sys.json", "save", self.sys)
+        await self.bot.say("Les notifications seront désormais affichées sur *{}*".format(channel.name))
+
+# STICKERS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>><
+
     @commands.group(name = "stk", pass_context=True)
     async def charm_stk(self, ctx):
         """Gestion Stickers"""
@@ -278,6 +305,31 @@ class Charm:
                         await self.bot.send_message(author, "**Ne spammez pas les stickers.**\nCela est considéré comme du spam.")
                         break
 
+    async def member_join(self, user :discord.Member):
+        if "NOTIF_CHANNEL" not in self.sys:
+            self.sys["NOTIF_CHANNEL"] = "204585334925819904"
+        if not self.sys["NOTIF_CHANNEL"] is None:
+            channel = self.bot.get_channel(self.sys["NOTIF_CHANNEL"])
+            await self.bot.send_message(channel, "{} **est arrivé(e)**".format(user.mention))
+            if "WELCOME_MSG" not in self.sys:
+                self.sys["WELCOME_MSG"] = None
+            if not self.sys["WELCOME_MSG"] is None:
+                await self.bot.send_message(user, self.sys["WELCOME_MSG"])
+
+    async def member_leave(self, user :discord.Member):
+        if "NOTIF_CHANNEL" not in self.sys:
+            self.sys["NOTIF_CHANNEL"] = "204585334925819904"
+        if not self.sys["NOTIF_CHANNEL"] is None:
+            channel = self.bot.get_channel(self.sys["NOTIF_CHANNEL"])
+            await self.bot.send_message(channel, "{} **est parti(e)**".format(str(user)))
+
+    async def member_leave(self, user :discord.Member):
+        if "NOTIF_CHANNEL" not in self.sys:
+            self.sys["NOTIF_CHANNEL"] = "204585334925819904"
+        if not self.sys["NOTIF_CHANNEL"] is None:
+            channel = self.bot.get_channel(self.sys["NOTIF_CHANNEL"])
+            await self.bot.send_message(channel, "{} **est banni(e)**".format(str(user)))
+
 def check_folders():
     if not os.path.exists("data/charm"):
         print("Creation du fichier Charm...")
@@ -288,6 +340,7 @@ def check_folders():
         os.makedirs("data/charm/stkimg")
 
 def check_files():
+    default = {"NOTIF_CHANNEL": None, "WELCOME_MSG": None}
     if not os.path.isfile("data/charm/stk.json"):
         print("Creation du fichier de Charm stk.json...")
         fileIO("data/charm/stk.json", "save", {"USERS": {}, "STICKERS": {}})
@@ -300,5 +353,9 @@ def setup(bot):
     check_folders()
     check_files()
     n = Charm(bot)
-    bot.add_listener(n.charm_msg, "on_message")
     bot.add_cog(n)
+    bot.add_listener(n.charm_msg, "on_message")
+    # Triggers
+    bot.add_listener(n.member_join, "on_member_join")
+    bot.add_listener(n.member_leave, "on_member_remove")
+    bot.add_listener(n.member_ban, "on_member_ban")
