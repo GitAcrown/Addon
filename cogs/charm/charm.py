@@ -310,6 +310,8 @@ class Charm:
             self.sys["NOTIF_CHANNEL"] = "204585334925819904"
         if not self.sys["NOTIF_CHANNEL"] is None:
             channel = self.bot.get_channel(self.sys["NOTIF_CHANNEL"])
+            if not channel.server.id == "204585334925819904":
+                return
             await self.bot.send_message(channel, "{} **est arrivé(e)**".format(user.mention))
             if "WELCOME_MSG" not in self.sys:
                 self.sys["WELCOME_MSG"] = None
@@ -321,6 +323,8 @@ class Charm:
             self.sys["NOTIF_CHANNEL"] = "204585334925819904"
         if not self.sys["NOTIF_CHANNEL"] is None:
             channel = self.bot.get_channel(self.sys["NOTIF_CHANNEL"])
+            if not channel.server.id == "204585334925819904":
+                return
             await self.bot.send_message(channel, "{} **est parti(e)**".format(str(user)))
 
     async def member_ban(self, user :discord.Member):
@@ -328,6 +332,8 @@ class Charm:
             self.sys["NOTIF_CHANNEL"] = "204585334925819904"
         if not self.sys["NOTIF_CHANNEL"] is None:
             channel = self.bot.get_channel(self.sys["NOTIF_CHANNEL"])
+            if not channel.server.id == "204585334925819904":
+                return
             await self.bot.send_message(channel, "{} **est banni(e)**".format(str(user)))
 
 def check_folders():
