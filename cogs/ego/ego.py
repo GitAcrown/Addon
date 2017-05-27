@@ -8,6 +8,7 @@ from collections import namedtuple
 from __main__ import send_cmd_help
 from discord.ext import commands
 import time
+import operator
 from .utils.dataIO import fileIO, dataIO
 
 #Enregistrement depuis le
@@ -117,6 +118,23 @@ class EgoAPI:
             else:
                 return int(s)
 
+    def pop_class(self, user, top=5):
+        liste = []
+        for p in self.user:
+            n = 0
+            for u in self.user:
+                if "MENTIONS" in self.user[u]["STATS"]:
+                    if p in self.user[u]["STATS"]["MENTIONS"]:
+                        n += self.user[u]["STATS"]["MENTIONS"][p]["NB"]
+            if self.user[p]["ID"] == user.id:
+                k = [n, self.user[p]["ID"]]
+            liste.append([n, self.user[p]["ID"]])
+        sort = sorted(liste, key=operator.itemgetter(0))
+        sort.reverse()
+        place = sort.index(k)
+        sort = sort[:top]
+        return [sort, place]
+
 class Ego:
     """Système EGO : Assistant personnel [EN CONSTRUCTION]"""
 
@@ -202,6 +220,27 @@ class Ego:
             await self.bot.say(embed=em)
         else:
             pass
+
+    @commands.command(pass_context=True, no_pm=True)
+    async def epop(self, ctx, top = 5):
+        """Affiche le top X des personnes les plus populaires du serveur et votre place sur ce top.
+        
+        Par défaut le top 5."""
+        author = ctx.message.author
+        server = ctx.message.server
+        sort = self.ego.pop_class(author, top)
+        place = sort[1]
+        em = discord.Embed(color=author.color, title="EGO | Les E-Pop du serveur")
+        msg = ""
+        n = 1
+        for p in sort[0]:
+            user = server.get_member(p[1])
+            msg += "{} | *{}*\n".format(n, str(user))
+            n += 1
+        em.add_field(name = "Top {}".format(top), value=msg)
+        em.add_field(name = "Votre place", value="{}e".format(place + 1))
+        em.set_footer(text="Ces informations sont issues du système Ego")
+        await self.bot.say(embed=em)
 
 # LISTENERS & SYSTEME =============================================
     async def stats_listener(self, message):
