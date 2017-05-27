@@ -179,7 +179,7 @@ class Ego:
         msg = await self.bot.say(embed=em)
 
         await self.bot.add_reaction(msg, "➕")
-        await asyncio.sleep(0.25)
+        await asyncio.sleep(1.25)
         rap = await self.bot.wait_for_reaction("➕", message=msg, timeout=20)
         if rap == None:
             pass
