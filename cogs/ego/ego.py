@@ -142,11 +142,16 @@ class Ego:
         self.bot = bot
         self.ego = EgoAPI(bot, "data/ego/user.json")
 
-    @commands.group(name= "ego", pass_context=True)
-    async def ego_sys(self, ctx):
-        """Commandes Systeme EGO - Assistant personnel"""
-        if ctx.invoked_subcommand is None:
-            await send_cmd_help(ctx)
+    @commands.command(name="logs", pass_context=True)
+    async def changelog(self, ctx):
+        """Informations sur la dernière MAJ Majeure de EGO."""
+        em = discord.Embed(color=0x004D80)
+        cl = "- Ajout de 'Classement Epop' sur &card [+]\n" \
+             "- Léger changement sur le calcul de l'E-popularité\n" \
+             "- Ajout d'un bouton 'Aide' à &card"
+        em.add_field(name="Derniers changements", value=cl)
+        em.set_footer(text="MAJ faite le 28/05/17")
+        await self.bot.say(embed=em)
 
     @commands.command(pass_context=True)
     async def card(self, ctx, user: discord.Member = None):
@@ -193,12 +198,13 @@ class Ego:
             em.add_field(name="Channel favoris", value="#{}".format(mostchan.name))
         except:
             pass
-        em.set_footer(text="Certaines informations proviennent du Système Ego | V1.15")
+        em.set_footer(text="Certaines informations proviennent du Système Ego | V1.16 (&logs)")
         msg = await self.bot.say(embed=em)
 
         await self.bot.add_reaction(msg, "➕")
+        await self.bot.add_reaction(msg, "❔")
         await asyncio.sleep(1.25)
-        rap = await self.bot.wait_for_reaction("➕", message=msg, timeout=20)
+        rap = await self.bot.wait_for_reaction(["➕","❔"], message=msg, timeout=20)
         if rap == None:
             pass
         elif rap.reaction.emoji == "➕":
@@ -212,11 +218,25 @@ class Ego:
             else:
                 em.add_field(name="Sorties", value=0)
             em.add_field(name="Nb messages", value="{}".format(ego.stats["MESSAGES"]))
+            place = self.ego.pop_class(user)[1]
+            em.add_field(name="Classement Epop", value="{}".format(place))
             total = 0
             for e in ego.stats["MENTIONS"]:
                 total += 1
             em.add_field(name="Nb mentions", value="{}".format(total))
             em.set_footer(text="Informations relatives à l'inscription Ego. Ces informations ne sont pas protégées et relèvent du public.")
+            await self.bot.say(embed=em)
+        elif rap.reaction.emoji == "❔":
+            em = discord.Embed(color = user.color)
+            aide = "**Ego** est un système integré au bot qui permet de récolter des statistiques sur le serveur. Il n'enregistre pas vos messages.\n" \
+                   "- ID représente votre Identifiant Discord. C'est ce qui permet de savoir qui vous êtes pour Ego.\n" \
+                   "- L'Age du compte correspond au nombre de jours depuis lequel votre compte a été crée.\n" \
+                   "- Le Nombre de jour est celui qui compte depuis combien de jours vous êtes sur le serveur (Reset à chaque départ)\n" \
+                   "- 'Ego/' est le nombre de jours depuis lequel le système vous piste. Plus ce nombre est elevé, plus les statistiques sont exactes.\n" \
+                   "- Vos relations proviennent d'un calcul effectué par un algorithme grace aux données récoltés. Elles ne sont pas à prendre au sérieux.\n" \
+                   "L'Emoji *+* vous permet d'avoir plus d'informations sur votre profil (Entrées et sorties du serveur par exemple)."
+            em.add_field(name="Aide", value=aide)
+            em.set_footer(text="Pour avoir plus d'informations sur la dernière MAJ, utilisez &logs.")
             await self.bot.say(embed=em)
         else:
             pass
