@@ -237,7 +237,8 @@ class Ego:
                    "L'Emoji *+* vous permet d'avoir plus d'informations sur votre profil (Entrées et sorties du serveur par exemple)."
             em.add_field(name="Aide", value=aide)
             em.set_footer(text="Pour avoir plus d'informations sur la dernière MAJ, utilisez &logs.")
-            await self.bot.say(embed=em)
+            await asyncio.sleep(0.5)
+            await self.bot.send_message(rap.user, embed=em)
         else:
             pass
 
