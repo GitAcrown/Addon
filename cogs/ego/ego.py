@@ -150,7 +150,7 @@ class Ego:
         em = discord.Embed(color=0x5184a5)
         cl = "- Modification du calcul d'E-popularité"
         em.add_field(name="Version 1.21", value=cl)
-        em.set_footer(text="MAJ faite le 28/05/17")
+        em.set_footer(text="MAJ faite le 31/05/17")
         await self.bot.say(embed=em)
 
     @commands.command(pass_context=True)
