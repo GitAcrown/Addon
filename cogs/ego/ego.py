@@ -126,9 +126,11 @@ class EgoAPI:
                 if "MENTIONS" in self.user[u]["STATS"]:
                     if p in self.user[u]["STATS"]["MENTIONS"]:
                         n += self.user[u]["STATS"]["MENTIONS"][p]["NB"]
+            t = self.user[p]["STATS"]["CREATION"] / (60*60*24)
+            mn = n/t
             if self.user[p]["ID"] == user.id:
-                k = [n, self.user[p]["ID"]]
-            liste.append([n, self.user[p]["ID"]])
+                k = [mn, self.user[p]["ID"]]
+            liste.append([mn, self.user[p]["ID"]])
         sort = sorted(liste, key=operator.itemgetter(0))
         sort.reverse()
         place = sort.index(k)
