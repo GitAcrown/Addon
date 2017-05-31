@@ -147,11 +147,9 @@ class Ego:
     @commands.command(name="logs", pass_context=True)
     async def changelog(self, ctx):
         """Informations sur la dernière MAJ Majeure de EGO."""
-        em = discord.Embed(color=0x004D80)
-        cl = "- Ajout de 'Classement Epop' sur &card [+]\n" \
-             "- Léger changement sur le calcul de l'E-popularité\n" \
-             "- Ajout d'un bouton 'Aide' à &card"
-        em.add_field(name="Derniers changements", value=cl)
+        em = discord.Embed(color=0x5184a5)
+        cl = "- Modification du calcul d'E-popularité"
+        em.add_field(name="Version 1.21", value=cl)
         em.set_footer(text="MAJ faite le 28/05/17")
         await self.bot.say(embed=em)
 
@@ -200,7 +198,7 @@ class Ego:
             em.add_field(name="Channel favoris", value="#{}".format(mostchan.name))
         except:
             pass
-        em.set_footer(text="Certaines informations proviennent du Système Ego | V1.16 (&logs)")
+        em.set_footer(text="Certaines informations proviennent du Système Ego | V1.21 (&logs)")
         msg = await self.bot.say(embed=em)
 
         await self.bot.add_reaction(msg, "➕")
