@@ -3,6 +3,7 @@ from discord.ext import commands
 from .utils import checks
 import asyncio
 import os
+import re
 import random
 from cogs.utils.dataIO import fileIO, dataIO
 from __main__ import send_cmd_help
@@ -17,6 +18,42 @@ class Chill:
         self.bot = bot
         self.sys = dataIO.load_json("data/chill/sys.json")
         self.factory = dataIO.load_json("data/chill/factory.json")
+
+    @commands.command(pass_context=True)
+    async def emojis(self, ctx, chanbase: discord.Channel, first, nombre: int):
+        """Donne des statistiques sur l'utilisation des emojis.
+        Aide:
+        Chanbase = Channel d'appartenance du message 'First'
+        First = ID du message depuis lequel on cherche les statistiques
+        Nombre = Nombre de messages à analyser après 'First'
+        """
+        server = ctx.message.server
+        channels = server.channels
+        first = self.bot.get_message(chanbase, first)
+        n = 0
+        dico = {}
+        await self.bot.whisper("Patientez pendant que je récolte les statistiques liées à votre demande...")
+        for channel in channels:
+            async for message in self.bot.logs_from(channel, nombre, after=first):
+                out = re.compile(':(.*?):', re.DOTALL | re.IGNORECASE).findall(message.content)
+                if out:
+                    for o in out:
+                        n += 1
+                        if o in dico:
+                            dico[o]["NB"] += 1
+                        else:
+                            dico[o] = {"NOM": o,
+                                       "NB" : 1}
+        msg = "Emoji / Nombre\n"
+        c = 1
+        for e in dico:
+            msg += "{}> {}\n".format(dico[e]["NOM"], dico[e]["NB"])
+            if len(msg) > 1950 * c:
+                msg += "#"
+                c += 1
+        msg = msg.split("#")
+        for m in msg:
+            await self.bot.whisper(m)
 
     @commands.command(pass_context=True, no_pm=True)
     async def decodex(self, ctx, *question):
