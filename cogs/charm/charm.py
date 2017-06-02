@@ -30,6 +30,12 @@ class Charm:
         else:
             return False
 
+    def old_stick(self, nom):
+        if nom in self.old["STICKER"]:
+            return True
+        else:
+            return False
+
 # TRIGGERS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>><
 
     @commands.group(name="wel", pass_context=True, no_pm=True)
@@ -275,6 +281,10 @@ class Charm:
                                 await self.bot.send_message(author, "Vous n'avez pas de sticker custom. Vous pouvez un mettre un avec {}stk submit custom <url>")
                         elif stk in self.stk["STICKERS"]:
                             return_img = [self.stk["STICKERS"][stk]["URL"], self.stk["STICKERS"][stk]["CHEMIN"], self.stk["STICKERS"][stk]["FORMAT"]]
+                        elif stk in self.old["STICKER"]:
+                            if stk not in self.stk["STICKERS"]:
+                                await self.bot.send_message(author, "Ce sticker existe dans mes anciens fichiers mais à été nettoyé\n"
+                                                                    "Vous pouvez tenter de l'importer avec '&stk import {}'".format(stk))
                         else:
                             break
 
