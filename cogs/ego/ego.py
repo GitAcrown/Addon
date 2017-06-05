@@ -137,6 +137,14 @@ class EgoAPI:
         sort = sort[:top]
         return [sort, place]
 
+    def set_site(self, user, url:str):
+        if user.id in self.user:
+            self.user[user.id]["STATS"]["SITE"] = url
+            self.save()
+            return True
+        else:
+            return False
+
 class Ego:
     """Système EGO : Assistant personnel [EN CONSTRUCTION]"""
 
@@ -154,6 +162,18 @@ class Ego:
         await self.bot.say(embed=em)
 
     @commands.command(pass_context=True)
+    async def site(self, ctx, url):
+        """Permet de rajouter un site personnel à sa Carte Ego."""
+        author = ctx.message.author
+        if "http" in url:
+            if self.ego.set_site(author, url):
+                await self.bot.say("Site enregistré.")
+            else:
+                await self.bot.say("Une erreur s'est produite. Essayez plus tard.")
+        else:
+            await self.bot.say("Ce n'est pas une URL valide.")
+
+    @commands.command(pass_context=True)
     async def card(self, ctx, user: discord.Member = None):
         """Permet de recevoir une carte affichant des informations complètes à propos d'un utilisateur."""
         server = ctx.message.server
@@ -162,7 +182,8 @@ class Ego:
             user = ctx.message.author
         ego = self.ego.logged(user)
         epoch = self.ego.epoch(user, "jour")
-        em = discord.Embed(title="{}".format(str(user)), color=user.color)
+        site = ego.stats["SITE"] if "SITE" in ego.stats else None
+        em = discord.Embed(title="{}".format(str(user)), color=user.color, url=site)
         em.set_thumbnail(url=user.avatar_url)
         em.add_field(name= "ID", value=str(user.id))
         em.add_field(name= "Surnommé", value=user.display_name)
@@ -193,11 +214,6 @@ class Ego:
         except:
             pass
         em.add_field(name="Relations", value="- *{}*\n- *{}*\n- *{}*".format(str(most), str(pail), str(cuck)))
-        try:
-            mostchan = server.get_channel(self.ego.plus_smth(user, "CHANNELS")[0])
-            em.add_field(name="Channel favoris", value="#{}".format(mostchan.name))
-        except:
-            pass
         em.set_footer(text="Certaines informations proviennent du Système Ego | V1.3 (&logs)")
         msg = await self.bot.say(embed=em)
 
@@ -275,13 +291,6 @@ class Ego:
         em.add_field(name = "Votre place", value="{}e".format(place + 1))
         em.set_footer(text="Ces informations sont issues du système Ego")
         await self.bot.say(embed=em)
-
-    @commands.command(pass_context=True, name="force_shut") #SHHHHHHHHHHHHHHHH
-    async def fcd(self, ctx):
-        """Redémarre le bot d'urgence"""
-        await self.bot.say("Redémarrage...")
-        await asyncio.sleep(1.5)
-        await self.bot.logout()
 
 # LISTENERS & SYSTEME =============================================
     async def stats_listener(self, message):
