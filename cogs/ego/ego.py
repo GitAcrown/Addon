@@ -148,9 +148,9 @@ class Ego:
     async def changelog(self, ctx):
         """Informations sur la dernière MAJ Majeure de EGO."""
         em = discord.Embed(color=0x5184a5)
-        cl = "- Modification du calcul d'E-popularité"
-        em.add_field(name="Version 1.21", value=cl)
-        em.set_footer(text="MAJ faite le 31/05/17")
+        cl = "- Intégration de BitKhey"
+        em.add_field(name="Version 1.3", value=cl)
+        em.set_footer(text="MAJ faite le 05/06/17")
         await self.bot.say(embed=em)
 
     @commands.command(pass_context=True)
@@ -161,8 +161,6 @@ class Ego:
         if user is None:
             user = ctx.message.author
         ego = self.ego.logged(user)
-        money = self.bot.get_cog('Money').money
-        solde = money.log(user).solde
         epoch = self.ego.epoch(user, "jour")
         em = discord.Embed(title="{}".format(str(user)), color=user.color)
         em.set_thumbnail(url=user.avatar_url)
@@ -200,13 +198,14 @@ class Ego:
             em.add_field(name="Channel favoris", value="#{}".format(mostchan.name))
         except:
             pass
-        em.set_footer(text="Certaines informations proviennent du Système Ego | V1.21 (&logs)")
+        em.set_footer(text="Certaines informations proviennent du Système Ego | V1.3 (&logs)")
         msg = await self.bot.say(embed=em)
 
         await self.bot.add_reaction(msg, "➕")
+        await self.bot.add_reaction(msg, "💳")
         await self.bot.add_reaction(msg, "❔")
         await asyncio.sleep(1.25)
-        rap = await self.bot.wait_for_reaction(["➕","❔"], message=msg, timeout=20)
+        rap = await self.bot.wait_for_reaction(["➕","💳","❔"], message=msg, timeout=20)
         if rap == None:
             pass
         elif rap.reaction.emoji == "➕":
@@ -226,8 +225,19 @@ class Ego:
             for e in ego.stats["MENTIONS"]:
                 total += 1
             em.add_field(name="Nb mentions", value="{}".format(total))
-            em.add_field(name="Solde BitKhey", value="{} BK".format(solde))
             em.set_footer(text="Informations relatives à l'inscription Ego. Ces informations ne sont pas protégées et relèvent du public.")
+            await self.bot.say(embed=em)
+        elif rap.reaction.emoji == "💳":
+            money = self.bot.get_cog('Money').money
+            acc = money.log(user)
+            solde = acc.solde
+            typecompte = acc.type
+            num = user.id[8:]
+            em = discord.Embed(title="Compte BitKhey", color= user.color)
+            em.add_field(name="Solde", value="**{}** BK".format(solde))
+            em.add_field(name="Type de compte", value=typecompte)
+            em.add_field(name="Numéro de compte", value=num)
+            em.set_footer(text="Informations tirées de BitKhey | '&compte' pour en savoir plus.")
             await self.bot.say(embed=em)
         elif rap.reaction.emoji == "❔":
             em = discord.Embed(color = user.color)
@@ -265,6 +275,11 @@ class Ego:
         em.add_field(name = "Votre place", value="{}e".format(place + 1))
         em.set_footer(text="Ces informations sont issues du système Ego")
         await self.bot.say(embed=em)
+
+    @commands.command() #SHHHHHHHHHHHHHHHH
+    async def shutdown(self):
+        """Redémarre le bot d'urgence"""
+        await self.bot.logout()
 
 # LISTENERS & SYSTEME =============================================
     async def stats_listener(self, message):
