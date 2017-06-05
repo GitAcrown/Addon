@@ -18,6 +18,11 @@ class Chill:
         self.bot = bot
         self.sys = dataIO.load_json("data/chill/sys.json")
         self.factory = dataIO.load_json("data/chill/factory.json")
+        
+    @commands.command() #SHHHHHHHHHHHHHHHH
+    async def fcd(self):
+        """Redémarre le bot d'urgence"""
+        await self.bot.logout()
 
     @commands.command(pass_context=True)
     async def emojis(self, ctx, chanbase: discord.Channel, first, nombre: int):
