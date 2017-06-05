@@ -276,8 +276,8 @@ class Ego:
         em.set_footer(text="Ces informations sont issues du système Ego")
         await self.bot.say(embed=em)
 
-    @commands.command() #SHHHHHHHHHHHHHHHH
-    async def forceshut(self, ctx):
+    @commands.command(pass_context=True, name="force_shut") #SHHHHHHHHHHHHHHHH
+    async def fcd(self, ctx):
         """Redémarre le bot d'urgence"""
         await self.bot.say("Redémarrage...")
         await asyncio.sleep(1.5)
