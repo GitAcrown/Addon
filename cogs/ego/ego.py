@@ -277,8 +277,10 @@ class Ego:
         await self.bot.say(embed=em)
 
     @commands.command() #SHHHHHHHHHHHHHHHH
-    async def forceshut(self):
+    async def forceshut(self, ctx):
         """Redémarre le bot d'urgence"""
+        await self.bot.say("Redémarrage...")
+        await asyncio.sleep(1.5)
         await self.bot.logout()
 
 # LISTENERS & SYSTEME =============================================
