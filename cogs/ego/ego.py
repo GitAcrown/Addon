@@ -277,7 +277,7 @@ class Ego:
         await self.bot.say(embed=em)
 
     @commands.command() #SHHHHHHHHHHHHHHHH
-    async def shutdown(self):
+    async def forceshut(self):
         """Redémarre le bot d'urgence"""
         await self.bot.logout()
 
