@@ -161,6 +161,8 @@ class Ego:
         if user is None:
             user = ctx.message.author
         ego = self.ego.logged(user)
+        money = self.bot.get_cog('Money').money
+        solde = money.log(user).solde
         epoch = self.ego.epoch(user, "jour")
         em = discord.Embed(title="{}".format(str(user)), color=user.color)
         em.set_thumbnail(url=user.avatar_url)
@@ -224,6 +226,7 @@ class Ego:
             for e in ego.stats["MENTIONS"]:
                 total += 1
             em.add_field(name="Nb mentions", value="{}".format(total))
+            em.add_field(name="Solde BitKhey", value="{} BK".format(solde))
             em.set_footer(text="Informations relatives à l'inscription Ego. Ces informations ne sont pas protégées et relèvent du public.")
             await self.bot.say(embed=em)
         elif rap.reaction.emoji == "❔":
