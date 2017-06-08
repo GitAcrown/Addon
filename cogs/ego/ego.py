@@ -156,7 +156,7 @@ class Ego:
     async def changelog(self, ctx):
         """Informations sur la dernière MAJ Majeure de EGO."""
         em = discord.Embed(color=0x5184a5)
-        cl = "- Intégration de BitKhey"
+        cl = "- Ajout de 'InstantEgo'
         em.add_field(name="Version 1.3", value=cl)
         em.set_footer(text="MAJ faite le 05/06/17")
         await self.bot.say(embed=em)
@@ -214,7 +214,7 @@ class Ego:
         except:
             pass
         em.add_field(name="Relations", value="- *{}*\n- *{}*\n- *{}*".format(str(most), str(pail), str(cuck)))
-        em.set_footer(text="Certaines informations proviennent du Système Ego | V1.3 (&logs)")
+        em.set_footer(text="Certaines informations proviennent du Système Ego | V1.31 (&logs)")
         msg = await self.bot.say(embed=em)
 
         await self.bot.add_reaction(msg, "➕")
@@ -342,6 +342,35 @@ class Ego:
         out = self.ego.get(user, "STATS", "SORTIES", 0) + 1
         self.ego.edit(user, "STATS", "SORTIES", out)
 
+    async def instant_ego(self, reaction, author):
+        if reaction.emoji == "🔍":
+            user = reaction.message.author
+            message = reaction.message
+
+            roles = [x.name for x in user.roles if x.name != "@everyone"]
+            if not roles: roles = ["None"]
+            ego = self.ego.logged(user)
+            epoch = self.ego.epoch(user, "jour")
+            site = ego.stats["SITE"] if "SITE" in ego.stats else None
+            em = discord.Embed(color=user.color, url=site)
+            em.set_author(name="InstantEgo | {}".format(str(user)), icon_url=user.avatar_url)
+            em.add_field(name="Surnommé", value=user.display_name)
+            em.add_field(name="Type de compte", value="Utilisateur" if user.bot is False else "Bot")
+            passed = (message.timestamp - user.created_at).days
+            em.add_field(name="Age du compte", value=str(passed) + " jours")
+            passed = (message.timestamp - user.joined_at).days
+            em.add_field(name="Nb de Jours", value="{} jours (Ego/{})".format(passed, epoch))
+            rolelist = [r.name for r in user.roles]
+            rolelist.remove('@everyone')
+            em.add_field(name="Roles", value=rolelist)
+            em.set_footer(text="Données issues en partie de Ego | '&card {}' pour en savoir plus".format(user.name))
+
+            if epoch == 0:
+                epoch = 1
+            em.add_field(name="Ratio de messages", value="{}/jour".format(str(
+                round(ego.stats["MESSAGES"] / epoch, 2))))
+            await self.bot.send_message(author, embed=em)
+
 def check_folders():
     if not os.path.exists("data/ego"):
         print("Creation du dossier EGO...")
@@ -359,4 +388,5 @@ def setup(bot):
     bot.add_listener(n.stats_listener, "on_message")
     bot.add_listener(n.entree_listen, "on_member_join")
     bot.add_listener(n.sortie_listen, "on_member_remove")
+    bot.add_listener(n.instant_ego, "on_reaction_add")
     bot.add_cog(n)
