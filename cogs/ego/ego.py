@@ -156,7 +156,7 @@ class Ego:
     async def changelog(self, ctx):
         """Informations sur la dernière MAJ Majeure de EGO."""
         em = discord.Embed(color=0x5184a5)
-        cl = "- Ajout de 'InstantEgo'
+        cl = "- Ajout de 'InstantEgo'"
         em.add_field(name="Version 1.3", value=cl)
         em.set_footer(text="MAJ faite le 05/06/17")
         await self.bot.say(embed=em)
