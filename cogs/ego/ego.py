@@ -145,6 +145,24 @@ class EgoAPI:
         else:
             return False
 
+    def total_ment(self, user):
+        if user.id in self.user:
+            nb = 0
+            for m in self.user[user.id]["STATS"]["MENTIONS"]:
+                nb += self.user[user.id]["STATS"]["MENTIONS"][m]["NB"]
+            return nb
+        else:
+            return False
+
+    def nb_ment(self, user, search):
+        if user.id in self.user:
+            if search.id in self.user[user.id]["STATS"]["MENTIONS"]:
+                return self.user[user.id]["STATS"]["MENTIONS"][search.id]["NB"]
+            else:
+                return False
+        else:
+            return False
+
 class Ego:
     """Système EGO : Assistant personnel [EN CONSTRUCTION]"""
 
@@ -291,6 +309,20 @@ class Ego:
         em.add_field(name = "Votre place", value="{}e".format(place + 1))
         em.set_footer(text="Ces informations sont issues du système Ego")
         await self.bot.say(embed=em)
+
+    @commands.command(pass_context=True, no_pm=True)
+    async def compat(self, ctx, p1: discord.Member, p2: discord.Member = None):
+        """Calcul de la compatibilité de deux personnes.
+        
+        Si P2 n'est pas précisé, c'est par défaut VOUS."""
+        if p2 == None:
+            p2 = ctx.message.author
+        nbp1_p2 = self.ego.nb_ment(p1, p2)
+        pour1 = (nbp1_p2 / self.ego.total_ment(p1))*100
+        nbp2_p1 = self.ego.nb_ment(p2, p1)
+        pour2 = (nbp2_p1 / self.ego.total_ment(p2))*100
+        moy = round((pour1 + pour2) / 2, 2)
+        await self.bot.say("La compatibilité entre **{}** et **{}** est de *{}%* !".format(p1.name, p2.name, moy))
 
 # LISTENERS & SYSTEME =============================================
     async def stats_listener(self, message):
