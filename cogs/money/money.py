@@ -227,10 +227,10 @@ class Money:
             self.money.reset_minage(author)
             await self.bot.say("Vous avez {} fragments.\nVous récoltez **{}** BK".format(frag, somme))
         else:
-            await self.bot.say("**Récolte d'hier** (Malus -75% pour récolte tardive)\nVous avez {} fragments. Vous avez donc **{}** BK".format(frag, somme))
             somme = int(round(specs["NB"] / 10, 0))
             frag = specs["NB"]
-            self.money.add_solde(author, somme, "Récolte minage")
+            await self.bot.say("**Récolte d'hier** (Malus -75% pour récolte tardive)\nVous avez {} fragments. Vous avez donc **{}** BK".format(frag, somme))
+            self.money.add_solde(author, somme, "Récolte minage (Tardive)")
             self.money.reset_minage(author)
 
     @_bit.command(pass_context=True, no_pm=True)
