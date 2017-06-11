@@ -322,7 +322,10 @@ class Ego:
         nbp2_p1 = self.ego.nb_ment(p2, p1)
         pour2 = (nbp2_p1 / self.ego.total_ment(p2))*100
         moy = round((pour1 + pour2) / 2, 2)
-        await self.bot.say("La compatibilité entre **{}** et **{}** est de *{}%* !".format(p1.name, p2.name, moy))
+        await self.bot.say("**Résultats :**\n"
+                           "*{0}* > *{1}* | **{2}**%\n"
+                           "*{1}* > *{0}* | **{3}**%\n"
+                           "*Total* = **{4}**%".format(p1.name, p2.name, pour1, pour2, moy))
 
 # LISTENERS & SYSTEME =============================================
     async def stats_listener(self, message):
