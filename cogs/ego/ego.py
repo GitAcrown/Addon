@@ -325,7 +325,7 @@ class Ego:
         await self.bot.say("**Résultats :**\n"
                            "*{0}* > *{1}* | **{2}**%\n"
                            "*{1}* > *{0}* | **{3}**%\n"
-                           "*Total* = **{4}**%".format(p1.name, p2.name, pour1, pour2, moy))
+                           "*Total* = **{4}**%".format(p1.name, p2.name, int(pour1), int(pour2), moy))
 
 # LISTENERS & SYSTEME =============================================
     async def stats_listener(self, message):
