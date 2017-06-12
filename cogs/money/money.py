@@ -219,19 +219,18 @@ class Money:
         
         Attention : Si vous ne récupérez pas tous les jours vos fragments, ils sont perdus."""
         author = ctx.message.author
-        specs = self.money.log(author).specs["MINAGE"]
-        if specs["DAY"] == time.strftime("%d", time.gmtime()):
-            somme = int(round(specs["NB"] / 6, 0))
+        if "MINAGE" in self.money.log(author).specs
+            pecs = self.money.log(author).specs["MINAGE"]
+            somme = int(round(specs["NB"] / 4, 0))
             frag = specs["NB"]
             self.money.add_solde(author, somme, "Récolte minage")
             self.money.reset_minage(author)
-            await self.bot.say("Vous avez {} fragments.\nVous récoltez **{}** BK".format(frag, somme))
+            msg = "Votre récolte :\n" \
+                  "*{}* fragments\n" \
+                  "Vous obtenez **{}** BK".format(frag, somme)
+            await self.bot.say(msg)
         else:
-            somme = int(round(specs["NB"] / 10, 0))
-            frag = specs["NB"]
-            await self.bot.say("**Récolte d'hier** (Malus -75% pour récolte tardive)\nVous avez {} fragments. Vous avez donc **{}** BK".format(frag, somme))
-            self.money.add_solde(author, somme, "Récolte minage (Tardive)")
-            self.money.reset_minage(author)
+            await self.bot.say("Vous n'avez encore aucun fragment.")
 
     @_bit.command(pass_context=True, no_pm=True)
     @checks.mod_or_permissions(manage_messages=True)
@@ -268,12 +267,9 @@ class Money:
                     acc = self.money.log(m)
                     if "MINAGE" not in acc.specs:
                         acc.specs["MINAGE"] = {"DAY": time.strftime("%d", time.gmtime()), "NB": 0}
-                    if acc.specs["MINAGE"]["DAY"] != time.strftime("%d", time.gmtime()):
-                        acc.specs["MINAGE"]["DAY"] = time.strftime("%d", time.gmtime())
-                        acc.specs["MINAGE"]["NB"] = 0
                     acc.specs["MINAGE"]["NB"] += 1
                     self.money.save()
-            await asyncio.sleep(300)
+            await asyncio.sleep(180)
 
 def check_folders():
     if not os.path.exists("data/money"):
