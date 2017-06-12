@@ -219,7 +219,7 @@ class Money:
         
         Attention : Si vous ne récupérez pas tous les jours vos fragments, ils sont perdus."""
         author = ctx.message.author
-        if "MINAGE" in self.money.log(author).specs
+        if "MINAGE" in self.money.log(author).specs:
             pecs = self.money.log(author).specs["MINAGE"]
             somme = int(round(specs["NB"] / 4, 0))
             frag = specs["NB"]
