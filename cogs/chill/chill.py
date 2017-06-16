@@ -68,9 +68,11 @@ class Chill:
     async def ghostbuster(self, ctx, user: discord.Member):
         """Permet de révéler une personne en 'Invisible'"""
         if user.status == discord.Status.invisible:
-            await self.bot.say("**{}** est connecté. Il est juste invisible ¯\_(ツ)_/¯")
-        else:
+            await self.bot.say("**{}** est connecté. Il est juste invisible ¯\_(ツ)_/¯".format(user.display_name))
+        elif user.status == discord.Status.offline:
             await self.bot.say("Cet utilisateur n'est pas connecté. Il n'est pas invisible...")
+        else:
+            await self.bot.say("Cet utilisateur est connecté mais n'est pas invisible.")
 
     @commands.command(pass_context=True, no_pm=True)
     async def decodex(self, ctx, *question):
