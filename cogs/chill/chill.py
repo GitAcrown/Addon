@@ -18,11 +18,15 @@ class Chill:
         self.bot = bot
         self.sys = dataIO.load_json("data/chill/sys.json")
         self.factory = dataIO.load_json("data/chill/factory.json")
-        
-    @commands.command() #SHHHHHHHHHHHHHHHH
-    async def fcd(self):
-        """Redémarre le bot d'urgence"""
-        await self.bot.logout()
+
+    @commands.command(pass_context=True)
+    async def int(self, ctx, message, url=None):
+        """Permet d'afficher un message en format INTEGRE"""
+        em = discord.Embed(color = ctx.message.author.color, description=message)
+        if url != None:
+            em.set_image(url=url)
+        em.set_author(name=ctx.message.author.name, icon_url=ctx.message.author.avatar_url)
+        await self.bot.say(embed=em)
 
     @commands.command(pass_context=True)
     async def emojis(self, ctx, chanbase: discord.Channel, first, nombre: int):
@@ -59,6 +63,14 @@ class Chill:
         msg = msg.split("#")
         for m in msg:
             await self.bot.whisper(m)
+
+    @commands.command(aliases=["gb"], pass_context=True, no_pm=True)
+    async def ghostbuster(self, ctx, user: discord.Member):
+        """Permet de révéler une personne en 'Invisible'"""
+        if user.status == discord.Status.invisible:
+            await self.bot.say("**{}** est connecté. Il est juste invisible ¯\_(ツ)_/¯")
+        else:
+            await self.bot.say("Cet utilisateur n'est pas connecté. Il n'est pas invisible...")
 
     @commands.command(pass_context=True, no_pm=True)
     async def decodex(self, ctx, *question):
