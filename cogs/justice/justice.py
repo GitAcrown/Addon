@@ -9,7 +9,7 @@ from cogs.utils.dataIO import fileIO, dataIO
 from __main__ import send_cmd_help, settings
 import time
 
-default = {"PRSROLE": None}
+default = {"PRSROLE": "Prison", "PRSCHAN": "212928957337567242", "2EGEN": False}
 
 class Justice:
     """Outils de modération avancés."""
@@ -18,165 +18,85 @@ class Justice:
         self.bot = bot
         self.sys = dataIO.load_json("data/justice/sys.json")
         self.case = dataIO.load_json("data/justice/case.json")
-
-    @commands.group(pass_context=True)
-    async def prs(self, ctx):
-        """Commandes de gestion Prison."""
-        if ctx.invoked_subcommand is None:
-            await send_cmd_help(ctx)
-
-    @prs.command(pass_context=True)
-    @checks.mod_or_permissions(administrator=True)
-    async def setrole(self, ctx, role: discord.Role):
-        """Réglage du rôle Prison."""
-        channel = ctx.message.channel
-        author = ctx.message.author
-        if self.sys["PRSROLE"] is None:
-            self.sys["PRSROLE"] = role.name
-            if role.hoist is False:
-                await self.bot.say("Je vous conseille de régler ce rôle pour les afficher dans une liste à part.")
+        if "2EGEN" not in self.sys or self.sys["2EGEN"] is False:
+            self.case = {}
+            self.sys = default
+            self.sys["2EGEN"] = True
             fileIO("data/justice/sys.json", "save", self.sys)
-            await self.bot.say("Rôle enregistré.")
-        else:
-            await self.bot.say(
-                "Le rôle {} est déja renseigné. Voulez-vous l'enlver ? (O/N)".format(self.sys["PRSROLE"]))
-            rep = await self.bot.wait_for_message(author=author, channel=channel)
-            rep = rep.content.lower()
-            if rep == "o":
-                await self.bot.say("Le rôle à été retiré.")
-                self.sys["PRSROLE"] = None
-                fileIO("data/justice/sys.json", "save", self.sys)
-            elif rep == "n":
-                await self.bot.say("Le rôle est conservé.")
-            else:
-                await self.bot.say("Réponse invalide, le rôle est conservé.")
-
-    @prs.command(pass_context=True, no_pm=True)
-    @checks.mod_or_permissions(kick_members=True)
-    async def apply(self, ctx, user: discord.Member, temps: int = 5):
-        """Ajoute ou retire une personne de prison.
-        > Paramètres :
-        - user : Utilisateur visé (Mention ou Pseudo exact)
-        - temps : Temps en prison, par défaut 5 minutes.
-        """
-        server = ctx.message.server
-        id = user.id
-        role = self.sys["PRSROLE"]
-        r = discord.utils.get(ctx.message.server.roles, name = role)
-        if id not in self.case:
-            self.case[user.id] = {"EXACT" : str(user),
-                                  "VISITE" : False,
-                                  "SORTIE_PRS": None}
             fileIO("data/justice/case.json", "save", self.case)
+
+    @commands.command(aliases=["p", "jail"], pass_context=True, no_pm=True)
+    async def prison(self, ctx, user: discord.Member, temps: int = 5, *raison: str):
+        """Permet de mettre quelqu'un en Prison pendant un certain temps.
+        
+        user > Utilisateur visé (Mention ou Pseudo absolu)
+        temps > Temps en minutes de la mise en prison (Optionnel, par défaut 5m)
+        raison > Raison à la mise en prison (Optionnel)"""
+        if raison == "":
+            raison = None
+        else:
+            raison = " ".join(raison)
+        role = self.sys["PRSROLE"]
+        chan = self.bot.get_channel(self.sys["PRSCHAN"])
+        mrole = discord.utils.get(ctx.message.server.roles, name=role)
         if temps >= 1:
-            sec = temps * 60 #Nous voulons un temps en secondes
-            now = int(time.time())
-            sortie = now + sec
-            if role not in [r.name for r in user.roles]:
-                await self.bot.add_roles(user, r)
-                await self.bot.say("{} est désormais en prison pour {} minute(s).".format(user.mention, temps))
-                await self.bot.send_message(user, "__Vous êtes désormais en prison pour {} minute(s).__\nVous avez désormais accès au salon *Goulag* pour toute contestation.".format(temps))
-                self.case[user.id]["SORTIE_PRS"] = sortie
-                self.case[user.id]["VISITE"] = False
+            sec = temps * 60  # Temps en secondes
+            if user.id not in self.case:
+                self.case[user.id] = {"ID": user.id,
+                                      "HISTO": [],
+                                      "TEMPS" : None,
+                                      "KARMA" : 0}
+                self.case[user.id]["KARMA"] -= 1
                 fileIO("data/justice/case.json", "save", self.case)
-                await asyncio.sleep(sec) #Attente ~~~~~~~~
-                if role in [r.name for r in user.roles]:
-                    try:
-                        await self.bot.remove_roles(user, r)
-                        await self.bot.say("{} est désormais libre.".format(user.mention))
-                        await self.bot.send_message(user, "__Vous êtes désormais libre.__")
-                        self.case[user.id]["SORTIE_PRS"] = None
-                        fileIO("data/justice/case.json", "save", self.case)
-                    except:
-                        await self.bot.whisper("*L'utilisateur {} emprisonné n'est plus sur le serveur.*".format(user.name))
-                        self.case[user.id]["SORTIE_PRS"] = None
-                        fileIO("data/justice/case.json", "save", self.case)
+            if role not in [r.name for r in user.roles]:
+                self.case[user.id]["TEMPS"] = time.time() + sec
+                t = time.strftime("%d/%m - %H:%M", time.localtime())
+                if raison == None:
+                    raison = "Aucune raison"
+                    msgp = "**{}** à été envoyé en prison pendant {}m.\nRaison: *{}*".format(user.name, temps, raison)
                 else:
-                    return
+                    msgp = "**{}** à été envoyé en prison pour {} minutes.".format(user.name, temps)
+                self.case[user.id]["HISTO"].append("{} | **+** Prison pour {} minute(s).\nRaison: *{}*".format(t, temps, raison))
+                fileIO("data/justice/case.json", "save", self.case)
+                await self.bot.add_roles(user, mrole)
+                await self.bot.say(msgp)
+                await self.bot.send_message(chan, "{} | Vous avez été mis en prison pour {}m.\nUtilisez *{}sortie* pour demander à en sortir lorsque votre peine sera effectuée.".format(user.mention, temps, ctx.prefix))
             else:
-                try:
-                    await self.bot.remove_roles(user, r)
-                    if mute is True:
-                        try:
-                            self.bot.server_voice_state(user, mute=False)
-                        except:
-                            pass
-                    else:
-                        pass
-                    await self.bot.say("{} à été libéré.".format(user.mention))
-                    await self.bot.send_message(user, "__Vous avez été libéré plus tôt que prévu.__")
-                    self.case[user.id]["SORTIE_PRS"] = None
-                    fileIO("data/justice/case.json", "save", self.case)
-                except:
-                    await self.bot.whisper("*L'utilisateur {} emprisonné n'est plus sur le serveur.*".format(user.name))
-                    self.case[user.id]["SORTIE_PRS"] = None
-                    fileIO("data/justice/case.json", "save", self.case)
+                t = time.strftime("%d/%m - %H:%M", time.localtime())
+                await self.bot.remove_roles(user, mrole)
+                await self.bot.say("**{}** à été libéré.".format(user.name))
+                await self.bot.send_message(user, "Vous avez été libéré de la prison plus tôt que prévu par {}.".format(ctx.message.author.
+                                                                                                                        name))
+                self.case[user.id]["HISTO"].append("{} | **!** Libéré par {} plus tôt que prévu.".format(t, ctx.message.author.name))
+                self.case[user.id]["TEMPS"] = None
+                fileIO("data/justice/case.json", "save", self.case)
         else:
-            await self.bot.say("Le temps doit être égal ou supérieur à une minute.")
+            await self.bot.say("Le temps spécifié doit être supérieur à une minute.")
 
-    @prs.command(pass_context=True, no_pm=True)
-    async def visite(self, ctx, user: discord.Member = None):
-        """Permet la visite de la prison durant un temps illimité.
-
-        Faîtes de nouveau la commande pour vous libérer."""
-        if user == None:
-            user = ctx.message.author
-        server = ctx.message.server
-        id = user.id
+    @commands.command(alises= ["s", "quit"], pass_context=True, no_pm=True)
+    async def sortie(self, ctx):
+        """Demander la sortie de prison et donne le temps restant le cas échéant."""
+        author = ctx.message.author
         role = self.sys["PRSROLE"]
-        r = discord.utils.get(ctx.message.server.roles, name=role)
-        if id not in self.case:
-            self.case[user.id] = {"EXACT": str(user),
-                                  "VISITE" : False,
-                                  "SORTIE_PRS": None}
-            fileIO("data/justice/case.json", "save", self.case)
-        if role not in [r.name for r in user.roles]:
-            await self.bot.add_roles(user, r)
-            await self.bot.say("{} est désormais en prison (Visite)".format(user.mention))
-            await asyncio.sleep(0.5)
-            await self.bot.send_message(user,
-                                        "__Vous visitez la prison.__\nVous avez désormais accès au salon *Goulag*.\nVous pouvez utiliser la commande de nouveau pour arrêter la visite.")
-
-            self.case[user.id]["VISITE"] = True
-            fileIO("data/justice/case.json", "save", self.case)
-        else:
-            if self.case[user.id]["VISITE"] is True:
-                try:
-                    await self.bot.remove_roles(user, r)
-                    await self.bot.say("{} à été libéré (Visite).".format(user.mention))
-                    await asyncio.sleep(0.5)
-                    await self.bot.send_message(user, "__Au revoir__ :wave:")
-                    self.case[user.id]["VISITE"] = False
-                    fileIO("data/justice/case.json", "save", self.case)
-                except:
-                    await self.bot.whisper("*Erreur, {} n'est plus sur le serveur.*".format(user.name))
-                    self.case[user.id]["VISITE"] = False
-                    fileIO("data/justice/case.json", "save", self.case)
+        mrole = discord.utils.get(ctx.message.server.roles, name=role)
+        if author.id in self.case and role in [r.name for r in author.roles]:
+            if time.time() >= self.case[author.id]["TEMPS"]:
+                await self.bot.say("**Sortie autorisée**\n*Patientez s'il vous plaît...*")
+                await asyncio.sleep(1.5)
+                await self.bot.remove_roles(author, mrole)
+                t = time.strftime("%d/%m - %H:%M", time.localtime())
+                self.case[author.id]["HISTO"].append("{} | **-** Sortie autonome autorisée de prison.".format(t))
+                self.case[author.id]["TEMPS"] = None
+                fileIO("data/justice/case.json", "save", self.case)
             else:
-                await self.bot.say("Hey ! Vous n'êtes pas en visite !")
-
-    @prs.command(pass_context=True)
-    async def rest(self, ctx, user: discord.Member = None):
-        """Estimation sur la sortie de Prison."""
-        role = self.sys["PRSROLE"]
-        r = discord.utils.get(ctx.message.server.roles, name=role)
-        if user == None:
-            user = ctx.message.author
-        if user.id in self.case:
-            if self.case[user.id]["VISITE"] is False:
-                if role in [r.name for r in user.roles]:
-                    reste = self.case[user.id]["SORTIE_PRS"] - int(time.time())
-                    reste /= 60
-                    reste = int(reste)
-                    sortie = time.localtime(self.case[user.id]["SORTIE_PRS"])
-                    sortie = time.strftime("%H:%M", sortie)
-                    await self.bot.say("{} Vous sortirez approximativement vers *{}*.".format(user.mention, sortie))
+                restant = round((self.case[author.id]["TEMPS"] - time.time()) / 60, 1)
+                if restant < 1:
+                    msg = "{}s".format(int(restant * 100))
                 else:
-                    await self.bot.say("Vous n'êtes pas en Prison")
-            else:
-                await self.bot.say("Vous êtes en visite, vous pouvez sortir à tout moment en réutilisant la commande de visite.")
+                    msg = "{}m".format(int(restant))
+                await self.bot.say("Il vous reste approximativement {} de prison.".format(msg))
         else:
-            await self.bot.say("Vous n'avez jamais été en prison.")
+            await self.bot.say("Vous n'êtes pas en prison.")
 
 def check_folders():
     folders = ("data", "data/justice/")
