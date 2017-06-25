@@ -99,6 +99,16 @@ class Justice:
         else:
             await self.bot.say("Vous n'êtes pas en prison.")
 
+    async def slash(self, user):
+        """Détecte et remet le rôle prison si échappé"""
+        role = self.sys["PRSROLE"]
+        mrole = discord.utils.get(ctx.message.server.roles, name=role)
+        if user.id in self.case:
+            if self.case[user.id]["TEMPS"] != None:
+                if role not in [r.name for r in user.roles]:
+                    await self.bot.add_roles(user, mrole)
+                    await self.bot.send_message(user, "**Rappel:** Vous êtes en prison. Utilisez &sortie sur le channel approprié pour en sortir ou obtenir, dans le cas échant, le temps restant.")
+
 def check_folders():
     folders = ("data", "data/justice/")
     for folder in folders:
@@ -119,4 +129,5 @@ def setup(bot):
     check_folders()
     check_files()
     n = Justice(bot)
+    bot.add_listener(n.slash, "on_member_join")
     bot.add_cog(n)
