@@ -26,6 +26,7 @@ class Justice:
             fileIO("data/justice/case.json", "save", self.case)
 
     @commands.command(aliases=["p", "jail"], pass_context=True, no_pm=True)
+    @checks.admin_or_permissions(kick_members=True)
     async def prison(self, ctx, user: discord.Member, temps: int = 5, *raison: str):
         """Permet de mettre quelqu'un en Prison pendant un certain temps.
         
