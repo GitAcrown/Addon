@@ -269,6 +269,19 @@ class Charm:
             if output:
                 for stk in output:
                     if nb <= 3:
+                        if stk == "list":
+                            msg = "**__Liste des stickers disponibles__**\n\n"
+                            n = 1
+                            for s in self.stk["STICKERS"]:
+                                msg += "- *{}*\n".format(self.stk["STICKERS"][s]["NOM"])
+                                if len(msg) > 1950 * n:
+                                    msg += "!!"
+                                    n += 1
+                            else:
+                                msglist = msg.split("!!")
+                                for m in msglist:
+                                    await self.bot.send_message(author, m)
+                                return
                         if stk == "custom":
                             nb += 1
                             if author.id in self.stk["USERS"]:
