@@ -263,6 +263,29 @@ class Charm:
     async def charm_msg(self, message):
         author = message.author
         channel = message.channel
+        #Système AFK
+        if "AFK" not in self.sys:
+            self.sys["AFK"] = []
+        for afk in self.sys["AFK"]:
+            if author.id == afk[0]:
+                self.sys["AFK"].remove([afk[0], afk[1], afk[2]])
+                fileIO("data/charm/sys.json", "save", self.sys)
+        if message.content.lower().startswith("afk"):
+            raison = message.content.lower()[3:]
+            if raison.startswith(" "):
+                raison = raison[1:]
+            self.sys["AFK"].append([author.id, author.name, raison])
+            fileIO("data/charm/sys.json", "save", self.sys)
+        if message.mentions != []:
+            for m in message.mentions:
+                for afk in self.sys["AFK"]:
+                    if m.id == afk[0]:
+                        if afk[2] != "":
+                            await self.bot.send_message(channel, "**{}** est AFK\n**Raison:** *{}*".format(afk[1], afk[2]))
+                        else:
+                            await self.bot.send_message(channel, "**{}** est AFK".format(afk[1]))
+
+        #Système Stickers
         nb = 0
         if ":" in message.content:
             output = re.compile(':(.*?):', re.DOTALL | re.IGNORECASE).findall(message.content)
