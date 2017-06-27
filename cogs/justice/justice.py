@@ -101,8 +101,9 @@ class Justice:
 
     async def slash(self, user):
         """Détecte et remet le rôle prison si échappé"""
+        server = user.server
         role = self.sys["PRSROLE"]
-        mrole = discord.utils.get(ctx.message.server.roles, name=role)
+        mrole = discord.utils.get(server.roles, name=role)
         if user.id in self.case:
             if self.case[user.id]["TEMPS"] != None:
                 if role not in [r.name for r in user.roles]:
