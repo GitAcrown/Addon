@@ -1,6 +1,5 @@
 import asyncio
 import os
-import random
 from .utils import checks
 from copy import deepcopy
 import discord
@@ -11,400 +10,251 @@ import time
 import operator
 from .utils.dataIO import fileIO, dataIO
 
-#Enregistrement depuis le
-
 class EgoAPI:
-    """API Ego | Utilisable sur toutes les extensions compatibles"""
-
+    """API Ego | Suivi de statistiques et services liés (Service)"""
     def __init__(self, bot, path):
         self.bot = bot
         self.user = dataIO.load_json(path)
 
     def save(self): #Sauvegarde l'ensemble des données utilisateur
-        fileIO("data/ego/user.json", "save", self.user)
+        fileIO("data/ego/profil.json", "save", self.user)
         return True
 
-    def create(self, user): #Créer un compte vierge
-        self.user[user.id] = {"ID": user.id,
-                              "LEVEL" : 0,
-                              "STATS" : {}}
-        self.user[user.id]["STATS"]["CREATION"] = time.time()
-        self.save()
-        return self.personnal(user)
+    def log(self, user):
+        if user.id in self.user:
+            return self.convert(user)
+        else:
+            creat = time.time()
+            self.user[user.id] = {"ID": user.id,
+                                     "BORN" : creat,
+                                     "HISTO" : [], #Historique du membre
+                                     "SAVED": [], #Sauvegardes (Messages, Memo...)
+                                     "PERSO" : {}, #Informations perso (A venir)
+                                     "STATS" : {}} #Statistiques sur le membre
+            self.save()
+            return self.convert(user)
 
-    def personnal(self, user):
-        Profil = namedtuple('Profil', ['id', 'level', "stats"])
+    def convert(self, user):
+        Profil = namedtuple('Profil', ['id', 'born', 'histo', 'saved', 'perso', 'stats'])
         id = user.id
-        level = self.user[user.id]["LEVEL"]
-        stats = self.user[user.id]["STATS"]
-        return Profil(id, level, stats)
+        b = self.user[user.id]["BORN"]
+        h = self.user[user.id]["HISTO"]
+        sa = self.user[user.id]["SAVED"]
+        p = self.user[user.id]["PERSO"]
+        st = self.user[user.id]["STATS"]
+        return Profil(id, b, h, sa, p ,st)
 
-    def logged(self, user):
-        if user.id in self.user:
-            return self.personnal(user)
+    def event(self, user, rubrique:str, symb:str, descr:str):
+        ego = self.log(user)
+        date = time.strftime("%d/%m/%Y", time.localtime())
+        ego.histo.append([date, rubrique, symb, descr])
+        self.save()
+
+    def since(self, user, format=None):
+        ego = self.log(user)
+        s = time.time() - ego.born
+        sm = s / 60  # en minutes
+        sh = sm / 60  # en heures
+        sj = sh / 24  # en jours
+        sa = sj / 364.25  # en années
+        if format == "année":
+            return int(sa)
+        elif format == "jour":
+            return int(sj)
+        elif format == "heure":
+            return int(sh)
+        elif format == "minute":
+            return int(sm)
         else:
-            return False
+            return int(s)
 
-    def edit(self, user, champ, line, val):
-        """Editer une valeur EGO"""
-        if self.logged(user):
-            self.user[user.id][champ][line] = val
-            self.save()
-            return True
+    def stat_color(self, user):
+        s = user.status
+        if s == discord.Status.online:
+            return 0x43B581
+        elif s == discord.Status.idle:
+            return 0xFAA61A
+        elif s == discord.Status.dnd:
+            return 0xF04747
         else:
-            return None
-
-    def get(self, user, champ, line, defaut):
-        """Recevoir une valeur EGO"""
-        if self.logged(user):
-            if line != None:
-                if line not in self.user[user.id][champ]:
-                    self.user[user.id][champ][line] = defaut
-                    self.save()
-                return self.user[user.id][champ][line]
-            else:
-                return self.user[user.id][champ]
-        else:
-            return None
-
-    def discard(self, user, champ, line):
-        """Supprimer une valeur EGO"""
-        if self.logged(user):
-            del self.user[user.id][champ][line]
-            self.save()
-        else:
-            return None
-
-    def plus_smth(self, user, line):
-        ego = self.logged(user)
-        if ego != None:
-            post = 0
-            ident = None
-            for p in ego.stats[line]:
-                if ego.stats[line][p]["NB"] > post:
-                    post = ego.stats[line][p]["NB"]
-                    ident = ego.stats[line][p]["ID"]
-            else:
-                return [ident, post]
-
-    def paille(self, search):
-        post = 0
-        ident = None
-        for p in self.user:
-            if "MENTIONS" in self.user[p]["STATS"]:
-                if search.id in self.user[p]["STATS"]["MENTIONS"]:
-                    if self.user[p]["STATS"]["MENTIONS"][search.id]["NB"] > post:
-                        post = self.user[p]["STATS"]["MENTIONS"][search.id]["NB"]
-                        ident = self.user[p]["ID"]
-        else:
-            return [ident, post]
-
-    def epoch(self, user, format=None):
-        ego = self.logged(user)
-        if ego != None:
-            s = time.time() - ego.stats["CREATION"]
-            sm = s/60 #en minutes
-            sh = sm/60 #en heures
-            sj = sh/24 #en jours
-            sa = sj/364.25 #en années
-            if format == "année":
-                return int(sa)
-            elif format == "jour":
-                return int(sj)
-            elif format == "heure":
-                return int(sh)
-            elif format == "minute":
-                return int(sm)
-            else:
-                return int(s)
-
-    def pop_class(self, user, top=5):
-        liste = []
-        for p in self.user:
-            n = 0
-            for u in self.user:
-                if "MENTIONS" in self.user[u]["STATS"]:
-                    if p in self.user[u]["STATS"]["MENTIONS"]:
-                        n += self.user[u]["STATS"]["MENTIONS"][p]["NB"]
-            t = self.user[p]["STATS"]["CREATION"] / (60*60*24)
-            mn = n/t
-            if self.user[p]["ID"] == user.id:
-                k = [mn, self.user[p]["ID"]]
-            liste.append([mn, self.user[p]["ID"]])
-        sort = sorted(liste, key=operator.itemgetter(0))
-        sort.reverse()
-        place = sort.index(k)
-        sort = sort[:top]
-        return [sort, place]
-
-    def set_site(self, user, url:str):
-        if user.id in self.user:
-            self.user[user.id]["STATS"]["SITE"] = url
-            self.save()
-            return True
-        else:
-            return False
-
-    def total_ment(self, user):
-        if user.id in self.user:
-            nb = 0
-            for m in self.user[user.id]["STATS"]["MENTIONS"]:
-                nb += self.user[user.id]["STATS"]["MENTIONS"][m]["NB"]
-            return nb
-        else:
-            return False
-
-    def nb_ment(self, user, search):
-        if user.id in self.user:
-            if search.id in self.user[user.id]["STATS"]["MENTIONS"]:
-                return self.user[user.id]["STATS"]["MENTIONS"][search.id]["NB"]
-            else:
-                return False
-        else:
-            return False
+            return 0x9ea0a3
 
 class Ego:
-    """Système EGO : Assistant personnel [EN CONSTRUCTION]"""
-
+    """Système Ego | Assistant personnel et suivi de statistiques"""
     def __init__(self, bot):
         self.bot = bot
-        self.ego = EgoAPI(bot, "data/ego/user.json")
+        self.ego = EgoAPI(bot, "data/ego/profil.json")
+        self.glob = dataIO.load_json("data/ego/glob.json") #Stats globaux
 
     @commands.command(name="logs", pass_context=True)
     async def changelog(self, ctx):
         """Informations sur la dernière MAJ Majeure de EGO."""
         em = discord.Embed(color=0x5184a5)
-        cl = "- Ajout de 'InstantEgo'"
-        em.add_field(name="Version 1.3", value=cl)
-        em.set_footer(text="MAJ faite le 05/06/17")
+        cl = "- Remise à 0 des données sauvegardées\n" \
+             "- Ajout de l'Historique\n" \
+             "- Nouveaux suivis (Pseudos, rôles...)\n" \
+             "- Changement affichage &card\n" \
+             "[Bientôt] Retour des commandes &epop et &compat\n" \
+             "[Bientôt] Mode fantôme\n" \
+             "[Bientôt] Ajout des informations perso\n" \
+             "[Bientôt] Historique détaillé\n"
+        em.add_field(name="Version 2.0", value=cl)
+        em.set_footer(text="MAJ publiée le 27/06")
         await self.bot.say(embed=em)
 
-    @commands.command(pass_context=True)
-    async def site(self, ctx, url):
-        """Permet de rajouter un site personnel à sa Carte Ego."""
-        author = ctx.message.author
-        if "http" in url:
-            if self.ego.set_site(author, url):
-                await self.bot.say("Site enregistré.")
-            else:
-                await self.bot.say("Une erreur s'est produite. Essayez plus tard.")
-        else:
-            await self.bot.say("Ce n'est pas une URL valide.")
-
-    @commands.command(pass_context=True)
+    @commands.command(aliases=["c"], pass_context=True)
     async def card(self, ctx, user: discord.Member = None):
-        """Permet de recevoir une carte affichant des informations complètes à propos d'un utilisateur."""
-        server = ctx.message.server
-        channel = ctx.message.channel
+        """Affiche une carte de membre détaillée.
+        
+        Si le pseudo n'est pas spécifié, c'est une carte de votre compte."""
         if user is None:
             user = ctx.message.author
-        ego = self.ego.logged(user)
-        epoch = self.ego.epoch(user, "jour")
-        site = ego.stats["SITE"] if "SITE" in ego.stats else None
-        em = discord.Embed(title="{}".format(str(user)), color=user.color, url=site)
+        ego = self.ego.log(user)
+        if not user.bot:
+            ec = self.ego.stat_color(user)
+        else:
+            ec = 0x2e6cc9
+        em = discord.Embed(title="{}".format(str(user)), color=ec, url=ego.perso["SITE"] if "SITE" in ego.perso else None)
         em.set_thumbnail(url=user.avatar_url)
-        em.add_field(name= "ID", value=str(user.id))
-        em.add_field(name= "Surnommé", value=user.display_name)
-        em.add_field(name= "Type de compte", value="Utilisateur" if user.bot is False else "Bot")
+        em.add_field(name="Surnom", value=user.display_name)
+        em.add_field(name="ID", value=str(user.id))
         passed = (ctx.message.timestamp - user.created_at).days
-        em.add_field(name= "Age du compte", value= str(passed) + " jours")
+        em.add_field(name="Age du compte", value=str(passed) + " jours")
         passed = (ctx.message.timestamp - user.joined_at).days
-        em.add_field(name= "Nb de Jours", value= "{} jours (Ego/{})".format(passed, epoch))
+        egodate = self.ego.since(user, "jour")
+        if passed < egodate:
+            msg = "+{} jours"
+        else:
+            msg = "{} jours"
+        em.add_field(name="Nb de jours", value=msg.format(passed))
         rolelist = [r.name for r in user.roles]
         rolelist.remove('@everyone')
-        em.add_field(name= "Roles", value= rolelist)
-
-        if epoch == 0:
-            epoch = 1
+        em.add_field(name="Roles", value=rolelist)
+        if egodate == 0:
+            egodate = 1
         em.add_field(name="Ratio de messages", value="{}/jour".format(str(
-            round(ego.stats["MESSAGES"] / epoch, 2))))
-        most = "Paillasson de (?)"
-        pail = "Paillassonné par (?)"
-        cuck = "Cuck par (?)"
-        try:
-            most = "Paillasson de {}".format(server.get_member(self.ego.plus_smth(user, "MENTIONS")[0]))
-            pp = server.get_member(self.ego.plus_smth(user, "MENTIONS")[0])
-            cuck = "Cuck par {}".format(server.get_member(self.ego.plus_smth(pp, "MENTIONS")[0]))
-        except:
-            pass
-        try:
-            pail = "Paillassonné par {}".format(server.get_member(self.ego.paille(user)[0]))
-        except:
-            pass
-        em.add_field(name="Relations", value="- *{}*\n- *{}*\n- *{}*".format(str(most), str(pail), str(cuck)))
-        em.set_footer(text="Certaines informations proviennent du Système Ego | V1.31 (&logs)")
-        msg = await self.bot.say(embed=em)
-
-        await self.bot.add_reaction(msg, "➕")
-        await self.bot.add_reaction(msg, "💳")
-        await self.bot.add_reaction(msg, "❔")
-        await asyncio.sleep(1.25)
-        rap = await self.bot.wait_for_reaction(["➕","💳","❔"], message=msg, timeout=20)
-        if rap == None:
-            pass
-        elif rap.reaction.emoji == "➕":
-            em = discord.Embed(title="Plus sur {}".format(str(user)), color=user.color)
-            if "ENTREES" in ego.stats:
-                em.add_field(name="Entrées", value=ego.stats["ENTREES"])
-            else:
-                em.add_field(name="Entrées", value=0)
-            if "SORTIES" in ego.stats:
-                em.add_field(name="Sorties", value=ego.stats["SORTIES"])
-            else:
-                em.add_field(name="Sorties", value=0)
-            em.add_field(name="Nb messages", value="{}".format(ego.stats["MESSAGES"]))
-            place = self.ego.pop_class(user)[1]
-            em.add_field(name="Classement Epop", value="{}".format(place))
-            total = 0
-            for e in ego.stats["MENTIONS"]:
-                total += 1
-            em.add_field(name="Nb mentions", value="{}".format(total))
-            em.set_footer(text="Informations relatives à l'inscription Ego. Ces informations ne sont pas protégées et relèvent du public.")
-            await self.bot.say(embed=em)
-        elif rap.reaction.emoji == "💳":
-            money = self.bot.get_cog('Money').money
-            acc = money.log(user)
-            solde = acc.solde
-            typecompte = acc.type
-            num = user.id[8:]
-            em = discord.Embed(title="Compte BitKhey", color= user.color)
-            em.add_field(name="Solde", value="**{}** BK".format(solde))
-            em.add_field(name="Type de compte", value=typecompte)
-            em.add_field(name="Numéro de compte", value=num)
-            em.set_footer(text="Informations tirées de BitKhey | '&compte' pour en savoir plus.")
-            await self.bot.say(embed=em)
-        elif rap.reaction.emoji == "❔":
-            em = discord.Embed(color = user.color)
-            aide = "**Ego** est un système integré au bot qui permet de récolter des statistiques sur le serveur. Il n'enregistre pas vos messages.\n" \
-                   "- ID représente votre Identifiant Discord. C'est ce qui permet de savoir qui vous êtes pour Ego.\n" \
-                   "- L'Age du compte correspond au nombre de jours depuis lequel votre compte a été crée.\n" \
-                   "- Le Nombre de jour est celui qui compte depuis combien de jours vous êtes sur le serveur (Reset à chaque départ)\n" \
-                   "- 'Ego/' est le nombre de jours depuis lequel le système vous piste. Plus ce nombre est elevé, plus les statistiques sont exactes.\n" \
-                   "- Vos relations proviennent d'un calcul effectué par un algorithme grace aux données récoltés. Elles ne sont pas à prendre au sérieux.\n" \
-                   "L'Emoji *+* vous permet d'avoir plus d'informations sur votre profil (Entrées et sorties du serveur par exemple)."
-            em.add_field(name="Aide", value=aide)
-            em.set_footer(text="Pour avoir plus d'informations sur la dernière MAJ, utilisez &logs.")
-            await asyncio.sleep(0.5)
-            await self.bot.send_message(rap.user, embed=em)
+            round(ego.stats["NB_MSG"] / egodate, 2))))
+        liste = ego.histo[-3:]
+        liste.reverse()
+        hist = ""
+        if liste != []:
+            for i in liste:
+                hist += "**{}** *{}*\n".format(i[2], i[3])
         else:
-            pass
-
-    @commands.command(pass_context=True, no_pm=True)
-    async def epop(self, ctx, top = 5):
-        """Affiche le top X des personnes les plus populaires du serveur et votre place sur ce top.
-        
-        Par défaut le top 5."""
-        author = ctx.message.author
-        server = ctx.message.server
-        sort = self.ego.pop_class(author, top)
-        place = sort[1]
-        em = discord.Embed(color=author.color, title="EGO | Les E-Pop du serveur")
-        msg = ""
-        n = 1
-        for p in sort[0]:
-            user = server.get_member(p[1])
-            msg += "{} | *{}*\n".format(n, str(user))
-            n += 1
-        em.add_field(name = "Top {}".format(top), value=msg)
-        em.add_field(name = "Votre place", value="{}e".format(place + 1))
-        em.set_footer(text="Ces informations sont issues du système Ego")
+            hist = "Aucun historique"
+        em.add_field(name="Historique", value="{}".format(hist))
+        em.set_footer(
+            text="Certaines informations proviennent du système Ego | V2.0 (&logs)", icon_url="http://i.imgur.com/DsBEbBw.png") #TODO Changer de version à chaque MAJ
         await self.bot.say(embed=em)
 
-    @commands.command(pass_context=True, no_pm=True)
-    async def compat(self, ctx, p1: discord.Member, p2: discord.Member = None):
-        """Calcul de la compatibilité de deux personnes.
-        
-        Si P2 n'est pas précisé, c'est par défaut VOUS."""
-        if p2 == None:
-            p2 = ctx.message.author
-        nbp1_p2 = self.ego.nb_ment(p1, p2)
-        pour1 = (nbp1_p2 / self.ego.total_ment(p1))*100
-        nbp2_p1 = self.ego.nb_ment(p2, p1)
-        pour2 = (nbp2_p1 / self.ego.total_ment(p2))*100
-        moy = round((pour1 + pour2) / 2, 2)
-        await self.bot.say("**Résultats :**\n"
-                           "*{0}* > *{1}* | **{2}**%\n"
-                           "*{1}* > *{0}* | **{3}**%\n"
-                           "*Total* = **{4}**%".format(p1.name, p2.name, int(pour1), int(pour2), moy))
+#LISTENERS
 
-# LISTENERS & SYSTEME =============================================
-    async def stats_listener(self, message):
+    async def l_msg(self, message):
         author = message.author
         channel = message.channel
-        if not self.ego.logged(author):
-            self.ego.create(author)
-            await asyncio.sleep(0.25)
-
-        #Nb de messages
-        out = self.ego.get(author, "STATS", "MESSAGES", 0) + 1
-        self.ego.edit(author, "STATS", "MESSAGES", out)
-
-        #Channel favoris
-        ego = self.ego.get(author, "STATS", "CHANNELS", {})
-        liste = []
-        for c in ego:
-            liste.append(ego[c]["ID"])
-        if channel.id in liste:
-            ego[channel.id]["NB"] += 1
-        else:
-            ego[channel.id] = {"ID" : channel.id, "NB" : 1}
-        self.ego.edit(author, "STATS", "CHANNELS", ego)
-
-        #Mentions
-        if message.mentions != []:
-            for u in message.mentions:
-                ego = self.ego.get(author, "STATS", "MENTIONS", {})
-                liste = []
-                for c in ego:
-                    liste.append(ego[c]["ID"])
-                if not u.id in liste:
-                    ego[u.id] = {"ID" : u.id, "NB": 1}
+        if "NB_MSG" in self.glob:
+            today = time.strftime("%d/%m/%Y", time.localtime())
+            if today in self.glob["NB_MSG"]:
+                if channel.id in self.glob["NB_MSG"][today]:
+                    self.glob["NB_MSG"][today][channel.id] += 1
                 else:
-                    ego[u.id]["NB"] += 1
-                self.ego.edit(author, "STATS", "MENTIONS", ego)
+                    self.glob["NB_MSG"][today][channel.id] = 1
+            else:
+                self.glob["NB_MSG"][today] = {} #Ngb
+        else:
+            self.glob["NB_MSG"] = {} #Ngb
 
-    async def entree_listen(self, user):
-        if not self.ego.logged(user):
-            self.ego.create(user)
-            await asyncio.sleep(0.25)
-        out = self.ego.get(user, "STATS", "ENTREES", 0) + 1
-        self.ego.edit(user, "STATS", "ENTREES", out)
+        ego = self.ego.log(author)
+        ego.stats["NB_MSG"] = ego.stats["NB_MSG"] + 1 if "NB_MSG" in ego.stats else 1
+        if message.mentions != []:
+            if "MENTION" in ego.stats:
+                for u in message.mentions:
+                    if u.id in ego.stats["MENTION"]:
+                        ego.stats["MENTION"][u.id] += 1
+                    else:
+                        ego.stats["MENTION"][u.id] = 1
+                    egb = self.ego.log(u)
+                    if "MENTION_BY" in egb.stats:
+                        if author.id in egb.stats["MENTION_BY"]:
+                            egb.stats["MENTION_BY"][author.id] += 1
+                        else:
+                            egb.stats["MENTION_BY"][author.id] = 1
+                    else:
+                        egb.stats["MENTION_BY"] = {} #Ngb
+            else:
+                ego.stats["MENTION"] = {} #Ngb
+        self.ego.save()
 
-    async def sortie_listen(self, user):
-        if not self.ego.logged(user):
-            self.ego.create(user)
-            await asyncio.sleep(0.25)
-        out = self.ego.get(user, "STATS", "SORTIES", 0) + 1
-        self.ego.edit(user, "STATS", "SORTIES", out)
+    async def l_join(self, user):
+        if "NB_JOIN" in self.glob:
+            today = time.strftime("%d/%m/%Y", time.localtime())
+            if today in self.glob["NB_JOIN"]:
+                self.glob["NB_JOIN"][today] += 1
+            else:
+                self.glob["NB_JOIN"][today] = 1
+        else:
+            self.glob["NB_JOIN"] = {} #Ngb
 
-    async def instant_ego(self, reaction, author):
-        if reaction.emoji == "🔍":
-            user = reaction.message.author
-            message = reaction.message
+        ego = self.ego.log(user)
+        if "ENTREES" in ego.stats:
+            ego.stats["ENTREES"] += 1
+        else:
+            ego.stats["ENTREES"] = 1
+        self.ego.event(user, "presence", ">", "Est arrivé sur le serveur")
+        self.ego.save()
 
-            roles = [x.name for x in user.roles if x.name != "@everyone"]
-            if not roles: roles = ["None"]
-            ego = self.ego.logged(user)
-            epoch = self.ego.epoch(user, "jour")
-            site = ego.stats["SITE"] if "SITE" in ego.stats else None
-            em = discord.Embed(color=user.color, url=site)
-            em.set_author(name="InstantEgo | {}".format(str(user)), icon_url=user.avatar_url)
-            em.add_field(name="Surnommé", value=user.display_name)
-            em.add_field(name="Type de compte", value="Utilisateur" if user.bot is False else "Bot")
-            passed = (message.timestamp - user.created_at).days
-            em.add_field(name="Age du compte", value=str(passed) + " jours")
-            passed = (message.timestamp - user.joined_at).days
-            em.add_field(name="Nb de Jours", value="{} jours (Ego/{})".format(passed, epoch))
-            rolelist = [r.name for r in user.roles]
-            rolelist.remove('@everyone')
-            em.add_field(name="Roles", value=rolelist)
-            em.set_footer(text="Données issues en partie de Ego | '&card {}' pour en savoir plus".format(user.name))
+    async def l_quit(self, user):
+        if "NB_QUIT" in self.glob:
+            today = time.strftime("%d/%m/%Y", time.localtime())
+            if today in self.glob["NB_QUIT"]:
+                self.glob["NB_QUIT"][today] += 1
+            else:
+                self.glob["NB_QUIT"][today] = 1
+        else:
+            self.glob["NB_QUIT"] = {} #Ngb
 
-            if epoch == 0:
-                epoch = 1
-            em.add_field(name="Ratio de messages", value="{}/jour".format(str(
-                round(ego.stats["MESSAGES"] / epoch, 2))))
-            await self.bot.send_message(author, embed=em)
+        ego = self.ego.log(user)
+        if "SORTIES" in ego.stats:
+            ego.stats["SORTIES"] += 1
+        else:
+            ego.stats["SORTIES"] = 1
+        self.ego.event(user, "presence", "<", "A quitté le serveur")
+        self.ego.save()
+
+    async def l_profil(self, b, a): #On cherche un changement dans le profil
+        ego = self.ego.log(a)
+        if a.name != b.name: #Pseudo ?
+            if "PSEUDOS" in ego.stats:
+                ego.stats["PSEUDOS"].append(a.name)
+            else:
+                ego.stats["PSEUDOS"] = [b.name, a.name]
+            self.ego.event(a, "pseudo", "@", "A changé son pseudo en {}".format(a.name))
+        if a.display_name != b.display_name: #Surnom ?
+            if "N_PSEUDOS" in ego.stats:
+                ego.stats["N_PSEUDOS"].append(a.display_name)
+            else:
+                ego.stats["N_PSEUDOS"] = [b.display_name, a.display_name]
+            self.ego.event(a, "n_pseudo", "@", "Désormais surnommé(e) {}".format(a.display_name))
+        if a.avatar_url != b.avatar_url: #Avatar ?
+            self.ego.event(a, "avatar", "×", "A changé son avatar")
+        if a.top_role != b.top_role: #Rôle affiché ?
+            if not a.top_role.name == "@everyone":
+                if a.top_role > b.top_role:
+                    self.ego.event(a, "role", "+", "A été promu {}".format(a.top_role.name))
+                else:
+                    self.ego.event(a, "role", "-", "A été rétrogradé {}".format(a.top_role.name))
+            else:
+                self.ego.event(a, "role", "!", "Ne possède plus de rôles")
+        #TODO Ajouter VoiceState dans le cadre du calcul d'Activité
+
+    async def l_ban(self, user):
+        ego = self.ego.log(user)
+        if "BANS" in ego.stats:
+            ego.stats["BANS"] += 1
+        else:
+            ego.stats["BANS"] = 1
+        self.ego.event(a, "presence", "#", "A été banni(e)")
+        self.ego.save()
 
 def check_folders():
     if not os.path.exists("data/ego"):
@@ -412,16 +262,21 @@ def check_folders():
         os.makedirs("data/ego")
 
 def check_files():
-    if not os.path.isfile("data/ego/user.json"):
+    if not os.path.isfile("data/ego/profil.json"):
         print("Creation du fichier de comptes EGO...")
-        fileIO("data/ego/user.json", "save", {})
+        fileIO("data/ego/profil.json", "save", {})
+    if not os.path.isfile("data/ego/glob.json"):
+        print("Creation du fichier global EGO...")
+        fileIO("data/ego/glob.json", "save", {})
 
 def setup(bot):
     check_folders()
     check_files()
     n = Ego(bot)
-    bot.add_listener(n.stats_listener, "on_message")
-    bot.add_listener(n.entree_listen, "on_member_join")
-    bot.add_listener(n.sortie_listen, "on_member_remove")
-    bot.add_listener(n.instant_ego, "on_reaction_add")
+    #Listeners (Suivi de l'écrit)
+    bot.add_listener(n.l_msg, "on_message") #A chaque message
+    bot.add_listener(n.l_join, "on_member_join") #A chaque membre qui rejoint
+    bot.add_listener(n.l_quit, "on_member_remove") #A chaque membre qui part
+    bot.add_listener(n.l_profil, "on_member_update") #Lorsqu'un membre modifie son profil (avatar, pseudo...)
+    bot.add_listener(n.l_ban, "on_member_ban") #Lorsqu'un membre est banni
     bot.add_cog(n)
