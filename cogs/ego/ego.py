@@ -86,6 +86,33 @@ class Ego:
         self.ego = EgoAPI(bot, "data/ego/profil.json")
         self.glob = dataIO.load_json("data/ego/glob.json") #Stats globaux
 
+    def solde_img(self, rewind=0): #Remonte de X jours (rewind) afin de calculer le solde migratoire
+        nb_join = nb_quit = 0
+        today = time.strftime("%d/%m/%Y", time.localtime())
+        if today in self.glob["NB_JOIN"]:
+            nb_join += self.glob["NB_JOIN"][today]
+        else:
+            return False
+        if today in self.glob["NB_QUIT"]:
+            nb_quit += self.glob["NB_QUIT"][today]
+        else:
+            return False
+        if rewind > 0:
+            yst = today
+            while rewind > 0:
+                yst = time.strftime("%d/%m/%Y", time.localtime(time.mktime(time.strptime(yst, "%d/%m/%Y")) - 86400))
+                if yst in self.glob["NB_JOIN"]:
+                    nb_join += self.glob["NB_JOIN"][yst]
+                else:
+                    return False
+                if yst in self.glob["NB_QUIT"]:
+                    nb_quit += self.glob["NB_QUIT"][yst]
+                else:
+                    return False
+                rewind -= 1
+        solde = nb_join - nb_quit
+        return [nb_join, nb_quit, solde]
+
     @commands.command(name="logs", pass_context=True)
     async def changelog(self, ctx):
         """Informations sur la dernière MAJ Majeure de EGO."""
@@ -94,12 +121,13 @@ class Ego:
              "- Ajout de l'Historique\n" \
              "- Nouveaux suivis (Pseudos, rôles...)\n" \
              "- Changement affichage &card\n" \
+             "- Ajout de &server\n" \
              "[Bientôt] Retour des commandes &epop et &compat\n" \
              "[Bientôt] Mode fantôme\n" \
              "[Bientôt] Ajout des informations perso\n" \
              "[Bientôt] Historique détaillé\n"
-        em.add_field(name="Version 2.0", value=cl)
-        em.set_footer(text="MAJ publiée le 27/06")
+        em.add_field(name="Version 2.0.5", value=cl)
+        em.set_footer(text="MAJ publiée le 28/06")
         await self.bot.say(embed=em)
 
     @commands.command(aliases=["c"], pass_context=True)
@@ -127,13 +155,13 @@ class Ego:
         else:
             msg = "{} jours"
         em.add_field(name="Nb de jours", value=msg.format(passed))
-        rolelist = [r.name for r in user.roles]
-        rolelist.remove('@everyone')
-        em.add_field(name="Roles", value=rolelist)
         if egodate == 0:
             egodate = 1
         em.add_field(name="Ratio de messages", value="{}/jour".format(str(
             round(ego.stats["NB_MSG"] / egodate, 2))))
+        rolelist = [r.name for r in user.roles]
+        rolelist.remove('@everyone')
+        em.add_field(name="Rôles", value=rolelist)
         liste = ego.histo[-3:]
         liste.reverse()
         hist = ""
@@ -144,7 +172,39 @@ class Ego:
             hist = "Aucun historique"
         em.add_field(name="Historique", value="{}".format(hist))
         em.set_footer(
-            text="Certaines informations proviennent du système Ego | V2.0 (&logs)", icon_url="http://i.imgur.com/DsBEbBw.png") #TODO Changer de version à chaque MAJ
+            text="Certaines informations proviennent du système Ego | V2.0.5 (&logs)", icon_url="http://i.imgur.com/DsBEbBw.png")
+        #TODO Changer de version à chaque MAJ
+        await self.bot.say(embed=em)
+
+    @commands.command(aliases=["s"], pass_context=True)
+    async def scard(self, ctx):
+        """Affiche des informations sur le serveur."""
+        server = ctx.message.server
+        online = str(len([m.status for m in server.members if str(m.status) == "online" or str(m.status) == "idle" or str(m.status) == "dnd"]))
+        total_users = str(len(server.members))
+        auj = time.strftime("%d/%m/%Y", time.localtime())
+        hier = time.strftime("%d/%m/%Y", time.localtime(time.mktime(time.strptime(auj, "%d/%m/%Y")) - 86400))
+        em = discord.Embed(title= "{}".format(server.name), color=ctx.message.author.color)
+        em.add_field(name="ID", value="{}".format(server.id))
+        em.add_field(name="Region", value="{}".format(server.region))
+        em.add_field(name="Propriétaire", value="{}".format(server.owner))
+        if "NB_JOIN" and "NB_QUIT" in self.glob:
+            if auj in self.glob["NB_JOIN"] and auj in self.glob["NB_QUIT"]:
+                if (self.glob["NB_JOIN"][auj] - self.glob["NB_QUIT"][auj]) > (self.glob["NB_JOIN"][hier] - self.glob["NB_QUIT"][hier]):
+                    var = "+"
+                elif (self.glob["NB_JOIN"][auj] - self.glob["NB_QUIT"][auj]) == (self.glob["NB_JOIN"][hier] - self.glob["NB_QUIT"][hier]):
+                    var = "="
+                else:
+                    var = "-"
+            else:
+                var = "?"
+        else:
+            var = "?"
+        em.add_field(name="Nb membres", value="**{}**/{} (*{}*)".format(online, total_users, var))
+        passed = (ctx.message.timestamp - server.created_at).days
+        em.add_field(name="Age", value="{} jours".format(passed))
+        em.set_thumbnail(url=server.icon_url)
+        em.set_footer(text="Certaines informations proviennent du système Ego | V2.0.5 (&logs)")
         await self.bot.say(embed=em)
 
 #LISTENERS
