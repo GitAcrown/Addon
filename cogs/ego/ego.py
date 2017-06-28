@@ -252,6 +252,8 @@ class Ego:
                 self.glob["NB_JOIN"][today] += 1
             else:
                 self.glob["NB_JOIN"][today] = 1
+            if today not in self.glob["NB_QUIT"]:
+                self.glob["NB_QUIT"][today] = 0
         else:
             self.glob["NB_JOIN"] = {} #Ngb
 
@@ -270,6 +272,8 @@ class Ego:
                 self.glob["NB_QUIT"][today] += 1
             else:
                 self.glob["NB_QUIT"][today] = 1
+            if today not in self.glob["NB_JOIN"]:
+                self.glob["NB_JOIN"][today] = 0
         else:
             self.glob["NB_QUIT"] = {} #Ngb
 
