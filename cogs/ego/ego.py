@@ -98,11 +98,14 @@ class EgoAPI:
                                         "NB": 1,
                                         "POSS": [self.user[p]["ID"]]}
         if verif != [] and dispo != {}:
+            total = []
             for j in dispo:
                 if jeu in dispo[j]["NOM"]:
+                    for poss in dispo[j]["POSS"]:
+                        total.append(poss)
                     if dispo[j]["NOM"] in bon:
-                        dispo[j]["POSS"].append(bon[j]["POSS"])
-                    return [dispo[j]["POSS"], dispo[j]["NOM"]]
+                        total.append(bon[j]["POSS"])
+                    return [total, dispo[j]["NOM"]]
             else:
                 return False
         else:
@@ -184,12 +187,15 @@ class Ego:
                     ego.perso["JEUX"] = [m.game.name.lower()]
         liste = self.ego.poss_jeu(opt)[0]
         nom = self.ego.poss_jeu(opt)[1]
-        msg = "**Personnes possédant {}:**\n\n".format(nom.title())
+        em = discord.Embed(color=author.color)
+        msg = ""
         if liste != False:
             for p in liste:
                 msg += "- *{}*\n".format(server.get_member(p))
             else:
-                await self.bot.say(msg)
+                em.add_field(name="Propriétaires de {}*".format(nom.title()), value=msg)
+                em.set_footer(text="* ou version similaire")
+                await self.bot.say(embed=em)
         else:
             await self.bot.say("Je n'ai pas assez de données sur ce jeu pour vous dire qui le possède.\nRéessayez une prochaine fois !")
 
