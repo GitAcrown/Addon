@@ -227,15 +227,6 @@ class Money:
             await self.bot.say(
                 "Mode non reconnu.\n**Rappel:**\n'+' = Ajouter une somme\n'-' = Retirer une somme\n'!' = Régler le solde à cette somme")
 
-    async def gain(self):
-        while self == self.bot.get_cog('Money'):
-            s = self.bot.get_server("204585334925819904")
-            for m in s.members:
-                if m.status != discord.Status.offline:
-                    self.api.add_solde(m, 1)
-            self.api.save()
-            await asyncio.sleep(1800)
-
 def check_folders():
     if not os.path.exists("data/money"):
         print("Creation du dossier Money...")
@@ -250,5 +241,4 @@ def setup(bot):
     check_folders()
     check_files()
     n = Money(bot)
-    bot.loop.create_task(n.gain())
     bot.add_cog(n)
