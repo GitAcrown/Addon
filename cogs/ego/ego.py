@@ -82,11 +82,13 @@ class EgoAPI:
     def poss_jeu(self, jeu):
         verif = []
         dispo = {}
+        bon = {}
         for p in self.user:
             if "JEUX" in self.user[p]["PERSO"]:
                 for g in self.user[p]["PERSO"]["JEUX"]:
                     if g not in verif:
                         verif.append(g)
+                        bon[g] = {"NOM": g, "POSS": self.user[p]["ID"]}
                     else:
                         if g in dispo:
                             dispo[g]["NB"] += 1
@@ -98,9 +100,11 @@ class EgoAPI:
         if verif != [] and dispo != {}:
             for j in dispo:
                 if jeu in dispo[j]["NOM"]:
+                    if jeu in bon:
+                        dispo[jeu]["POSS"].append(bon[jeu]["POSS"])
                     return dispo[jeu]["POSS"]
-                else:
-                    return False
+            else:
+                return False
         else:
             return False
 
@@ -176,7 +180,9 @@ class Ego:
                 if "JEUX" in ego.perso:
                     if m.game.name.lower() not in ego.perso["JEUX"]:
                         ego.perso["JEUX"].append(m.game.name.lower())
-        msg = "**Personnes possédant {}:**\n\n".format(opt)
+                else:
+                    ego.perso["JEUX"] = [m.game.name.lower()]
+        msg = "**Personnes possédant {}:**\n\n".format(opt.title())
         liste = self.ego.poss_jeu(opt)
         if liste != False:
             for p in liste:
