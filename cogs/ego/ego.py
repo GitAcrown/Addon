@@ -363,6 +363,7 @@ class Ego:
                     ego.perso["JEUX"].append(a.game.name.lower())
             else:
                 ego.perso["JEUX"] = [a.game.name]
+        self.ego.save()
 
         #TODO Ajouter VoiceState dans le cadre du calcul d'Activité
 
