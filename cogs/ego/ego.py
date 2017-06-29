@@ -102,7 +102,7 @@ class EgoAPI:
                 if jeu in dispo[j]["NOM"]:
                     if dispo[j]["NOM"] in bon:
                         dispo[j]["POSS"].append(bon[j]["POSS"])
-                    return dispo[j]["POSS"]
+                    return [dispo[j]["POSS"], dispo[j]["NOM"]]
             else:
                 return False
         else:
@@ -182,8 +182,9 @@ class Ego:
                         ego.perso["JEUX"].append(m.game.name.lower())
                 else:
                     ego.perso["JEUX"] = [m.game.name.lower()]
-        msg = "**Personnes possédant {}:**\n\n".format(opt.title())
-        liste = self.ego.poss_jeu(opt)
+        liste = self.ego.poss_jeu(opt)[0]
+        nom = self.ego.poss_jeu(opt)[1]
+        msg = "**Personnes possédant {}:**\n\n".format(nom.title())
         if liste != False:
             for p in liste:
                 msg += "- *{}*\n".format(server.get_member(p))
