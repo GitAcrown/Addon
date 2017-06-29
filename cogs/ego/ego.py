@@ -163,11 +163,19 @@ class Ego:
         author = ctx.message.author
         if opt is None:
             if author.game != None:
-                opt = author.game.name
+                opt = author.game.name.lower()
             else:
                 await self.bot.say("Vous ne jouez à aucun jeu.")
                 return
+        else:
+            opt = opt.lower()
         server = ctx.message.server
+        for m in server.members:
+            if m.game != None:
+                ego = self.ego.log(m)
+                if "JEUX" in ego.perso:
+                    if m.game.name.lower() not in ego.perso["JEUX"]:
+                        ego.perso["JEUX"].append(m.game.name.lower())
         msg = "**Personnes possédant {}:**\n\n".format(opt)
         liste = self.ego.poss_jeu(opt)
         if liste != False:
