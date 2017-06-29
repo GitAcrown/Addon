@@ -137,11 +137,11 @@ class Ego:
         Si un jeu est précisé, il sera recherché à la place de celui que vous jouez."""
         author = ctx.message.author
         if opt is None:
-            opt = author.game
+            opt = author.game.name
         server = ctx.message.server
         msg = "**Personnes jouant à {} :**\n\n".format(opt)
         for m in server.members:
-            if m.game.lower() == opt.lower():
+            if m.game.name.lower() == opt.lower():
                 msg += "- *{}*\n".format(str(m))
         if msg != "**Personnes jouant à {} :**\n\n":
             await self.bot.say(msg)
