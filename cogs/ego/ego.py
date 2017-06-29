@@ -146,7 +146,7 @@ class Ego:
         msg = "**Personnes jouant à {} :**\n\n".format(opt)
         for m in server.members:
             if m.game != None:
-                if m.game.name.lower() == opt.lower():
+                if opt.lower() in m.game.name.lower():
                     msg += "- *{}*\n".format(str(m))
         if msg != "**Personnes jouant à {} :**\n\n":
             await self.bot.say(msg)
