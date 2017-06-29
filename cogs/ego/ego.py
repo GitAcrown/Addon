@@ -130,6 +130,24 @@ class Ego:
         em.set_footer(text="MAJ publiée le 28/06")
         await self.bot.say(embed=em)
 
+    @commands.command(pass_context=True)
+    async def jeu(self, ctx, opt: str=None):
+        """Permet de voir qui joue au même jeu que vous.
+        
+        Si un jeu est précisé, il sera recherché à la place de celui que vous jouez."""
+        author = ctx.message.author
+        if opt is None:
+            opt = author.game
+        server = ctx.message.server
+        msg = "**Personnes jouant à {} :**\n\n".format(opt)
+        for m in server.members:
+            if m.game.lower() == opt.lower():
+                msg += "- *{}*\n".format(str(m))
+        if msg != "**Personnes jouant à {} :**\n\n":
+            await self.bot.say(msg)
+        else:
+            await self.bot.say("Personne ne joue à ce jeu.")
+
     @commands.command(aliases=["c"], pass_context=True)
     async def card(self, ctx, user: discord.Member = None):
         """Affiche une carte de membre détaillée.
