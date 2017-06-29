@@ -100,10 +100,9 @@ class EgoAPI:
         if verif != [] and dispo != {}:
             for j in dispo:
                 if jeu in dispo[j]["NOM"]:
-                    for b in bon:
-                        if jeu in bon[b]["NOM"]:
-                            dispo[jeu]["POSS"].append(bon[jeu]["POSS"])
-                    return dispo[jeu]["POSS"]
+                    if dispo[j]["NOM"] in bon:
+                        dispo[j]["POSS"].append(bon[j]["POSS"])
+                    return dispo[j]["POSS"]
             else:
                 return False
         else:
