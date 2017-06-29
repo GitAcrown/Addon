@@ -137,7 +137,11 @@ class Ego:
         Si un jeu est précisé, il sera recherché à la place de celui que vous jouez."""
         author = ctx.message.author
         if opt is None:
-            opt = author.game.name
+            if author.game != None:
+                opt = author.game.name
+            else:
+                await self.bot.say("Vous ne jouez à aucun jeu.")
+                return
         server = ctx.message.server
         msg = "**Personnes jouant à {} :**\n\n".format(opt)
         for m in server.members:
