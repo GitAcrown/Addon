@@ -185,19 +185,19 @@ class Ego:
                         ego.perso["JEUX"].append(m.game.name.lower())
                 else:
                     ego.perso["JEUX"] = [m.game.name.lower()]
+        if self.ego.poss_jeu(opt) == False:
+            await self.bot.say("Je n'ai pas assez de données pour ce jeu, je suis pour le moment incapable de vous dire si d'autres personnes le possède.\nRéssayez une prochaine fois !")
+            return
         liste = self.ego.poss_jeu(opt)[0]
         nom = self.ego.poss_jeu(opt)[1]
         em = discord.Embed(color=author.color)
         msg = ""
-        if liste != False:
-            for p in liste:
-                msg += "- *{}*\n".format(server.get_member(p))
-            else:
-                em.add_field(name="Propriétaires de {}*".format(nom.title()), value=msg)
-                em.set_footer(text="* ou version similaire")
-                await self.bot.say(embed=em)
+        for p in liste:
+            msg += "- *{}*\n".format(server.get_member(p))
         else:
-            await self.bot.say("Je n'ai pas assez de données sur ce jeu pour vous dire qui le possède.\nRéessayez une prochaine fois !")
+            em.add_field(name="Propriétaires de {}*".format(nom.title()), value=msg)
+            em.set_footer(text="* ou version similaire")
+            await self.bot.say(embed=em)
 
     @commands.command(aliases=["c"], pass_context=True)
     async def card(self, ctx, user: discord.Member = None):
