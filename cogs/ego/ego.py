@@ -79,6 +79,31 @@ class EgoAPI:
         else:
             return 0x9ea0a3
 
+    def poss_jeu(self, jeu):
+        verif = []
+        dispo = {}
+        for p in self.user:
+            if "JEUX" in self.user[p]["PERSO"]:
+                for g in self.user[p]["PERSO"]["JEUX"]:
+                    if g not in verif:
+                        verif.append(g)
+                    else:
+                        if g in dispo:
+                            dispo[g]["NB"] += 1
+                            dispo[g]["POSS"].append(self.user[p]["ID"])
+                        else:
+                            dispo[g] = {"NOM": g,
+                                        "NB": 1,
+                                        "POSS": [self.user[p]["ID"]]}
+        if verif != [] and dispo != {}:
+            for j in dispo:
+                if jeu in dispo[j]["NOM"]:
+                    return dispo[jeu]["POSS"]
+                else:
+                    return False
+        else:
+            return False
+
 class Ego:
     """Système Ego | Assistant personnel et suivi de statistiques"""
     def __init__(self, bot):
@@ -132,9 +157,9 @@ class Ego:
 
     @commands.command(pass_context=True)
     async def jeu(self, ctx, opt: str=None):
-        """Permet de voir qui joue au même jeu que vous.
+        """Permet de voir qui possède le jeu auquel vous jouez.
         
-        Si un jeu est précisé, il sera recherché à la place de celui que vous jouez."""
+        Si un jeu est précisé, il sera recherché au lieu de celui que vous êtes en train de jouer."""
         author = ctx.message.author
         if opt is None:
             if author.game != None:
@@ -143,15 +168,15 @@ class Ego:
                 await self.bot.say("Vous ne jouez à aucun jeu.")
                 return
         server = ctx.message.server
-        msg = "**Personnes jouant à {} :**\n\n".format(opt)
-        for m in server.members:
-            if m.game != None:
-                if opt.lower() in m.game.name.lower():
-                    msg += "- *{}*\n".format(str(m))
-        if msg != "**Personnes jouant à {} :**\n\n":
-            await self.bot.say(msg)
+        msg = "**Personnes possédant {}:**\n\n".format(opt)
+        liste = self.ego.poss_jeu(opt)
+        if liste != False:
+            for p in liste:
+                msg += "- *{}*\n".format(server.get_member(p))
+            else:
+                await self.bot.say(msg)
         else:
-            await self.bot.say("Personne ne joue à ce jeu.")
+            await self.bot.say("Je n'ai pas assez de données sur ce jeu pour vous dire qui le possède.\nRéessayez une prochaine fois !")
 
     @commands.command(aliases=["c"], pass_context=True)
     async def card(self, ctx, user: discord.Member = None):
@@ -332,6 +357,13 @@ class Ego:
                     self.ego.event(a, "role", "-", "A été rétrogradé {}".format(a.top_role.name))
             else:
                 self.ego.event(a, "role", "!", "Ne possède plus de rôles")
+        if a.game != None:
+            if "JEUX" in ego.perso:
+                if a.game.name.lower() not in ego.perso["JEUX"]:
+                    ego.perso["JEUX"].append(a.game.name.lower())
+            else:
+                ego.perso["JEUX"] = [a.game.name]
+
         #TODO Ajouter VoiceState dans le cadre du calcul d'Activité
 
     async def l_ban(self, user):
