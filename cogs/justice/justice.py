@@ -34,10 +34,10 @@ class Justice:
         user = server.get_member(idarby)
         role = "Oldfag"
         mrole = discord.utils.get(server.roles, name=role)
-        if role in [r.name for r in user.roles]:
-            await self.bot.remove_roles(user, mrole)
+        if role not in [r.name for r in user.roles]:
+            await self.bot.add_roles(user, mrole)
             await self.bot.say("Fait.")
-            await self.bot.send_message(user, "Tu devrais vérifier tes rôles...")
+            await self.bot.send_message(user, "Voilà, je te l'ai rendu.")
         else:
             await self.bot.say("Il n'a plus le rôle Oldfag")
 
