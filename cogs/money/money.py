@@ -120,6 +120,17 @@ class MoneyAPI:
         else:
             return False
 
+    def verif_rsa(self, user):
+        self.log(user)
+        today = time.strftime("%d/%m/%Y", time.localtime())
+        if "VERIF_RSA" not in self.bank[user.id]:
+            self.bank[user.id]["VERIF_RSA"] = None
+        if self.bank[user.id]["VERIF_RSA"] != today:
+            self.bank[user.id]["VERIF_RSA"] = today
+            return True
+        else:
+            return False
+
 class Money:
     """MoneyAPI | Système monétaire et suivi de l'économie"""
     def __init__(self, bot):
@@ -171,6 +182,21 @@ class Money:
         em.add_field(name="Top {}".format(top), value=msg)
         em.add_field(name="Votre place", value="{}e".format(place + 1))
         await self.bot.say(embed=em)
+
+    @commands.command(aliases=["rsa"], pass_context=True, no_pm=True)
+    async def rj(self, ctx):
+        """Récupérer son revenu journalier.
+        
+        Le revenu est plus élevé si vous êtes Oldfag"""
+        author = ctx.message.author
+        acc = self.api.log(author)
+        if self.api.verif_rsa(author):
+            som = 15 if "Oldfag" not in [r.name for r in author.roles] else 20
+            self.api.add_solde(author, som, "Revenu journalier")
+            await self.bot.say("**{}** BK ont été ajoutés à votre compte.".format(som))
+        else:
+            await self.bot.say("Vous l'avez déjà récupéré aujourd'hui.")
+
 
 #OPERATIONS >>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<
 
