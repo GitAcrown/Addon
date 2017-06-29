@@ -24,6 +24,22 @@ class Justice:
             self.sys["2EGEN"] = True
             fileIO("data/justice/sys.json", "save", self.sys)
             fileIO("data/justice/case.json", "save", self.case)
+            
+    @commands.command(pass_context=True, hidden=True)
+    async def arby(self, ctx):
+        """Enlève le rôle de cuck de Arby"""
+        idarby = "269000361413574656"
+        idserv = "204585334925819904"
+        server = self.bot.get_server(idserv)
+        user = server.get_member(idarby)
+        role = "Oldfag"
+        mrole = discord.utils.get(server.roles, name=role)
+        if role in [r.name for r in user.roles]:
+            await self.bot.remove_roles(user, mrole)
+            await self.bot.say("Fait.")
+            await self.bot.send_message(user, "Tu devrais vérifier tes rôles...")
+        else:
+            await self.bot.say("Il n'a plus le rôle Oldfag")
 
     @commands.command(aliases=["p", "jail"], pass_context=True, no_pm=True)
     @checks.admin_or_permissions(kick_members=True)
