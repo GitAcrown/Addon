@@ -804,7 +804,49 @@ class Ego:
         em.add_field(name="Age", value="{} jours".format(passed))
         em.set_thumbnail(url=server.icon_url)
         em.set_footer(text="Certaines informations proviennent du système Ego | V2.2 (&logs)", icon_url="http://i.imgur.com/DsBEbBw.png")
-        await self.bot.say(embed=em)
+        msg = await self.bot.say(embed=em)
+
+        await self.bot.add_reaction(msg, "📊")
+        await asyncio.sleep(1)
+        rap = await self.bot.wait_for_reaction("📊", message=msg, timeout=20)
+        if rap == None:
+            pass
+        elif rap.reaction.emoji == "📊":
+            em = discord.Embed(title="Statistiques {}".format(server.name), color=ctx.message.author.color)
+            aff = True
+            if "NB_JOIN" and "NB_QUIT" in self.glob:
+                if auj in self.glob["NB_JOIN"]:
+                    todayj = self.glob["NB_JOIN"][auj]
+                    if auj in self.glob["NB_QUIT"]:
+                        todayq = self.glob["NB_QUIT"][auj]
+                        if hier in self.glob["NB_JOIN"]:
+                            laj = self.glob["NB_JOIN"][hier]
+                            if hier in self.glob["NB_QUIT"]:
+                                laq = self.glob["NB_QUIT"][hier]
+                            else:
+                                aff = False
+                        else:
+                            aff = False
+                    else:
+                        aff = False
+                else:
+                    aff = False
+            else:
+                aff = False
+            if aff != False:
+                to = "Arrivées : **{}**\n" \
+                     "Sorties : **{}**"
+                em.add_field(name="Aujourd'hui ({})".format(auj), value=to.format(todayj, todayq))
+                em.add_field(name="Hier ({})".format(hier), value=to.format(laj, laq))
+            else:
+                em.add_field(name="Erreur", value="Données trop minces pour afficher des statistiques")
+            em.set_footer(
+                text="Informations issues de EGO | Pour des stats completes consultez le site d'Action | V2.2",
+                icon_url="http://i.imgur.com/DsBEbBw.png")
+            await self.bot.say(embed=em)
+        else:
+            return
+
 
 #LISTENERS
 
