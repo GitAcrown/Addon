@@ -718,6 +718,7 @@ class Ego:
                 em = discord.Embed(title="Jeux de {}".format(str(user)), color=ec)
                 biblio = self.ego.biblio(user)
                 selfbib = self.ego.biblio(ctx.message.author)
+                verif = []
                 msg = ""
                 if biblio != False:
                     if biblio != []:
