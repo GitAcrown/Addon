@@ -79,7 +79,7 @@ class EgoAPI:
         else:
             return 0x9ea0a3
 
-    def poss_jeu(self, jeu):
+    def old_poss_jeu(self, jeu): # Vieille version de l'algo de vérification de jeu (Gardé aucazou)
         verif = []
         dispo = {}
         bon = {}
@@ -110,6 +110,104 @@ class EgoAPI:
                 return False
         else:
             return False
+
+    def poss_jeu(self, jeu):
+        verif = self.jeux_verif()
+        total = []
+        nom = None
+        for j in verif:
+            if jeu in j:
+                if nom == None:
+                    nom = j
+                for p in self.user:
+                    if "JEUX" in self.user[p]["PERSO"]:
+                        if j in self.user[p]["PERSO"]["JEUX"]:
+                            total.append(self.user[p]["ID"])
+        if total != []:
+            return [total, nom]
+        else:
+            return False
+
+    def jeux_verif(self):
+        verif = []
+        dispo = []
+        for p in self.user:
+            if "JEUX" in self.user[p]["PERSO"]:
+                for g in self.user[p]["PERSO"]["JEUX"]:
+                    if g not in verif:
+                        verif.append(g)
+                    else:
+                        if g not in dispo:
+                            dispo.append(g)
+        return dispo
+
+    def biblio(self, user):
+        ego = self.log(user)
+        verif = self.jeux_verif()
+        if "JEUX" in ego.perso:
+            poss = []
+            for g in ego.perso["JEUX"]:
+                if g in verif:
+                    poss.append(g)
+            if poss != []:
+                return poss
+            else:
+                return False
+        else:
+            return False
+
+    def is_fantome(self, user):
+        ego = self.log(user)
+        if "CONFIDENCE" in ego.perso:
+            if "FANTOME" in ego.perso["CONFIDENCE"]:
+                return ego.perso["CONFIDENCE"]["FANTOME"]
+            else:
+                return False
+        else:
+            return False
+
+    def aff_auto(self, user, section):
+        ego = self.log(user)
+        if "CONFIDENCE" in ego.perso:
+            if self.is_fantome(user) is False:
+                if section in ego.perso["CONFIDENCE"]:
+                    return ego.perso["CONFIDENCE"][section]
+                else:
+                    return True
+            else:
+                return False
+        else:
+            return True
+
+    def suspens(self, user, mode:bool):
+        ego = self.log(user)
+        if mode == True:
+            self.user[user.id]["STATS"] = {}
+            self.user[user.id]["HISTO"] = []
+            self.user[user.id]["SAVED"] = []
+            self.user[user.id]["PERSO"]["CONFIDENCE"]["FANTOME"] = True
+            self.save()
+        else:
+            self.user[user.id]["PERSO"]["CONFIDENCE"]["FANTOME"] = False
+            self.event(user, "autre", "?", "Est sorti(e) du mode fantôme")
+            self.save()
+        return True
+
+    def trad_day(self, input):
+        if input.lower() == "monday":
+            return "Lundi"
+        elif input.lower() == "tuesday":
+            return "Mardi"
+        elif input.lower() == "wednesday":
+            return "Mercredi"
+        elif input.lower() == "thursday":
+            return "Jeudi"
+        elif input.lower() == "friday":
+            return "Vendredi"
+        elif input.lower() == "saturday":
+            return "Samedi"
+        else:
+            return "Dimanche"
 
 class Ego:
     """Système Ego | Assistant personnel et suivi de statistiques"""
@@ -149,17 +247,15 @@ class Ego:
     async def changelog(self, ctx):
         """Informations sur la dernière MAJ Majeure de EGO."""
         em = discord.Embed(color=0x5184a5)
-        cl = "- Remise à 0 des données sauvegardées\n" \
-             "- Ajout de l'Historique\n" \
-             "- Nouveaux suivis (Pseudos, rôles...)\n" \
-             "- Changement affichage &card\n" \
-             "- Ajout de &server\n" \
-             "[Bientôt] Retour des commandes &epop et &compat\n" \
-             "[Bientôt] Mode fantôme\n" \
-             "[Bientôt] Ajout des informations perso\n" \
-             "[Bientôt] Historique détaillé\n"
-        em.add_field(name="Version 2.0.5", value=cl)
-        em.set_footer(text="MAJ publiée le 28/06")
+        cl = "[BETA] Ajout des paramètres perso (&options)\n" \
+             "[BETA] Ajout du mode 'fantôme'\n" \
+             "- Ajout de l'affichage du site\n" \
+             "- Nouveau suivi de la bibliothèque de jeux\n" \
+             "- Changements mineurs d'affichage\n" \
+             "[Bientôt] Voir la collection de jeux de quelqu'un (et comparer)\n" \
+             "[Bientôt] Retour des relations entre membres"
+        em.add_field(name="Version 2.2", value=cl)
+        em.set_footer(text="MAJ publiée le 30/06")
         await self.bot.say(embed=em)
 
     @commands.command(pass_context=True)
@@ -199,6 +295,362 @@ class Ego:
             em.set_footer(text="* ou version similaire")
             await self.bot.say(embed=em)
 
+    @commands.command(aliases=["opt"], pass_context=True, no_pm=True)
+    async def options(self, ctx):
+        """Permet de modifier des options relatives à EGO."""
+        author = ctx.message.author
+        user = author
+        ego = self.ego.log(author)
+        if not user.bot:
+            ec = self.ego.stat_color(user)
+        else:
+            ec = 0x2e6cc9
+        if self.ego.is_fantome(user) is False:
+            retour = False
+            while retour is False:
+                em = discord.Embed(color=ec, title="EGO | Vos paramètres")
+                liste = "**1** | Informations personnelles\n" \
+                        "**2** | Confidentialité\n" \
+                        "**3** | Notifications\n" \
+                        "**Q** | Quitter"
+                em.add_field(name="Menu", value=liste)
+                em.set_footer(text="Saisissez le chiffre correspondant au sous-menu désiré",
+                              icon_url="http://i.imgur.com/DsBEbBw.png")
+                menu = await self.bot.whisper(embed=em)
+                verif = False
+                while verif != True:
+                    rep = await self.bot.wait_for_message(timeout=30, author=ctx.message.author, channel=menu.channel)
+                    if rep == None:
+                        await self.bot.whisper("*Absence de réponse* | Bye :wave:")
+                        return
+                    elif rep.content == "1":
+                        verif = True
+                        fini = False
+                        while fini != True:
+                            em = discord.Embed(color=ec, title="EGO | Informations perso.")
+                            liste = "**A** | Anniversaire\n" \
+                                    "**B** | Bibliothèque de jeux\n" \
+                                    "**S** | Site personnel\n" \
+                                    "**R** | Retour au menu\n" \
+                                    "**Q** | Quitter"
+                            em.add_field(name="Options", value=liste)
+                            em.set_footer(text="Saisissez la lettre correspondant à l'option désirée",
+                                          icon_url="http://i.imgur.com/DsBEbBw.png")
+                            sub_menu = await self.bot.whisper(embed=em)
+                            verif2 = False
+                            while verif2 != True:
+                                rep2 = await self.bot.wait_for_message(timeout=30, author=ctx.message.author,
+                                                                       channel=menu.channel)
+                                if rep2 == None:
+                                    await self.bot.whisper("*Absence de réponse* | Bye :wave:")
+                                    return
+                                elif rep2.content.lower() == "a":
+                                    verif2 = True
+                                    if "ANNIV" not in ego.perso:
+                                        notif = "**Saisir votre anniversaire**\n" \
+                                                "*Il est possible de saisir la date d'anniversaire afin de proposer divers services supplémentaires*\n" \
+                                                "*comme notifier d'autres membres proches de vous que c'est votre anniversaire afin que personne ne l'oublie.*\n" \
+                                                "Utilisez le format 'dd/mm' pour saisir votre anniversaire. \nPour annuler, saisissez 'non'."
+                                    else:
+                                        if ego.perso["ANNIV"] is None:
+                                            notif = "**Saisir votre anniversaire**\n" \
+                                                    "*Il est possible de saisir la date d'anniversaire afin de proposer divers services supplémentaires*\n" \
+                                                    "*comme notifier d'autres membres proches de vous que c'est votre anniversaire afin que personne ne l'oublie.*\n" \
+                                                    "Utilisez le format 'dd/mm' pour saisir votre anniversaire. \nPour annuler, saisissez 'non'."
+                                        else:
+                                            notif = "**Modifier votre anniversaire**\n" \
+                                                    "*Il est possible de saisir la date d'anniversaire afin de proposer divers services supplémentaires*\n" \
+                                                    "*comme notifier d'autres membres proches de vous que c'est votre anniversaire afin que personne ne l'oublie.*\n" \
+                                                    "Utilisez le format 'dd/mm' pour saisir votre anniversaire. \nPour annuler, saisissez 'non'. \nPour le retirer, saisissez 'stop'."
+                                    await self.bot.whisper(notif)
+                                    verif3 = False
+                                    while verif3 != True:
+                                        rep3 = await self.bot.wait_for_message(timeout=30, author=ctx.message.author,
+                                                                               channel=menu.channel)
+                                        if rep3 == None:
+                                            await self.bot.whisper("*Absence de réponse* | Retour au menu")
+                                            verif3 = True
+                                        elif len(rep3.content.lower()) == 5:
+                                            try:
+                                                node = time.strptime(rep3.content, "%d/%m")
+                                                cont = True
+                                            except:
+                                                await self.bot.whisper("*Format invalide* | Réessayez")
+                                                cont = False
+                                            if cont != False:
+                                                verif3 = True
+                                                await self.bot.whisper(
+                                                    "*Vous fêterez votre prochain anniversaire le {}/{}.*\nEst-ce exact ? (O/N)".format(
+                                                        node.tm_mday, node.tm_mon))
+                                                att = await self.bot.wait_for_message(timeout=30,
+                                                                                      author=ctx.message.author,
+                                                                                      channel=menu.channel)
+                                                if att == None:
+                                                    await self.bot.whisper("*Absence de réponse* | Retour au menu")
+                                                elif att.content.lower() == "o" or "oui":
+                                                    await self.bot.whisper("**Enregistré !**")
+                                                    ego.perso["ANNIV"] = rep3.content.lower()
+                                                    self.ego.save()
+                                                else:
+                                                    await self.bot.whisper("*Annulation* | Retour au menu")
+                                        elif rep3.content.lower() in ["non", "annuler"]:
+                                            await self.bot.whisper("*Annulation* | Retour au menu")
+                                            verif3 = True
+                                        elif rep3.content.lower() == "stop":
+                                            await self.bot.whisper(
+                                                "*Votre anniversaire à été effacé de mes données* | Retour au menu")
+                                            ego.perso["ANNIV"] = None
+                                            self.ego.save()
+                                            verif3 = True
+                                        else:
+                                            await self.bot.whisper("*Format invalide* | Réessayez")
+                                elif rep2.content.lower() == "b":
+                                    verif2 = True
+                                    biblio = self.ego.biblio(user)
+                                    if biblio != False:
+                                        if biblio != []:
+                                            msg = "**Voici vos jeux possédés**:\n"
+                                            for g in biblio:
+                                                msg += "*{}*\n".format(g.title())
+                                            msg += "\nCes jeux sont vérifiés automatiquement par EGO. Cependant certains 'faux-jeux' (Status modifiés pour le fun) outrepassent cette sécurité\n" \
+                                                   "Il est donc possible de retirer un jeu détecté comme valide.\n" \
+                                                   "__Pour en retirer un, saisissez son nom complet__ sinon tapez 'annuler'."
+                                            await self.bot.whisper(msg)
+                                            verif3 = False
+                                            while verif3 != True:
+                                                rep3 = await self.bot.wait_for_message(timeout=60,
+                                                                                       author=ctx.message.author,
+                                                                                       channel=menu.channel)
+                                                if rep3 == None:
+                                                    await self.bot.whisper("*Absence de réponse* | Retour au menu")
+                                                    verif3 = True
+                                                elif rep3.content.lower() in [k.lower() for k in biblio]:
+                                                    ego.perso["JEUX"].remove(rep3.content.lower())
+                                                    self.ego.save()
+                                                    msg = "**Liste actualisée**:\n"
+                                                    biblio = self.ego.biblio(user)
+                                                    if biblio != []:
+                                                        for g in biblio:
+                                                            msg += "*{}*\n".format(g.title())
+                                                    else:
+                                                        msg += "Votre bibliothèque est vide."
+                                                    await self.bot.whisper(
+                                                        "{}\n\n**{} retiré.**\n*Pour continuer, saisissez un autre jeu, sinon tapez 'annuler'.*".format(
+                                                            rep3.content.title()))
+                                                elif rep3.content.lower() in ["non", "annuler"]:
+                                                    await self.bot.whisper("*Action annulée* | Retour au menu")
+                                                    verif3 = True
+                                                else:
+                                                    await self.bot.whisper(
+                                                        "*Absent de votre bibliothèque* | Réessayez (Tapez 'annuler' pour retourner au menu)")
+                                        else:
+                                            await self.bot.whisper(
+                                                "*Votre bibliothèque détectée semble vide* | Retour menu")
+                                    else:
+                                        await self.bot.whisper(
+                                            "*Vous n'avez pas de bibliothèque détectée* | Retour menu")
+                                elif rep2.content.lower() == "s":
+                                    verif2 = True
+                                    notif = "**Saisir son site internet**\n" \
+                                            "*Il est possible de saisir l'URL de son site internet afin de l'afficher sur votre carte*\n" \
+                                            "*Celui-ci sera accessible en cliquant sur votre pseudo dans &card*\n" \
+                                            "Pour l'ajouter, entrez l'URL du site. Sinon, tapez 'annuler'"
+                                    await self.bot.whisper(notif)
+                                    verif3 = False
+                                    while verif3 != True:
+                                        rep3 = await self.bot.wait_for_message(timeout=30, author=ctx.message.author,
+                                                                               channel=menu.channel)
+                                        if rep3 == None:
+                                            await self.bot.whisper("*Absence de réponse* | Retour au menu")
+                                            verif3 = True
+                                        elif "http://" in rep3.content.lower():
+                                            verif3 = True
+                                            if "SITE" not in ego.perso:
+                                                ego.perso["SITE"] = rep3.content.lower()
+                                                await self.bot.whisper("*Site ajouté !* | Retour au menu")
+                                            else:
+                                                ego.perso["SITE"] = rep3.content.lower()
+                                                await self.bot.whisper("*Site modifié !* | Retour au menu")
+                                        elif rep3.content.lower() in ["non", "annuler"]:
+                                            await self.bot.whisper("*Annulation* | Retour au menu")
+                                            verif3 = True
+                                        else:
+                                            await self.bot.whisper(
+                                                "*Format invalide* | Réessayez (Ou tapez 'annuler' pour retourner au menu)")
+                                elif rep2.content.lower() == "r":
+                                    fini = True
+                                    verif2 = True
+                                    await self.bot.whisper("*Retour au menu*")
+                                elif rep2.content.lower() == "q":
+                                    await self.bot.whisper("**Bye** :wave:")
+                                    return
+                                else:
+                                    await self.bot.whisper(
+                                        "Non reconnu. Tapez la lettre correspondant à l'option désirée.")
+                    elif rep.content == "2":
+                        verif = True
+                        if "CONFIDENCE" not in ego.perso:
+                            ego.perso["CONFIDENCE"] = {}
+                        base = ["RATIO", "JEUX", "RELATIONS", "PROFIL", "HISTO", "FANTOME"]
+                        for e in base:
+                            if e not in ego.perso["CONFIDENCE"]:
+                                if e != "FANTOME":
+                                    ego.perso["CONFIDENCE"][e] = True
+                                else:
+                                    ego.perso["CONFIDENCE"][e] = False
+                        fini = False
+                        while fini != True:
+                            em = discord.Embed(color=ec, title="EGO | Confidentialité")
+                            liste = "**M** | Ratio de message ({})\n" \
+                                    "**B** | Bibliothèque de jeux ({})\n" \
+                                    "**S** | Relations ({})\n" \
+                                    "**H** | Historique ({})\n" \
+                                    "**P** | Profil personnel ({})\n" \
+                                    "**F** | Mode fantôme ({})\n" \
+                                    "**R** | Retour au menu\n" \
+                                    "**Q** | Quitter".format(ego.perso["CONFIDENCE"]["RATIO"],
+                                                             ego.perso["CONFIDENCE"]["JEUX"],
+                                                             ego.perso["CONFIDENCE"]["RELATIONS"],
+                                                             ego.perso["CONFIDENCE"]["HISTO"],
+                                                             ego.perso["CONFIDENCE"]["PROFIL"],
+                                                             ego.perso["CONFIDENCE"]["FANTOME"])
+                            em.add_field(name="Options", value=liste)
+                            em.set_footer(text="Saisissez la lettre correspondant à l'option désirée",
+                                          icon_url="http://i.imgur.com/DsBEbBw.png")
+                            sub_menu = await self.bot.whisper(embed=em)
+                            verif2 = False
+                            while verif2 != True:
+                                rep2 = await self.bot.wait_for_message(timeout=30, author=ctx.message.author,
+                                                                       channel=menu.channel)
+                                if rep2 == None:
+                                    await self.bot.whisper("*Absence de réponse* | Bye :wave:")
+                                    return
+                                elif rep2.content.lower() == "m":
+                                    verif2 = True
+                                    if ego.perso["CONFIDENCE"]["RATIO"] is True:
+                                        await self.bot.whisper(
+                                            "*Le ratio de message ne sera plus affiché sur votre carte EGO* | Retour Menu")
+                                        ego.perso["CONFIDENCE"]["RATIO"] = False
+                                        self.ego.save()
+                                    else:
+                                        if ego.perso["CONFIDENCE"]["RATIO"] is False:
+                                            await self.bot.whisper(
+                                                "*Le ratio de message sera affiché sur votre carte EGO* | Retour Menu")
+                                            ego.perso["CONFIDENCE"]["RATIO"] = True
+                                            self.ego.save()
+                                elif rep2.content.lower() == "b":
+                                    verif2 = True
+                                    if ego.perso["CONFIDENCE"]["JEUX"] is True:
+                                        await self.bot.whisper(
+                                            "*Vos jeux ne seront plus affichés sur votre carte EGO* | Retour Menu")
+                                        ego.perso["CONFIDENCE"]["JEUX"] = False
+                                        self.ego.save()
+                                    else:
+                                        if ego.perso["CONFIDENCE"]["JEUX"] is False:
+                                            await self.bot.whisper(
+                                                "*Vos jeux seront affichés sur votre carte EGO* | Retour Menu")
+                                            ego.perso["CONFIDENCE"]["JEUX"] = True
+                                            self.ego.save()
+                                elif rep2.content.lower() == "s":
+                                    verif2 = True
+                                    if ego.perso["CONFIDENCE"]["RELATIONS"] is True:
+                                        await self.bot.whisper(
+                                            "*Vos relations ne seront plus affichés sur votre carte EGO* | Retour Menu")
+                                        ego.perso["CONFIDENCE"]["RELATIONS"] = False
+                                        self.ego.save()
+                                    else:
+                                        if ego.perso["CONFIDENCE"]["RELATIONS"] is False:
+                                            await self.bot.whisper(
+                                                "*Vos relations seront affichés sur votre carte EGO* | Retour Menu")
+                                            ego.perso["CONFIDENCE"]["RELATIONS"] = True
+                                            self.ego.save()
+                                elif rep2.content.lower() == "h":
+                                    verif2 = True
+                                    if ego.perso["CONFIDENCE"]["HISTO"] is True:
+                                        await self.bot.whisper(
+                                            "*Votre historique ne sera plus affiché sur votre carte EGO* | Retour Menu")
+                                        ego.perso["CONFIDENCE"]["HISTO"] = False
+                                        self.ego.save()
+                                    else:
+                                        if ego.perso["CONFIDENCE"]["HISTO"] is False:
+                                            await self.bot.whisper(
+                                                "*Votre historique sera affiché sur votre carte EGO* | Retour Menu")
+                                            ego.perso["CONFIDENCE"]["HISTO"] = True
+                                            self.ego.save()
+                                elif rep2.content.lower() == "p":
+                                    verif2 = True
+                                    if ego.perso["CONFIDENCE"]["PROFIL"] is True:
+                                        await self.bot.whisper(
+                                            "*Vos informations perso. ne seront plus communiqués par EGO* | Retour Menu")
+                                        ego.perso["CONFIDENCE"]["PROFIL"] = False
+                                        self.ego.save()
+                                    else:
+                                        if ego.perso["CONFIDENCE"]["PROFIL"] is False:
+                                            await self.bot.whisper(
+                                                "*Vos informations perso. seront communiqués par EGO* | Retour Menu")
+                                            ego.perso["CONFIDENCE"]["PROFIL"] = True
+                                            self.ego.save()
+                                elif rep2.content.lower() == "f":
+                                    verif2 = True
+                                    warning = "**Mode Fantôme**\n" \
+                                              "Activer ce mode effacera toute information détenue par EGO jusqu'à ce jour et mettra votre profil 'en suspens'.\n" \
+                                              "Cela signifie qu'aucune nouvelle donnée ne sera récoltée de vous jusqu'a que vous sortiez de ce mode.\n" \
+                                              "En outre, votre carte EGO n'affichera que le stricte nécéssaire fourni par les serveurs Discord (Arrivée sur le serveur etc)\n" \
+                                              "*Note: Certaines données tels que le suivi du changement de pseudo ne sont pas seulement gérés par EGO et ne pourraient être supprimées*\n\n" \
+                                              "_Êtes-vous certain d'activer ce mode ?_ (O/N)"
+                                    await self.bot.whisper(warning)
+                                    verif3 = False
+                                    while verif3 is False:
+                                        rep3 = await self.bot.wait_for_message(timeout=60, author=ctx.message.author,
+                                                                               channel=menu.channel)
+                                        if rep3 == None:
+                                            await self.bot.whisper("*Absence de réponse* | Retour au menu")
+                                            verif3 = True
+                                        elif rep3.content.lower() in ["oui", "o"]:
+                                            if self.ego.suspens(ctx.message.author, True) == True:
+                                                await self.bot.whisper(
+                                                    "**Mode fantôme activé**\nPour en sortir, allez dans vos options et confirmez la sortie du mode.\n**Bye** :wave:")
+                                            else:
+                                                await self.bot.whisper("Il y a eu une erreur lors du changement de mode. Contactez Acrown#4424...")
+                                            return
+                                        else:
+                                            await self.bot.whisper("*Annulation* | Retour au menu")
+                                            verif3 = True
+                                elif rep2.content.lower() == "r":
+                                    await self.bot.whisper("*Retour au menu*")
+                                    verif2 = True
+                                    fini = True
+                                elif rep2.content.lower() == "q":
+                                    await self.bot.whisper("**Bye** :wave:")
+                                    return
+                                else:
+                                    await self.bot.whisper("*Réponse invalide* | Réessayez")
+                    elif rep.content == "3":
+                        verif = True
+                        await self.bot.whisper("*Page en construction* | Retour au menu")
+                    elif rep.content.lower() == "q":
+                        await self.bot.whisper("**Bye** :wave:")
+                        return
+                    else:
+                        await self.bot.whisper("*Réponse invalide* | Réessayez")
+        else:
+            menu = await self.bot.whisper(
+                "**Voulez-vous sortir du mode fantôme et réautoriser le suivi par EGO ?** (O/N)")
+            verifs = False
+            while verifs is False:
+                rep = await self.bot.wait_for_message(timeout=30, author=ctx.message.author, channel=menu.channel)
+                if rep is None:
+                    await self.bot.whisper("*Absence de réponse* | Bye :wave:")
+                    return
+                elif rep.content.lower() in ["o", "oui"]:
+                    await self.bot.whisper("**Sortie du mode fantôme**\n"
+                                           "Votre profil n'est plus suspendu !")
+                    self.ego.suspens(ctx.message.author, False)
+                    return
+                else:
+                    await self.bot.whisper("Bye :wave:")
+                    return
+
     @commands.command(aliases=["c"], pass_context=True)
     async def card(self, ctx, user: discord.Member = None):
         """Affiche une carte de membre détaillée.
@@ -218,30 +670,36 @@ class Ego:
         passed = (ctx.message.timestamp - user.created_at).days
         em.add_field(name="Age du compte", value=str(passed) + " jours")
         passed = (ctx.message.timestamp - user.joined_at).days
-        egodate = self.ego.since(user, "jour")
-        if passed < egodate:
-            msg = "+{} jours"
-        else:
-            msg = "{} jours"
+        msg = "{} jours"
+        if self.ego.is_fantome(user) is False:
+            egodate = self.ego.since(user, "jour")
+            if egodate < 1:
+                egodate = 1
+            if passed < egodate:
+                msg = "+{} jours"
         em.add_field(name="Nb de jours", value=msg.format(passed))
-        if egodate == 0:
-            egodate = 1
-        em.add_field(name="Ratio de messages", value="{}/jour".format(str(
-            round(ego.stats["NB_MSG"] / egodate, 2))))
+        if self.ego.aff_auto(user, "RATIO") is True:
+            em.add_field(name="Ratio de messages", value="{}/jour".format(str(
+                round(ego.stats["NB_MSG"] / egodate, 2))))
         rolelist = [r.name for r in user.roles]
         rolelist.remove('@everyone')
         em.add_field(name="Rôles", value=rolelist)
-        liste = ego.histo[-3:]
-        liste.reverse()
-        hist = ""
-        if liste != []:
-            for i in liste:
-                hist += "**{}** *{}*\n".format(i[2], i[3])
+        if self.ego.aff_auto(user, "HISTO") is True:
+            liste = ego.histo[-3:]
+            liste.reverse()
+            hist = ""
+            if liste != []:
+                for i in liste:
+                    hist += "**{}** *{}*\n".format(i[2], i[3])
+            else:
+                hist = "Aucun historique"
+            em.add_field(name="Historique", value="{}".format(hist))
+        if self.ego.is_fantome(user) is True:
+            fantome = "Cette personne n'est pas suivie par le système EGO"
         else:
-            hist = "Aucun historique"
-        em.add_field(name="Historique", value="{}".format(hist))
+            fantome = "Certaines informations proviennent du système EGO"
         em.set_footer(
-            text="Certaines informations proviennent du système Ego | V2.0.5 (&logs)", icon_url="http://i.imgur.com/DsBEbBw.png")
+            text="{} | V2.2 (&logs)".format(fantome), icon_url="http://i.imgur.com/DsBEbBw.png")
         #TODO Changer de version à chaque MAJ
         await self.bot.say(embed=em)
 
@@ -273,7 +731,7 @@ class Ego:
         passed = (ctx.message.timestamp - server.created_at).days
         em.add_field(name="Age", value="{} jours".format(passed))
         em.set_thumbnail(url=server.icon_url)
-        em.set_footer(text="Certaines informations proviennent du système Ego | V2.0.5 (&logs)")
+        em.set_footer(text="Certaines informations proviennent du système Ego | V2.2 (&logs)", icon_url="http://i.imgur.com/DsBEbBw.png")
         await self.bot.say(embed=em)
 
 #LISTENERS
@@ -294,6 +752,8 @@ class Ego:
             self.glob["NB_MSG"] = {} #Ngb
 
         ego = self.ego.log(author)
+        if self.ego.is_fantome(author) is True:
+            return
         ego.stats["NB_MSG"] = ego.stats["NB_MSG"] + 1 if "NB_MSG" in ego.stats else 1
         if message.mentions != []:
             if "MENTION" in ego.stats:
@@ -327,6 +787,8 @@ class Ego:
             self.glob["NB_JOIN"] = {} #Ngb
 
         ego = self.ego.log(user)
+        if self.ego.is_fantome(author) is True:
+            return
         if "ENTREES" in ego.stats:
             ego.stats["ENTREES"] += 1
         else:
@@ -347,6 +809,8 @@ class Ego:
             self.glob["NB_QUIT"] = {} #Ngb
 
         ego = self.ego.log(user)
+        if self.ego.is_fantome(author) is True:
+            return
         if "SORTIES" in ego.stats:
             ego.stats["SORTIES"] += 1
         else:
@@ -356,6 +820,8 @@ class Ego:
 
     async def l_profil(self, b, a): #On cherche un changement dans le profil
         ego = self.ego.log(a)
+        if self.ego.is_fantome(a) is True:
+            return
         if a.name != b.name: #Pseudo ?
             if "PSEUDOS" in ego.stats:
                 ego.stats["PSEUDOS"].append(a.name)
@@ -380,16 +846,19 @@ class Ego:
                 self.ego.event(a, "role", "!", "Ne possède plus de rôles")
         if a.game != None:
             if "JEUX" in ego.perso:
-                if a.game.name.lower() not in ego.perso["JEUX"]:
-                    ego.perso["JEUX"].append(a.game.name.lower())
+                if a.game.name != None:
+                    if a.game.name.lower() not in ego.perso["JEUX"]:
+                        ego.perso["JEUX"].append(a.game.name.lower())
             else:
-                ego.perso["JEUX"] = [a.game.name]
+                ego.perso["JEUX"] = [] #Ngb
         self.ego.save()
 
         #TODO Ajouter VoiceState dans le cadre du calcul d'Activité
 
     async def l_ban(self, user):
         ego = self.ego.log(user)
+        if self.ego.is_fantome(author) is True:
+            return
         if "BANS" in ego.stats:
             ego.stats["BANS"] += 1
         else:
