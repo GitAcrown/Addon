@@ -714,21 +714,25 @@ class Ego:
         if rap == None:
             pass
         elif rap.reaction.emoji == "🎮":
-            if user != ctx.message.author:
-                em = discord.Embed(title="Jeux de {}".format(str(user)), color=ec)
-                biblio = self.ego.biblio(user)
-                selfbib = self.ego.biblio(ctx.message.author)
-                verif = []
-                msg = ""
-                if biblio != False:
-                    if biblio != []:
-                        for g in biblio:
-                            if g.lower() not in verif:
-                                if selfbib != False:
-                                    if selfbib != []:
-                                        if g in selfbib:
-                                            msg += "***{}***\n".format(g.title())
-                                            verif.append(g.lower())
+            if self.ego.aff_auto(user, "JEUX") is True:
+                if user != ctx.message.author:
+                    em = discord.Embed(title="Jeux de {}".format(str(user)), color=ec)
+                    biblio = self.ego.biblio(user)
+                    selfbib = self.ego.biblio(ctx.message.author)
+                    verif = []
+                    msg = ""
+                    if biblio != False:
+                        if biblio != []:
+                            for g in biblio:
+                                if g.lower() not in verif:
+                                    if selfbib != False:
+                                        if selfbib != []:
+                                            if g in selfbib:
+                                                msg += "***{}***\n".format(g.title())
+                                                verif.append(g.lower())
+                                            else:
+                                                msg += "*{}*\n".format(g.title())
+                                                verif.append(g.lower())
                                         else:
                                             msg += "*{}*\n".format(g.title())
                                             verif.append(g.lower())
@@ -736,35 +740,34 @@ class Ego:
                                         msg += "*{}*\n".format(g.title())
                                         verif.append(g.lower())
                                 else:
-                                    msg += "*{}*\n".format(g.title())
+                                    pass
+                        else:
+                            msg = "Bibliothèque vide."
+                    else:
+                        msg = "Bibliothèque vide."
+                    em.add_field(name="Bibliothèque", value=msg)
+                    em.set_footer(text="Les jeux en commun sont affichés en gras", icon_url="http://i.imgur.com/DsBEbBw.png")
+                else:
+                    em = discord.Embed(title="Vos jeux", color=ec)
+                    biblio = self.ego.biblio(user)
+                    verif = []
+                    if biblio != False:
+                        if biblio != []:
+                            for g in biblio:
+                                if g.lower() not in verif:
                                     verif.append(g.lower())
-                            else:
-                                pass
+                                    msg += "*{}*\n".format(g.title())
+                                else:
+                                    pass
+                        else:
+                            msg = "Bibliothèque vide."
                     else:
                         msg = "Bibliothèque vide."
-                else:
-                    msg = "Bibliothèque vide."
-                em.add_field(name="Bibliothèque", value=msg)
-                em.set_footer(text="Les jeux en commun sont affichés en gras", icon_url="http://i.imgur.com/DsBEbBw.png")
+                    em.add_field(name="Bibliothèque", value=msg)
+                    em.set_footer(text="Certains jeux possédés peuvent ne pas avoir été vérifiés", icon_url="http://i.imgur.com/DsBEbBw.png")
+                await self.bot.say(embed=em)
             else:
-                em = discord.Embed(title="Vos jeux", color=ec)
-                biblio = self.ego.biblio(user)
-                verif = []
-                if biblio != False:
-                    if biblio != []:
-                        for g in biblio:
-                            if g.lower() not in verif:
-                                verif.append(g.lower())
-                                msg += "*{}*\n".format(g.title())
-                            else:
-                                pass
-                    else:
-                        msg = "Bibliothèque vide."
-                else:
-                    msg = "Bibliothèque vide."
-                em.add_field(name="Bibliothèque", value=msg)
-                em.set_footer(text="Certains jeux possédés peuvent ne pas avoir été vérifiés", icon_url="http://i.imgur.com/DsBEbBw.png")
-            await self.bot.say(embed=em)
+                await self.bot.say("L'utilisateur ne souhaite pas partager sa bibliothèque.")
         else:
             return
 
