@@ -785,13 +785,16 @@ class Ego:
         em.add_field(name="Region", value="{}".format(server.region))
         em.add_field(name="Propriétaire", value="{}".format(server.owner))
         if "NB_JOIN" and "NB_QUIT" in self.glob:
-            if auj in self.glob["NB_JOIN"] and auj in self.glob["NB_QUIT"]:
-                if (self.glob["NB_JOIN"][auj] - self.glob["NB_QUIT"][auj]) > (self.glob["NB_JOIN"][hier] - self.glob["NB_QUIT"][hier]):
-                    var = "+"
-                elif (self.glob["NB_JOIN"][auj] - self.glob["NB_QUIT"][auj]) == (self.glob["NB_JOIN"][hier] - self.glob["NB_QUIT"][hier]):
-                    var = "="
+            if auj in self.glob["NB_JOIN"]:
+                if auj in self.glob["NB_QUIT"]:
+                    if (self.glob["NB_JOIN"][auj] - self.glob["NB_QUIT"][auj]) > (self.glob["NB_JOIN"][hier] - self.glob["NB_QUIT"][hier]):
+                        var = "+"
+                    elif (self.glob["NB_JOIN"][auj] - self.glob["NB_QUIT"][auj]) == (self.glob["NB_JOIN"][hier] - self.glob["NB_QUIT"][hier]):
+                        var = "="
+                    else:
+                        var = "-"
                 else:
-                    var = "-"
+                    var = "?"
             else:
                 var = "?"
         else:
