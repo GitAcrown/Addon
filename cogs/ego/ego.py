@@ -247,15 +247,21 @@ class Ego:
     async def changelog(self, ctx):
         """Informations sur la dernière MAJ Majeure de EGO."""
         em = discord.Embed(color=0x5184a5)
-        cl = "[BETA] Ajout des paramètres perso (&options)\n" \
+        c1 = "[BETA] Ajout des paramètres perso (&options)\n" \
              "[BETA] Ajout du mode 'fantôme'\n" \
              "- Ajout de l'affichage du site\n" \
              "- Nouveau suivi de la bibliothèque de jeux\n" \
-             "- Changements mineurs d'affichage\n" \
-             "[Bientôt] Voir la collection de jeux de quelqu'un (et comparer)\n" \
-             "[Bientôt] Retour des relations entre membres"
-        em.add_field(name="Version 2.2", value=cl)
-        em.set_footer(text="MAJ publiée le 30/06")
+             "- Changements mineurs d'affichage"
+        em.add_field(name="Version 2.2", value=c1)
+        c2 = "- Affichage de la bibliothèque de jeux\n" \
+             "- Ajout comparaison de bibliothèques\n" \
+             "- Nouvel algorithme de détection + rapide\n" \
+             "- Nouvel affichage &logs"
+        em.add_field(name="Version 2.2.1", value=c2)
+        bt = "- Notifications (Anniversaire...)\n" \
+             "- Retour des relations"
+        em.add_field(name="Bientôt", value=bt)
+        em.set_footer(text="Dernière MAJ publiée le 30/06")
         await self.bot.say(embed=em)
 
     @commands.command(pass_context=True)
@@ -700,8 +706,66 @@ class Ego:
             fantome = "Certaines informations proviennent du système EGO"
         em.set_footer(
             text="{} | V2.2 (&logs)".format(fantome), icon_url="http://i.imgur.com/DsBEbBw.png")
-        #TODO Changer de version à chaque MAJ
-        await self.bot.say(embed=em)
+        msg = await self.bot.say(embed=em)
+
+        await self.bot.add_reaction(msg, "🎮")
+        await asyncio.sleep(1)
+        rap = await self.bot.wait_for_reaction("🎮", message=msg, timeout=20)
+        if rap == None:
+            pass
+        elif rap.reaction.emoji == "🎮":
+            if user != ctx.message.author:
+                em = discord.Embed(title="Jeux de {}".format(str(user)), color=ec)
+                biblio = self.ego.biblio(user)
+                selfbib = self.ego.biblio(ctx.message.author)
+                msg = ""
+                if biblio != False:
+                    if biblio != []:
+                        for g in biblio:
+                            if g.lower() not in verif:
+                                if selfbib != False:
+                                    if selfbib != []:
+                                        if g in selfbib:
+                                            msg += "***{}***\n".format(g.title())
+                                            verif.append(g.lower())
+                                        else:
+                                            msg += "*{}*\n".format(g.title())
+                                            verif.append(g.lower())
+                                    else:
+                                        msg += "*{}*\n".format(g.title())
+                                        verif.append(g.lower())
+                                else:
+                                    msg += "*{}*\n".format(g.title())
+                                    verif.append(g.lower())
+                            else:
+                                pass
+                    else:
+                        msg = "Bibliothèque vide."
+                else:
+                    msg = "Bibliothèque vide."
+                em.add_field(name="Bibliothèque", value=msg)
+                em.set_footer(text="Les jeux en commun sont affichés en gras", icon_url="http://i.imgur.com/DsBEbBw.png")
+            else:
+                em = discord.Embed(title="Vos jeux", color=ec)
+                biblio = self.ego.biblio(user)
+                verif = []
+                if biblio != False:
+                    if biblio != []:
+                        for g in biblio:
+                            if g.lower() not in verif:
+                                verif.append(g.lower())
+                                msg += "*{}*\n".format(g.title())
+                            else:
+                                pass
+                    else:
+                        msg = "Bibliothèque vide."
+                else:
+                    msg = "Bibliothèque vide."
+                em.add_field(name="Bibliothèque", value=msg)
+                em.set_footer(text="Certains jeux possédés peuvent ne pas avoir été vérifiés", icon_url="http://i.imgur.com/DsBEbBw.png")
+            await self.bot.say(embed=em)
+        else:
+            return
 
     @commands.command(aliases=["s"], pass_context=True)
     async def scard(self, ctx):
