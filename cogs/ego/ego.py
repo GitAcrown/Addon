@@ -847,9 +847,9 @@ class Ego:
         else:
             return
 
-        @commands.command(pass_context=True, hidden=True)
+        @commands.command(name="egologs", pass_context=True, hidden=True)
         @checks.admin_or_permissions(kick_members=True)
-        async def egologs(self, ctx):
+        async def ego_logs(self, ctx):
             """Upload le fichier de débug EGO."""
             channel = ctx.message.channel
             chemin = 'data/ego/profil.json'
