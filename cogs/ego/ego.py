@@ -850,13 +850,16 @@ class Ego:
     @commands.command(name="egologs", pass_context=True, hidden=True)
     @checks.admin_or_permissions(kick_members=True)
     async def debug(self, ctx):
-        """Upload le fichier de débug EGO."""
+        """Upload les fichiers de débug EGO."""
         channel = ctx.message.channel
         chemin = 'data/ego/profil.json'
+        chemin2 = 'data/ego/glob.json'
         await self.bot.say("Upload en cours...")
         await asyncio.sleep(0.25)
         try:
             await self.bot.send_file(channel, chemin)
+            await asyncio.sleep(1)
+            await self.bot.send_file(channel, chemin2)
         except:
             await self.bot.say("Impossible d'upload le fichier.")
 
