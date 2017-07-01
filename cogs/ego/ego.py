@@ -879,6 +879,7 @@ class Ego:
                 self.glob["NB_MSG"][today] = {} #Ngb
         else:
             self.glob["NB_MSG"] = {} #Ngb
+        fileIO("data/ego/glob.json", "save", self.glob)
 
         ego = self.ego.log(author)
         if self.ego.is_fantome(author) is True:
@@ -914,6 +915,7 @@ class Ego:
                 self.glob["NB_QUIT"][today] = 0
         else:
             self.glob["NB_JOIN"] = {} #Ngb
+        fileIO("data/ego/glob.json", "save", self.glob)
 
         ego = self.ego.log(user)
         if self.ego.is_fantome(author) is True:
@@ -936,6 +938,7 @@ class Ego:
                 self.glob["NB_JOIN"][today] = 0
         else:
             self.glob["NB_QUIT"] = {} #Ngb
+        fileIO("data/ego/glob.json", "save", self.glob)
 
         ego = self.ego.log(user)
         if self.ego.is_fantome(author) is True:
