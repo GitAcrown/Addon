@@ -319,8 +319,16 @@ class Charm:
                             return_img = [self.stk["STICKERS"][stk]["URL"], self.stk["STICKERS"][stk]["CHEMIN"], self.stk["STICKERS"][stk]["FORMAT"]]
                         elif stk in self.old["STICKER"]:
                             if stk not in self.stk["STICKERS"]:
-                                await self.bot.send_message(author, "Ce sticker existe dans mes anciens fichiers mais à été nettoyé\n"
-                                                                    "Vous pouvez tenter de l'importer avec '&stk import {}'".format(stk))
+                                if "VERIF_STICK" not in self.sys:
+                                    self.sys["VERIF_STICK"] = {}
+                                if author.id not in self.sys["VERIF_STICK"]:
+                                    self.sys["VERIF_STICK"][author.id] = []
+                                if stk not in self.sys["VERIF_STICK"][author.id]:
+                                    await self.bot.send_message(author, "Ce sticker existe dans mes anciens fichiers mais à été archivé.\n"
+                                                                        "Vous pouvez l'importer avec '&stk import {}' sur le channel #bot !".format(stk))
+                                    self.sys["VERIF_STICK"][author.id].append(stk)
+                                else:
+                                    return
                         else:
                             break
 
