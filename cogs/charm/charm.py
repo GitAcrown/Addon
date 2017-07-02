@@ -263,6 +263,7 @@ class Charm:
     async def charm_msg(self, message):
         author = message.author
         channel = message.channel
+        mentions = message.mentions
         #Système AFK
         if "AFK" not in self.sys:
             self.sys["AFK"] = []
@@ -281,7 +282,10 @@ class Charm:
                 for afk in self.sys["AFK"]:
                     if m.id == afk[0]:
                         if afk[2] != "":
-                            await self.bot.send_message(channel, "**{}** est AFK\n**Raison:** *{}*".format(afk[1], afk[2]))
+                            if mentions == []:
+                                await self.bot.send_message(channel, "**{}** est AFK\n**Raison:** *{}*".format(afk[1], afk[2]))
+                            else:
+                                await self.bot.send_message(channel, "**{}** est AFK".format(afk[1]))
                         else:
                             await self.bot.send_message(channel, "**{}** est AFK".format(afk[1]))
 
