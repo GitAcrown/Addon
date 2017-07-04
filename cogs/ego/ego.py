@@ -260,20 +260,23 @@ class Ego:
             return
         liste = self.ego.poss_jeu(opt)[0]
         nom = self.ego.poss_jeu(opt)[1]
+        em = discord.Embed(color=author.color)
         msg = ""
-        n = 1
         for p in liste:
             msg += "- *{}*\n".format(server.get_member(p))
-            if len(msg) > 1950 * n:
+            if len(msg) >= 1950 * n:
                 n += 1
                 msg += "!!"
         else:
             lmsg = msg.split("!!")
-            for m in lmsg:
-                em = discord.Embed(color=author.color)
-                em.add_field(name="Propriétaires de {}*".format(nom.title()), value=m)
-                em.set_footer(text="* ou version similaire")
+            em.add_field(name="Propriétaires de {}*".format(nom.title()), value=msg)
+            em.set_footer(text="* ou version similaire")
+            if "!!" not in lmsg:
                 await self.bot.say(embed=em)
+            else:
+                await self.bot.say("Propriétaires de {} *ou version similaire*\n\n")
+                for m in lmsg:
+                    await self.bot.say(m)
 
     @commands.command(aliases=["opt"], pass_context=True, no_pm=True)
     async def options(self, ctx):
