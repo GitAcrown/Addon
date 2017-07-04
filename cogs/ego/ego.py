@@ -260,9 +260,8 @@ class Ego:
             return
         liste = self.ego.poss_jeu(opt)[0]
         nom = self.ego.poss_jeu(opt)[1]
-        em = discord.Embed(color=author.color)
         msg = ""
-        n = 1
+        n
         for p in liste:
             msg += "- *{}*\n".format(server.get_member(p))
             if len(msg) >= 1950 * n:
@@ -270,9 +269,10 @@ class Ego:
                 msg += "!!"
         else:
             lmsg = msg.split("!!")
-            em.add_field(name="Propriétaires de {}*".format(nom.title()), value=msg)
-            em.set_footer(text="* ou version similaire")
             if "!!" not in lmsg:
+                em = discord.Embed(color=author.color)
+                em.add_field(name="Propriétaires de {}*".format(nom.title()), value=msg)
+                em.set_footer(text="* ou version similaire")
                 await self.bot.say(embed=em)
             else:
                 await self.bot.say("Propriétaires de {} *ou version similaire*\n\n")
