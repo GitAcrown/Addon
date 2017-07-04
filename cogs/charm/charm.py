@@ -63,6 +63,16 @@ class Charm:
 
 # STICKERS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>><
 
+    @commands.command(pass_context=True, no_pm=True, hidden=True)
+    async def egotest(self, ctx):
+        """Test la connexion entre Charm et EGO"""
+        try:
+            ego = self.bot.get_cog('Ego').ego
+            card = ego.log(ctx.message.author)
+            await self.bot.say(str(card.born))
+        except:
+            await self.bot.say("Ego n'est pas connecté.")
+
     @commands.group(name = "stk", pass_context=True)
     async def charm_stk(self, ctx):
         """Gestion Stickers"""
@@ -364,13 +374,18 @@ class Charm:
                         break
 
     async def member_join(self, user :discord.Member):
+        ego = self.bot.get_cog('Ego').ego
+        card = ego.log(user)
         if "NOTIF_CHANNEL" not in self.sys:
             self.sys["NOTIF_CHANNEL"] = "204585334925819904"
         if not self.sys["NOTIF_CHANNEL"] is None:
             channel = self.bot.get_channel(self.sys["NOTIF_CHANNEL"])
             if not channel.server.id == "204585334925819904":
                 return
-            await self.bot.send_message(channel, "{} **est arrivé(e)**".format(user.mention))
+            if card.born < (time.time() - 3600):
+                await self.bot.send_message(channel, "{} **est de revenu(e)**".format(user.mention))
+            else:
+                await self.bot.send_message(channel, "{} **est arrivé(e)**".format(user.mention))
             if "WELCOME_MSG" not in self.sys:
                 self.sys["WELCOME_MSG"] = None
             if not self.sys["WELCOME_MSG"] is None:
