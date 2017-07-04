@@ -261,7 +261,7 @@ class Ego:
         liste = self.ego.poss_jeu(opt)[0]
         nom = self.ego.poss_jeu(opt)[1]
         msg = ""
-        n
+        n = 1
         for p in liste:
             msg += "- *{}*\n".format(server.get_member(p))
             if len(msg) >= 1950 * n:
