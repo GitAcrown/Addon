@@ -79,38 +79,6 @@ class EgoAPI:
         else:
             return 0x9ea0a3
 
-    def old_poss_jeu(self, jeu): # Vieille version de l'algo de vérification de jeu (Gardé aucazou)
-        verif = []
-        dispo = {}
-        bon = {}
-        for p in self.user:
-            if "JEUX" in self.user[p]["PERSO"]:
-                for g in self.user[p]["PERSO"]["JEUX"]:
-                    if g not in verif:
-                        verif.append(g)
-                        bon[g] = {"NOM": g, "POSS": self.user[p]["ID"]}
-                    else:
-                        if g in dispo:
-                            dispo[g]["NB"] += 1
-                            dispo[g]["POSS"].append(self.user[p]["ID"])
-                        else:
-                            dispo[g] = {"NOM": g,
-                                        "NB": 1,
-                                        "POSS": [self.user[p]["ID"]]}
-        if verif != [] and dispo != {}:
-            total = []
-            for j in dispo:
-                if jeu in dispo[j]["NOM"]:
-                    for poss in dispo[j]["POSS"]:
-                        total.append(poss)
-                    if dispo[j]["NOM"] in bon:
-                        total.append(bon[j]["POSS"])
-                    return [total, dispo[j]["NOM"]]
-            else:
-                return False
-        else:
-            return False
-
     def poss_jeu(self, jeu):
         verif = self.jeux_verif()
         total = []
@@ -292,14 +260,20 @@ class Ego:
             return
         liste = self.ego.poss_jeu(opt)[0]
         nom = self.ego.poss_jeu(opt)[1]
-        em = discord.Embed(color=author.color)
         msg = ""
+        n = 1
         for p in liste:
             msg += "- *{}*\n".format(server.get_member(p))
+            if len(msg) > 1950 * n:
+                n += 1
+                msg += "!!"
         else:
-            em.add_field(name="Propriétaires de {}*".format(nom.title()), value=msg)
-            em.set_footer(text="* ou version similaire")
-            await self.bot.say(embed=em)
+            lmsg = msg.split("!!")
+            for m in lmsg:
+                em = discord.Embed(color=author.color)
+                em.add_field(name="Propriétaires de {}*".format(nom.title()), value=m)
+                em.set_footer(text="* ou version similaire")
+                await self.bot.say(embed=em)
 
     @commands.command(aliases=["opt"], pass_context=True, no_pm=True)
     async def options(self, ctx):
