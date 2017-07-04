@@ -195,6 +195,25 @@ class EgoAPI:
         else:
             return False
 
+    def pop_class(self, user, top=5):
+        liste = []
+        for p in self.user:
+            n = 0
+            for u in self.user:
+                if "MENTION" in self.user[u]["STATS"]:
+                    if p in self.user[u]["STATS"]["MENTION"]:
+                        n += self.user[u]["STATS"]["MENTION"][p]
+            t = self.user[p]["BORN"] / (60*60*24)
+            mn = n/t
+            if self.user[p]["ID"] == user.id:
+                k = [mn, self.user[p]["ID"]]
+            liste.append([mn, self.user[p]["ID"]])
+        sort = sorted(liste, key=operator.itemgetter(0))
+        sort.reverse()
+        place = sort.index(k)
+        sort = sort[:top]
+        return [sort, place]
+
 class Ego:
     """Système Ego | Assistant personnel et suivi de statistiques"""
     def __init__(self, bot):
@@ -242,15 +261,37 @@ class Ego:
              "Ajout comparaison de bibliothèques\n" \
              "Nouvel algorithme de détection + rapide\n" \
              "Nouvel affichage &logs"
-        em.add_field(name="Total V2.2", value=c1)
+        em.add_field(name="Résumé Version 2.2", value=c1)
         c2 = "Ajout de &find\n" \
-             "Améliorations de l'affichage de &jeu"
+             "Améliorations de l'affichage de &jeu\n" \
+             "Réajout temporaire de &epop (ancien algorithme adapté)"
         em.add_field(name="Version 2.2.5", value=c2)
         bt = "Notifications (Anniversaire...)\n" \
              "Retour des relations\n" \
              "Historique complet"
-        em.add_field(name="Bientôt", value=bt)
+        em.add_field(name="Bientôt", value=bt, inline=False)
         em.set_footer(text="Dernière MAJ publiée le 04/07")
+        await self.bot.say(embed=em)
+
+    @commands.command(pass_context=True, no_pm=True)
+    async def epop(self, ctx, top=5):
+        """Affiche le top X des personnes les plus populaires du serveur et votre place sur ce top.
+
+        Par défaut le top 5."""
+        author = ctx.message.author
+        server = ctx.message.server
+        sort = self.ego.pop_class(author, top)
+        place = sort[1]
+        em = discord.Embed(color=author.color, title="EGO | Les E-Pop du serveur")
+        msg = ""
+        n = 1
+        for p in sort[0]:
+            user = server.get_member(p[1])
+            msg += "{} | *{}*\n".format(n, str(user))
+            n += 1
+        em.add_field(name="Top {}".format(top), value=msg)
+        em.add_field(name="Votre place", value="{}e".format(place + 1))
+        em.set_footer(text="Ces informations sont issues du système Ego | V2.2.5 (&logs)")
         await self.bot.say(embed=em)
 
     @commands.command(pass_context=True)
