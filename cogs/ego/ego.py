@@ -269,15 +269,18 @@ class Ego:
                 msg += "!!"
         else:
             lmsg = msg.split("!!")
-            if "!!" not in lmsg:
-                em = discord.Embed(color=author.color)
-                em.add_field(name="Propriétaires de {}*".format(nom.title()), value=msg)
-                em.set_footer(text="* ou version similaire")
-                await self.bot.say(embed=em)
-            else:
-                await self.bot.say("Propriétaires de {} *ou version similaire*\n\n")
-                for m in lmsg:
-                    await self.bot.say(m)
+            try:
+                if "!!" not in lmsg:
+                    em = discord.Embed(color=author.color)
+                    em.add_field(name="Propriétaires de {}*".format(nom.title()), value=msg)
+                    em.set_footer(text="* ou version similaire")
+                    await self.bot.say(embed=em)
+                else:
+                    await self.bot.say("Propriétaires de {} *ou version similaire*\n\n")
+                    for m in lmsg:
+                        await self.bot.say(m)
+            except:
+                await self.bot.say("Le nombre de joueurs est trop important. Discord n'autorise pas l'affichage d'un tel pavé...")
 
     @commands.command(aliases=["opt"], pass_context=True, no_pm=True)
     async def options(self, ctx):
