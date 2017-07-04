@@ -183,13 +183,13 @@ class EgoAPI:
             if "PSEUDOS" in self.user[p]["STATS"]:
                 for i in self.user[p]["STATS"]["PSEUDOS"]:
                     if term.lower() in i.lower():
-                        possible.append(self.user[p]["ID"])
+                        possible.append([self.user[p]["ID"], i])
             if strict is False:
                 if "N_PSEUDOS" in self.user[p]["STATS"]:
                     for i in self.user[p]["STATS"]["N_PSEUDOS"]:
                         if term.lower() in i.lower():
                             if self.user[p]["ID"] not in possible:
-                                possible.append(self.user[p]["ID"])
+                                possible.append([self.user[p]["ID"], i])
         if possible != []:
             return possible
         else:
@@ -317,10 +317,10 @@ class Ego:
         msg = ""
         for p in liste:
             try:
-                mp = server.get_member(p)
-                msg += "**{}**\n".format(str(mp))
+                mp = server.get_member(p[0])
+                msg += "**{}** ({})\n".format(str(mp), p[1])
             except:
-                msg += "*{}*\n".format(p)
+                msg += "*{}* ({})\n".format(p[0], p[1])
         em = discord.Embed(color=ctx.message.author.color)
         em.add_field(name="Résultats de votre recherche", value=msg)
         em.set_footer(text="Informations issues de EGO | V2.2.5 (&logs)", icon_url="http://i.imgur.com/DsBEbBw.png")
