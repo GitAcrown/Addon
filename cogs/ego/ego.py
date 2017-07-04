@@ -177,6 +177,24 @@ class EgoAPI:
         else:
             return "Dimanche"
 
+    def find_pseudo(self, term: str, strict = False):
+        possible = []
+        for p in self.user:
+            if "PSEUDOS" in self.user[p]["STATS"]:
+                for i in self.user[p]["STATS"]["PSEUDOS"]:
+                    if term.lower() in i.lower():
+                        possible.append(self.user[p]["ID"])
+            if strict is False:
+                if "N_PSEUDOS" in self.user[p]["STATS"]:
+                    for i in self.user[p]["STATS"]["N_PSEUDOS"]:
+                        if term.lower() in i.lower():
+                            if self.user[p]["ID"] not in possible:
+                                possible.append(self.user[p]["ID"])
+        if possible != []:
+            return possible
+        else:
+            return False
+
 class Ego:
     """Système Ego | Assistant personnel et suivi de statistiques"""
     def __init__(self, bot):
@@ -217,19 +235,22 @@ class Ego:
         em = discord.Embed(color=0x5184a5)
         c1 = "[BETA] Ajout des paramètres perso (&options)\n" \
              "[BETA] Ajout du mode 'fantôme'\n" \
-             "- Ajout de l'affichage du site\n" \
-             "- Nouveau suivi de la bibliothèque de jeux\n" \
-             "- Changements mineurs d'affichage"
-        em.add_field(name="Version 2.2", value=c1)
-        c2 = "- Affichage de la bibliothèque de jeux\n" \
-             "- Ajout comparaison de bibliothèques\n" \
-             "- Nouvel algorithme de détection + rapide\n" \
-             "- Nouvel affichage &logs"
-        em.add_field(name="Version 2.2.1", value=c2)
-        bt = "- Notifications (Anniversaire...)\n" \
-             "- Retour des relations"
+             "Ajout de l'affichage du site\n" \
+             "Nouveau suivi de la bibliothèque de jeux\n" \
+             "Changements mineurs d'affichage\n" \
+             "Affichage de la bibliothèque de jeux\n" \
+             "Ajout comparaison de bibliothèques\n" \
+             "Nouvel algorithme de détection + rapide\n" \
+             "Nouvel affichage &logs"
+        em.add_field(name="Total V2.2", value=c1)
+        c2 = "Ajout de &find\n" \
+             "Améliorations de l'affichage de &jeu"
+        em.add_field(name="Version 2.2.5", value=c2)
+        bt = "Notifications (Anniversaire...)\n" \
+             "Retour des relations\n" \
+             "Historique complet"
         em.add_field(name="Bientôt", value=bt)
-        em.set_footer(text="Dernière MAJ publiée le 30/06")
+        em.set_footer(text="Dernière MAJ publiée le 04/07")
         await self.bot.say(embed=em)
 
     @commands.command(pass_context=True)
@@ -281,6 +302,29 @@ class Ego:
                         await self.bot.say(m)
             except:
                 await self.bot.say("Le nombre de joueurs est trop important. Discord n'autorise pas l'affichage d'un tel pavé...")
+
+    @commands.command(pass_context=True, no_pm=True)
+    async def find(self, ctx, recherche, strict:bool = False):
+        """Permet de retrouver à qui appartient un pseudo ou un surnom.
+        Si le pseudo est composé, utilisez des guillemets pour l'entrer.
+        
+        Prend en compte les anciens pseudos enregistrés par EGO."""
+        liste = self.ego.find_pseudo(recherche, strict)
+        if liste is False:
+            await self.bot.say("Aucun résultat trouvé. Essayez d'être moins précis et/ou vérifiez l'orthographe.")
+            return
+        server = ctx.message.server
+        msg = ""
+        for p in liste:
+            try:
+                mp = server.get_member(p)
+                msg += "**{}**\n".format(str(mp))
+            except:
+                msg += "*{}*\n".format(p)
+        em = discord.Embed(color=ctx.message.author.color)
+        em.add_field(name="Résultats de votre recherche", value=msg)
+        em.set_footer(text="Informations issues de EGO | V2.2.5 (&logs)", icon_url="http://i.imgur.com/DsBEbBw.png")
+        await self.bot.say(embed=em)
 
     @commands.command(aliases=["opt"], pass_context=True, no_pm=True)
     async def options(self, ctx):
