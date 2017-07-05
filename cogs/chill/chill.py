@@ -50,6 +50,15 @@ class Chill:
         mess = await self.bot.edit_message(mess, msg)
 
     @commands.command(pass_context=True)
+    async def repsec(self, ctx, channelid):
+        """Débide 2.0"""
+        channel = self.bot.get_channel(channelid)
+        await self.bot.send_message(channel, "Salut à vous.")
+        await asyncio.sleep(0.5)
+        rep = await self.bot.wait_for_message(channel=channel)
+        await self.bot.send_message(channel, "Pourquoi tu me parles {} ? Je suis pas ton ami fdp".format(rep.author))
+
+    @commands.command(pass_context=True)
     async def emojis(self, ctx, chanbase: discord.Channel, first, nombre: int):
         """Donne des statistiques sur l'utilisation des emojis.
         Aide:
