@@ -1,7 +1,6 @@
 import asyncio
 import os
 from .utils import checks
-from copy import deepcopy
 import discord
 from collections import namedtuple
 from __main__ import send_cmd_help
@@ -248,6 +247,8 @@ class Ego:
         solde = nb_join - nb_quit
         return [nb_join, nb_quit, solde]
 
+#,Commandes >>>>>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
     @commands.command(name="logs", pass_context=True)
     async def changelog(self, ctx):
         """Informations sur la dernière MAJ Majeure de EGO."""
@@ -260,20 +261,76 @@ class Ego:
              "Affichage de la bibliothèque de jeux\n" \
              "Ajout comparaison de bibliothèques\n" \
              "Nouvel algorithme de détection + rapide\n" \
-             "Nouvel affichage &logs"
-        em.add_field(name="Résumé Version 2.2", value=c1)
-        c2 = "Ajout de &find\n" \
+             "Nouvel affichage &logs\n" \
+             "Ajout de &find\n" \
              "Améliorations de l'affichage de &jeu\n" \
              "Réajout temporaire de &epop (ancien algorithme adapté)"
-        em.add_field(name="Version 2.2.5", value=c2)
+        em.add_field(name="Version 2.2", value=c1)
+        c2 = "Ajout des statistiques serveur détaillés\n" \
+             "Réorganisation des commandes, rassemblées sous &ego (sauf &card et &scard)"
+        em.add_field(name="Version 2.3", value=c2)
         bt = "Notifications (Anniversaire...)\n" \
              "Retour des relations\n" \
              "Historique complet"
         em.add_field(name="Bientôt", value=bt, inline=False)
-        em.set_footer(text="Dernière MAJ publiée le 04/07")
+        em.set_footer(text="Dernière MAJ publiée le 05/07", icon_url="http://i.imgur.com/DsBEbBw.png")
         await self.bot.say(embed=em)
 
-    @commands.command(pass_context=True, no_pm=True)
+    @commands.group(name="ego", pass_context=True)
+    async def _ego(self, ctx):
+        """Commandes EGO"""
+        if ctx.invoked_subcommand is None:
+            await send_cmd_help(ctx)
+
+    @_ego.command(pass_context=True, no_pm=True)
+    async def servstats(self, ctx):
+        """Affiche les détails des statistiques sur le serveur."""
+        server = ctx.message.server
+        today = time.strftime("%d/%m/%Y", time.localtime())
+        saut = 0
+        day = menu = None
+        retour = False
+        while retour is False:
+            if saut == 0:
+                day = today
+            elif saut > 0:
+                day = time.strftime("%d/%m/%Y", time.localtime(time.mktime(time.strptime(today, "%d/%m/%Y")) - (86400 * saut)))
+            else:
+                await self.bot.say("**Erreur** | Impossible d'aller dans le futur, ça risquerait de détruire l'Espace-Temps...")
+                return
+            em = discord.Embed(title="EGO Stats | {} - *{}*".format(server.name, day), color=ctx.message.author.color)
+            em.set_thumbnail(url=server.icon_url)
+            if day in self.glob["NB_MSG"]:
+                total = 0
+                for c in self.glob["NB_MSG"][day]:
+                    total += self.glob["NB_MSG"][day][c]
+                em.add_field(name="Nb de messages", value="{}".format(total))
+            if day in self.glob["NB_JOIN"]:
+                em.add_field(name="Nb d'arrivées", value="{}".format(self.glob["NB_JOIN"][day]))
+            if day in self.glob["NB_QUIT"]:
+                em.add_field(name="Nb de départs", value="{}".format(self.glob["NB_QUIT"][day]))
+            em.set_footer(text="Données issues de EGO | V2.3 (&logs)", icon_url="http://i.imgur.com/DsBEbBw.png")
+            if menu == None:
+                menu = await self.bot.whisper(embed=em)
+            else:
+                await self.bot.clear_reactions(menu)
+                await asyncio.sleep(0.5)
+                menu = await self.bot.edit_message(menu, embed=em)
+            await self.bot.add_reaction(menu, "⏪")
+            if saut > 0:
+                await self.bot.add_reaction(menu, "⏩")
+            await asyncio.sleep(1)
+            act = await self.bot.wait_for_reaction(["⏪","⏩"], message=menu, timeout=60)
+            if act == None:
+                return
+            elif act.reaction.emoji == "⏪":
+                saut += 1
+            elif act.reaction.emoji == "⏩":
+                saut -= 1
+            else:
+                pass
+
+    @_ego.command(pass_context=True, no_pm=True)
     async def epop(self, ctx, top=5):
         """Affiche le top X des personnes les plus populaires du serveur et votre place sur ce top.
 
@@ -291,10 +348,10 @@ class Ego:
             n += 1
         em.add_field(name="Top {}".format(top), value=msg)
         em.add_field(name="Votre place", value="{}e".format(place + 1))
-        em.set_footer(text="Ces informations sont issues du système Ego | V2.2.5 (&logs)")
+        em.set_footer(text="Ces informations sont issues du système Ego | V2.3 (&logs)", icon_url="http://i.imgur.com/DsBEbBw.png")
         await self.bot.say(embed=em)
 
-    @commands.command(pass_context=True)
+    @_ego.command(pass_context=True)
     async def jeu(self, ctx, opt: str=None):
         """Permet de voir qui possède le jeu auquel vous jouez.
         
@@ -344,7 +401,7 @@ class Ego:
             except:
                 await self.bot.say("Le nombre de joueurs est trop important. Discord n'autorise pas l'affichage d'un tel pavé...")
 
-    @commands.command(pass_context=True, no_pm=True)
+    @_ego.command(pass_context=True, no_pm=True)
     async def find(self, ctx, recherche, strict:bool = False):
         """Permet de retrouver à qui appartient un pseudo ou un surnom.
         Si le pseudo est composé, utilisez des guillemets pour l'entrer.
@@ -364,12 +421,12 @@ class Ego:
                 msg += "*{}* ({})\n".format(p[0], p[1])
         em = discord.Embed(color=ctx.message.author.color)
         em.add_field(name="Résultats de votre recherche", value=msg)
-        em.set_footer(text="Informations issues de EGO | V2.2.5 (&logs)", icon_url="http://i.imgur.com/DsBEbBw.png")
+        em.set_footer(text="Informations issues de EGO | V2.3 (&logs)", icon_url="http://i.imgur.com/DsBEbBw.png")
         await self.bot.say(embed=em)
 
-    @commands.command(aliases=["opt"], pass_context=True, no_pm=True)
+    @_ego.command(aliases=["opt"], pass_context=True, no_pm=True)
     async def options(self, ctx):
-        """Permet de modifier des options relatives à EGO."""
+        """Permet de modifier vos options EGO."""
         author = ctx.message.author
         user = author
         ego = self.ego.log(author)
@@ -771,7 +828,7 @@ class Ego:
         else:
             fantome = "Certaines informations proviennent du système EGO"
         em.set_footer(
-            text="{} | V2.2 (&logs)".format(fantome), icon_url="http://i.imgur.com/DsBEbBw.png")
+            text="{} | V2.3 (&logs)".format(fantome), icon_url="http://i.imgur.com/DsBEbBw.png")
         msg = await self.bot.say(embed=em)
 
         await self.bot.add_reaction(msg, "🎮")
@@ -869,7 +926,7 @@ class Ego:
         passed = (ctx.message.timestamp - server.created_at).days
         em.add_field(name="Age", value="{} jours".format(passed))
         em.set_thumbnail(url=server.icon_url)
-        em.set_footer(text="Certaines informations proviennent du système Ego | V2.2 (&logs)", icon_url="http://i.imgur.com/DsBEbBw.png")
+        em.set_footer(text="Certaines informations proviennent du système Ego | V2.3 (&logs)", icon_url="http://i.imgur.com/DsBEbBw.png")
         msg = await self.bot.say(embed=em)
 
         await self.bot.add_reaction(msg, "📊")
