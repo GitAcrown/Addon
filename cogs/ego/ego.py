@@ -314,7 +314,6 @@ class Ego:
                 menu = await self.bot.say(embed=em)
             else:
                 await self.bot.clear_reactions(menu)
-                await asyncio.sleep(0.5)
                 menu = await self.bot.edit_message(menu, embed=em)
             await self.bot.add_reaction(menu, "⏪")
             if saut > 0:
@@ -322,6 +321,8 @@ class Ego:
             await asyncio.sleep(1)
             act = await self.bot.wait_for_reaction(["⏪","⏩"], message=menu, timeout=60)
             if act == None:
+                em.set_footer(text="---- Session expiré ----")
+                await self.bot.edit_message(menu, embed=em)
                 return
             elif act.reaction.emoji == "⏪":
                 saut += 1
