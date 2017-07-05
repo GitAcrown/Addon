@@ -992,6 +992,18 @@ class Ego:
     async def l_msg(self, message):
         author = message.author
         channel = message.channel
+        if author.bot is True:
+            if "BOT_MSG" in self.glob:
+                today = time.strftime("%d/%m/%Y", time.localtime())
+                if today in self.glob["BOT_MSG"]:
+                    if channel.id in self.glob["BOT_MSG"][today]:
+                        self.glob["BOT_MSG"][today][channel.id] += 1
+                    else:
+                        self.glob["BOT_MSG"][today][channel.id] = 1
+                else:
+                    self.glob["BOT_MSG"][today] = {} #Ngb
+            else:
+                self.glob["BOT_MSG"] = {} #Ngb
         if "NB_MSG" in self.glob:
             today = time.strftime("%d/%m/%Y", time.localtime())
             if today in self.glob["NB_MSG"]:
