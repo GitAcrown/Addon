@@ -964,7 +964,7 @@ class Ego:
             else:
                 em.add_field(name="Erreur", value="Données trop minces pour afficher des statistiques")
             em.set_footer(
-                text="Informations issues de EGO | Pour des stats completes consultez le site d'Action | V2.2",
+                text="Informations issues de EGO | Pour obtenir des détails, utilisez '&ego servstats' | V2.3 (&logs)",
                 icon_url="http://i.imgur.com/DsBEbBw.png")
             await self.bot.say(embed=em)
         else:
