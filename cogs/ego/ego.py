@@ -311,7 +311,7 @@ class Ego:
                 em.add_field(name="Nb de départs", value="{}".format(self.glob["NB_QUIT"][day]))
             em.set_footer(text="Données issues de EGO | V2.3 (&logs)", icon_url="http://i.imgur.com/DsBEbBw.png")
             if menu == None:
-                menu = await self.bot.whisper(embed=em)
+                menu = await self.bot.say(embed=em)
             else:
                 await self.bot.clear_reactions(menu)
                 await asyncio.sleep(0.5)
