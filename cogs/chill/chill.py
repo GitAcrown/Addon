@@ -41,6 +41,7 @@ class Chill:
             else:
                 msg = "**{}** secondes restantes avant débidage...".format(s)
                 mess = await self.bot.edit_message(mess, msg)
+            s -= 1
             await asyncio.sleep(1)
         msg = "**BOOM**"
         mess = await self.bot.edit_message(mess, msg)
