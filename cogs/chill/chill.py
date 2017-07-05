@@ -29,6 +29,26 @@ class Chill:
         await self.bot.say(embed=em)
 
     @commands.command(pass_context=True)
+    async def debide(self, ctx, channelid):
+        """Module de débidage"""
+        channel = self.bot.get_channel(channelid)
+        s = 10
+        mess = None
+        while s > 0:
+            if mess is None:
+                msg = "**{}** secondes restantes avant débidage...".format(s)
+                mess = await self.bot.send_message(channel, msg)
+            else:
+                msg = "**{}** secondes restantes avant débidage...".format(s)
+                mess = await self.bot.edit_message(mess, msg)
+            await asyncio.sleep(1)
+        msg = "**BOOM**"
+        mess = await self.bot.edit_message(mess, msg)
+        await asyncio.sleep(2)
+        msg = "lol."
+        mess = await self.bot.edit_message(mess, msg)
+
+    @commands.command(pass_context=True)
     async def emojis(self, ctx, chanbase: discord.Channel, first, nombre: int):
         """Donne des statistiques sur l'utilisation des emojis.
         Aide:
