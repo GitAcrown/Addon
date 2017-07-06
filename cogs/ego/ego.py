@@ -283,7 +283,7 @@ class Ego:
             await send_cmd_help(ctx)
 
     @_ego.command(pass_context=True, no_pm=True)
-    async def servstats(self, ctx):
+    async def stats(self, ctx):
         """Affiche les détails des statistiques sur le serveur."""
         server = ctx.message.server
         today = time.strftime("%d/%m/%Y", time.localtime())
@@ -301,14 +301,30 @@ class Ego:
             em = discord.Embed(title="EGO Stats | {} - *{}*".format(server.name, day), color=ctx.message.author.color)
             em.set_thumbnail(url=server.icon_url)
             if day in self.glob["NB_MSG"]:
+                tot = ""
                 total = 0
                 for c in self.glob["NB_MSG"][day]:
+                    tot += "**{}** {}\n".format(self.bot.get_channel(c), self.glob["NB_MSG"][day][c])
                     total += self.glob["NB_MSG"][day][c]
-                em.add_field(name="Nb de messages", value="{}".format(total))
-            if day in self.glob["NB_JOIN"]:
-                em.add_field(name="Nb d'arrivées", value="{}".format(self.glob["NB_JOIN"][day]))
-            if day in self.glob["NB_QUIT"]:
-                em.add_field(name="Nb de départs", value="{}".format(self.glob["NB_QUIT"][day]))
+                tot += "\n**Total** {}\n".format(total)
+                if day in self.glob["BOT_MSG"]:
+                    tobot = 0
+                    for b in self.glob["BOT_MSG"][day]:
+                        tobot += self.glob["BOT_MSG"][day][b]
+                    tot += "**Sans bot** {}".format(total - tobot)
+                em.add_field(name="Messages", value="{}".format(tot))
+            if day in self.glob["NB_JOIN"] and self.glob["NB_QUIT"]:
+                if day in self.glob["NB_RETURN"]:
+                    msg = "**Immigrés (Dont revenus):** {} ({})\n" \
+                          "**Emigrés:** {}\n" \
+                          "**Solde:** {}".format(self.glob["NB_JOIN"][day], self.glob["NB_RETURN"][day], self.glob["NB_QUIT"][day], (self.glob["NB_JOIN"][day] - self.glob["NB_QUIT"][day]))
+                else:
+                    msg = "**Immigrés:** {}\n" \
+                          "**Emigrés:** {}\n" \
+                          "**Solde:** {}".format(self.glob["NB_JOIN"][day],
+                                                 self.glob["NB_QUIT"][day],
+                                                 (self.glob["NB_JOIN"][day] - self.glob["NB_QUIT"][day]))
+                em.add_field(name="Flux migratoire", value="{}".format(msg))
             em.set_footer(text="Données issues de EGO | V2.3 (&logs)", icon_url="http://i.imgur.com/DsBEbBw.png")
             if menu == None:
                 menu = await self.bot.say(embed=em)
@@ -1051,16 +1067,25 @@ class Ego:
                 self.glob["NB_QUIT"][today] = 0
         else:
             self.glob["NB_JOIN"] = {} #Ngb
-        fileIO("data/ego/glob.json", "save", self.glob)
 
         ego = self.ego.log(user)
         if self.ego.is_fantome(author) is True:
             return
+        if ego.born < (time.time() - 500):
+            if "NB_RETURN" in self.glob:
+                if today in self.glob["NB_RETURN"]:
+                    self.glob["NB_RETURN"][today] += 1
+                else:
+                    self.glob["NB_RETURN"][today] = 1
+            else:
+                self.glob["NB_RETURN"] = {} #Ngb
+
         if "ENTREES" in ego.stats:
             ego.stats["ENTREES"] += 1
         else:
             ego.stats["ENTREES"] = 1
         self.ego.event(user, "presence", ">", "Est arrivé sur le serveur")
+        fileIO("data/ego/glob.json", "save", self.glob)
         self.ego.save()
 
     async def l_quit(self, user):
