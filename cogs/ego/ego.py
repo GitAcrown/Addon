@@ -1008,6 +1008,8 @@ class Ego:
     async def l_msg(self, message):
         author = message.author
         channel = message.channel
+        if "NB_RETURN" not in self.glob:
+            self.glob["NB_RETURN"] = {}
         if author.bot is True:
             if "BOT_MSG" in self.glob:
                 today = time.strftime("%d/%m/%Y", time.localtime())
@@ -1065,6 +1067,8 @@ class Ego:
                 self.glob["NB_JOIN"][today] = 1
             if today not in self.glob["NB_QUIT"]:
                 self.glob["NB_QUIT"][today] = 0
+            if today not in self.glob["NB_RETURN"]:
+                self.glob["NB_RETURN"][today] = 0
         else:
             self.glob["NB_JOIN"] = {} #Ngb
 
@@ -1097,6 +1101,8 @@ class Ego:
                 self.glob["NB_QUIT"][today] = 1
             if today not in self.glob["NB_JOIN"]:
                 self.glob["NB_JOIN"][today] = 0
+            if today not in self.glob["NB_RETURN"]:
+                self.glob["NB_RETURN"][today] = 0
         else:
             self.glob["NB_QUIT"] = {} #Ngb
         fileIO("data/ego/glob.json", "save", self.glob)
