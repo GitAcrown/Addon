@@ -304,7 +304,7 @@ class Ego:
                 tot = ""
                 total = 0
                 for c in self.glob["NB_MSG"][day]:
-                    if self.bot.get_channel(c).server:
+                    if not self.bot.get_channel(c).is_private:
                         nom = self.bot.get_channel(c).name.title()
                         tot += "**{}** {}\n".format(nom, self.glob["NB_MSG"][day][c])
                         total += self.glob["NB_MSG"][day][c]
