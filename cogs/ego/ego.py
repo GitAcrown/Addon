@@ -304,8 +304,10 @@ class Ego:
                 tot = ""
                 total = 0
                 for c in self.glob["NB_MSG"][day]:
-                    tot += "**{}** {}\n".format(self.bot.get_channel(c), self.glob["NB_MSG"][day][c])
-                    total += self.glob["NB_MSG"][day][c]
+                    if self.bot.get_channel(c).server:
+                        nom = self.bot.get_channel(c).name.title()
+                        tot += "**{}** {}\n".format(nom, self.glob["NB_MSG"][day][c])
+                        total += self.glob["NB_MSG"][day][c]
                 tot += "\n**Total** {}\n".format(total)
                 if day in self.glob["BOT_MSG"]:
                     tobot = 0
@@ -1008,29 +1010,32 @@ class Ego:
     async def l_msg(self, message):
         author = message.author
         channel = message.channel
-        if "NB_RETURN" not in self.glob:
-            self.glob["NB_RETURN"] = {}
+        server = message.server
         if author.bot is True:
             if "BOT_MSG" in self.glob:
-                today = time.strftime("%d/%m/%Y", time.localtime())
-                if today in self.glob["BOT_MSG"]:
-                    if channel.id in self.glob["BOT_MSG"][today]:
-                        self.glob["BOT_MSG"][today][channel.id] += 1
+                if server:
+                    today = time.strftime("%d/%m/%Y", time.localtime())
+                    if today in self.glob["BOT_MSG"]:
+                        if channel.id in self.glob["BOT_MSG"][today]:
+                            self.glob["BOT_MSG"][today][channel.id] += 1
+                        else:
+                            self.glob["BOT_MSG"][today][channel.id] = 1
                     else:
-                        self.glob["BOT_MSG"][today][channel.id] = 1
-                else:
-                    self.glob["BOT_MSG"][today] = {} #Ngb
+                        self.glob["BOT_MSG"][today] = {} #Ngb
             else:
                 self.glob["BOT_MSG"] = {} #Ngb
         if "NB_MSG" in self.glob:
-            today = time.strftime("%d/%m/%Y", time.localtime())
-            if today in self.glob["NB_MSG"]:
-                if channel.id in self.glob["NB_MSG"][today]:
-                    self.glob["NB_MSG"][today][channel.id] += 1
+            if server:
+                today = time.strftime("%d/%m/%Y", time.localtime())
+                if today in self.glob["NB_MSG"]:
+                    if channel.id in self.glob["NB_MSG"][today]:
+                        self.glob["NB_MSG"][today][channel.id] += 1
+                    else:
+                        self.glob["NB_MSG"][today][channel.id] = 1
                 else:
-                    self.glob["NB_MSG"][today][channel.id] = 1
+                    self.glob["NB_MSG"][today] = {} #Ngb
             else:
-                self.glob["NB_MSG"][today] = {} #Ngb
+                pass
         else:
             self.glob["NB_MSG"] = {} #Ngb
         fileIO("data/ego/glob.json", "save", self.glob)
