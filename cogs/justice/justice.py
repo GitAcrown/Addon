@@ -44,6 +44,7 @@ class Justice:
             sec = temps * 60  # Temps en secondes
             if user.id not in self.case:
                 self.case[user.id] = {"ID": user.id,
+                                      "SOMA": 0,
                                       "HISTO": [],
                                       "TEMPS" : None,
                                       "KARMA" : 0}
@@ -110,6 +111,55 @@ class Justice:
                     await self.bot.add_roles(user, mrole)
                     await self.bot.send_message(user, "**Rappel:** Vous êtes en prison. Utilisez &sortie sur le channel approprié pour en sortir ou obtenir, dans le cas échant, le temps restant.")
 
+    async def semiauto(self, reaction, author):
+        user = reaction.message.author
+        role = self.sys["PRSROLE"]
+        chan = self.bot.get_channel(self.sys["PRSCHAN"])
+        mrole = discord.utils.get(reaction.message.server.roles, name=role)
+        temps = 5
+        raison = None
+        if reaction.emoji == "🚩":
+            if author.server_permissions.manage_messages is True:
+                if role not in [r.name for r in user.roles]:
+                    if user.id not in self.case:
+                        self.case[user.id] = {"ID": user.id,
+                                              "SOMA": 0,
+                                              "HISTO": [],
+                                              "TEMPS": None,
+                                              "KARMA": 0}
+                        self.case[user.id]["KARMA"] -= 1
+                        fileIO("data/justice/case.json", "save", self.case)
+                    if "SOMA" not in self.case[user.id]:
+                        self.case[user.id]["SOMA"] = 0
+                    self.case[user.id]["SOMA"] += 1
+                    if self.case[user.id]["SOMA"] == 1:
+                        temps = 5
+                        raison = "Première sommation Auto"
+                    elif self.case[user.id]["SOMA"] == 2:
+                        temps = 30
+                        raison = "Deuxième sommation Auto"
+                    elif self.case[user.id]["SOMA"] == 3:
+                        temps = 1440 #24h
+                        raison = "Troisième sommation Auto"
+                    elif self.case[user.id]["SOMA"] == 4:
+                        self.case[user.id]["SOMA"] = 0
+                        await self.bot.kick(user)
+                        return
+                    else:
+                        self.case[user.id]["SOMA"] = 0
+                    sec = temps * 60
+                    self.case[user.id]["TEMPS"] = time.time() + sec
+                    t = time.strftime("%d/%m - %H:%M", time.localtime())
+                    msgp = "**{}** à été envoyé en prison pendant {}m.\nRaison: *{}*".format(user.name, temps, raison)
+                    self.case[user.id]["HISTO"].append(
+                        "{} | **+** Prison pour {} minute(s).\nRaison: *{}*".format(t, temps, raison))
+                    fileIO("data/justice/case.json", "save", self.case)
+                    await self.bot.add_roles(user, mrole)
+                    await self.bot.send_message(reaction.message.channel, msgp)
+                    await self.bot.send_message(chan,
+                                                "{} | Vous avez été mis en prison pour {}m.\nUtilisez *&sortie* pour demander à en sortir lorsque votre peine sera effectuée.".format(
+                                                    user.mention, temps))
+
 def check_folders():
     folders = ("data", "data/justice/")
     for folder in folders:
@@ -131,4 +181,5 @@ def setup(bot):
     check_files()
     n = Justice(bot)
     bot.add_listener(n.slash, "on_member_join")
+    bot.add_listener(n.semiauto, "on_reaction_add")
     bot.add_cog(n)
