@@ -26,7 +26,7 @@ class Justice:
             fileIO("data/justice/case.json", "save", self.case)
 
     @commands.command(aliases=["p", "jail"], pass_context=True, no_pm=True)
-    @checks.admin_or_permissions(kick_members=True)
+    @checks.admin_or_permissions(manage_messages=True)
     async def prison(self, ctx, user: discord.Member, temps: int = 5, *raison: str):
         """Permet de mettre quelqu'un en Prison pendant un certain temps.
         
@@ -100,6 +100,41 @@ class Justice:
         else:
             await self.bot.say("Vous n'êtes pas en prison.")
 
+    @commands.command(pass_context=True, no_pm=True)
+    @checks.admin_or_permissions(manage_messages=True)
+    async def niv(self, ctx, membre:discord.Member, niveau:int = None):
+        """Permet de modifier le niveau de Sommation d'un membre (0-3) ou affiche le niveau si non précisé.
+        Rappels:
+        0 = Absence de sommation (reset)
+        1 = Prison 5m
+        2 = Prison 30m
+        3 = Prison 24h
+        4 = Kick
+        Attention, le niveau monte de un cran à chaque blâme.
+        Exemple : Mettre un membre en sommation 3 signifie qu'au prochain blâme il sera kick."""
+        if membre.id in self.case:
+            if niveau is None:
+                if "SOMA" in self.case[membre.id]:
+                    await self.bot.say("*{}* est au niveau **{}** de sommation.".format(membre.name, self.case[membre.id]["SOMA"]))
+                    return
+            if niveau < 4:
+                self.case[membre.id]["SOMA"] = niveau
+                fileIO("data/justice/case.json", "save", self.case)
+                await self.bot.say("Niveau de sommation modifié avec succès.")
+            else:
+                await self.bot.say("Le niveau doit être compris entre 0 et 3.")
+        else:
+            if niveau < 4:
+                self.case[user.id] = {"ID": user.id,
+                                      "SOMA": 0,
+                                      "HISTO": [],
+                                      "TEMPS": None,
+                                      "KARMA": 0}
+                fileIO("data/justice/case.json", "save", self.case)
+            else:
+                await self.bot.say("Le niveau doit être compris entre 0 et 3.")
+
+
     async def slash(self, user):
         """Détecte et remet le rôle prison si échappé"""
         server = user.server
@@ -118,7 +153,7 @@ class Justice:
         mrole = discord.utils.get(reaction.message.server.roles, name=role)
         temps = 5
         raison = None
-        if reaction.emoji == "🚩":
+        if reaction.emoji == "‼":
             if author.server_permissions.manage_messages is True:
                 if role not in [r.name for r in user.roles]:
                     if user.id not in self.case:
