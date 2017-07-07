@@ -384,7 +384,7 @@ class Charm:
             if not channel.server.id == "204585334925819904":
                 return
             if card.born < (time.time() - 3600):
-                await self.bot.send_message(channel, "{} **est de revenu(e)**".format(user.mention))
+                await self.bot.send_message(channel, "{} **est revenu(e)**".format(user.mention))
             else:
                 await self.bot.send_message(channel, "{} **est arrivé(e)**".format(user.mention))
             if "WELCOME_MSG" not in self.sys:
