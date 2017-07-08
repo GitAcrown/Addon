@@ -185,15 +185,15 @@ class Justice:
                     sec = temps * 60
                     self.case[user.id]["TEMPS"] = time.time() + sec
                     t = time.strftime("%d/%m - %H:%M", time.localtime())
-                    msgp = "**{}** à été envoyé en prison pendant {}m.\nRaison: *{}*".format(user.name, temps, raison)
+                    msgp = "**{}** à été envoyé en prison pendant **{}m** par **{}**.\nRaison: *{}*".format(user.name, temps, author.name, raison)
                     self.case[user.id]["HISTO"].append(
                         "{} | **+** Prison pour {} minute(s).\nRaison: *{}*".format(t, temps, raison))
                     fileIO("data/justice/case.json", "save", self.case)
                     await self.bot.add_roles(user, mrole)
                     await self.bot.send_message(reaction.message.channel, msgp)
                     await self.bot.send_message(chan,
-                                                "{} | Vous avez été mis en prison pour {}m.\nUtilisez *&sortie* pour demander à en sortir lorsque votre peine sera effectuée.".format(
-                                                    user.mention, temps))
+                                                "{} | Vous avez été mis en prison pour **{}m** par **{}**.\nUtilisez *&sortie* pour demander à en sortir lorsque votre peine sera effectuée.".format(
+                                                    user.mention, temps, author.name))
 
 def check_folders():
     folders = ("data", "data/justice/")
