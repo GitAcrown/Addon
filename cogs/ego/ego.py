@@ -1084,7 +1084,7 @@ class Ego:
             self.glob["NB_JOIN"] = {} #Ngb
 
         ego = self.ego.log(user)
-        if self.ego.is_fantome(author) is True:
+        if self.ego.is_fantome(user) is True:
             return
         if ego.born < (time.time() - 500):
             if "NB_RETURN" in self.glob:
@@ -1119,7 +1119,7 @@ class Ego:
         fileIO("data/ego/glob.json", "save", self.glob)
 
         ego = self.ego.log(user)
-        if self.ego.is_fantome(author) is True:
+        if self.ego.is_fantome(user) is True:
             return
         if "SORTIES" in ego.stats:
             ego.stats["SORTIES"] += 1
@@ -1127,6 +1127,22 @@ class Ego:
             ego.stats["SORTIES"] = 1
         self.ego.event(user, "presence", "<", "A quitté le serveur")
         self.ego.save()
+
+    async def l_react(self, reaction, user):
+        if "REACTS" in self.glob:
+            today = time.strftime("%d/%m/%Y", time.localtime())
+            if reaction.custom_emoji is True:
+                if today in self.glob["REACTS"]:
+                    if reaction.emoji.name in self.glob["REACTS"][today]:
+                        self.glob["REACTS"][today][reaction.emoji.name] += 1
+                    else:
+                        self.glob["REACTS"][today][reaction.emoji.name] = 1
+                else:
+                    self.glob["REACTS"][today] = {}
+                    self.glob["REACTS"][today][reaction.emoji.name] = 1
+        else:
+            self.glob["REACTS"] = {} #Ngb
+        fileIO("data/ego/glob.json", "save", self.glob)
 
     async def l_profil(self, b, a): #On cherche un changement dans le profil
         ego = self.ego.log(a)
@@ -1167,13 +1183,13 @@ class Ego:
 
     async def l_ban(self, user):
         ego = self.ego.log(user)
-        if self.ego.is_fantome(author) is True:
+        if self.ego.is_fantome(user) is True:
             return
         if "BANS" in ego.stats:
             ego.stats["BANS"] += 1
         else:
             ego.stats["BANS"] = 1
-        self.ego.event(a, "presence", "#", "A été banni(e)")
+        self.ego.event(user, "presence", "#", "A été banni(e)")
         self.ego.save()
 
 def check_folders():
@@ -1195,6 +1211,7 @@ def setup(bot):
     n = Ego(bot)
     #Listeners (Suivi de l'écrit)
     bot.add_listener(n.l_msg, "on_message") #A chaque message
+    bot.add_listener(n.l_react, "on_reaction_add")
     bot.add_listener(n.l_join, "on_member_join") #A chaque membre qui rejoint
     bot.add_listener(n.l_quit, "on_member_remove") #A chaque membre qui part
     bot.add_listener(n.l_profil, "on_member_update") #Lorsqu'un membre modifie son profil (avatar, pseudo...)
