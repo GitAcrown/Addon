@@ -925,51 +925,51 @@ class Ego:
                         await self.bot.say(
                             "**Erreur** | Impossible d'aller dans le futur, ça risquerait de détruire l'Espace-Temps...")
                         return
-                msg = ""
-                found = False
-                for h in ego.histo:
-                    if h[0] == day:
-                        found = True
-                        msg += "**{}** *{}*\n".format(h[1], h[2])
-                if found in True:
-                    if menu == None:
-                        em = discord.Embed(title="EGO Historique | *{}*".format(day), description=msg,
-                                           color=ctx.message.author.color)
-                        em.set_thumbnail(url=user.avatar_url)
-                        menu = await self.bot.say(embed=em)
+                    msg = ""
+                    found = False
+                    for h in ego.histo:
+                        if h[0] == day:
+                            found = True
+                            msg += "**{}** *{}*\n".format(h[1], h[2])
+                    if found in True:
+                        if menu == None:
+                            em = discord.Embed(title="EGO Historique | *{}*".format(day), description=msg,
+                                               color=ctx.message.author.color)
+                            em.set_thumbnail(url=user.avatar_url)
+                            menu = await self.bot.say(embed=em)
+                        else:
+                            em = discord.Embed(title="EGO Historique | *{}*".format(day), description=msg,
+                                               color=ctx.message.author.color)
+                            em.set_thumbnail(url=user.avatar_url)
+                            await self.bot.edit_message(menu, embed=em)
                     else:
-                        em = discord.Embed(title="EGO Historique | *{}*".format(day), description=msg,
-                                           color=ctx.message.author.color)
-                        em.set_thumbnail(url=user.avatar_url)
+                        if menu == None:
+                            em = discord.Embed(title="EGO Historique | *{}*".format(day),
+                                               description="Aucun historique trouvé pour ce jour",
+                                               color=ctx.message.author.color)
+                            em.set_thumbnail(url=user.avatar_url)
+                            menu = await self.bot.say(embed=em)
+                        else:
+                            em = discord.Embed(title="EGO Historique | *{}*".format(day),
+                                               description="Aucun historique trouvé pour ce jour",
+                                               color=ctx.message.author.color)
+                            em.set_thumbnail(url=user.avatar_url)
+                            await self.bot.edit_message(menu, embed=em)
+                    await self.bot.add_reaction(menu, "⏪")
+                    if saut > 0:
+                        await self.bot.add_reaction(menu, "⏩")
+                    await asyncio.sleep(1)
+                    act = await self.bot.wait_for_reaction(["⏪", "⏩"], message=menu, timeout=60)
+                    if act == None:
+                        em.set_footer(text="---- Session expiré ----")
                         await self.bot.edit_message(menu, embed=em)
-                else:
-                    if menu == None:
-                        em = discord.Embed(title="EGO Historique | *{}*".format(day),
-                                           description="Aucun historique trouvé pour ce jour",
-                                           color=ctx.message.author.color)
-                        em.set_thumbnail(url=user.avatar_url)
-                        menu = await self.bot.say(embed=em)
+                        return
+                    elif act.reaction.emoji == "⏪":
+                        saut += 1
+                    elif act.reaction.emoji == "⏩":
+                        saut -= 1
                     else:
-                        em = discord.Embed(title="EGO Historique | *{}*".format(day),
-                                           description="Aucun historique trouvé pour ce jour",
-                                           color=ctx.message.author.color)
-                        em.set_thumbnail(url=user.avatar_url)
-                        await self.bot.edit_message(menu, embed=em)
-                await self.bot.add_reaction(menu, "⏪")
-                if saut > 0:
-                    await self.bot.add_reaction(menu, "⏩")
-                await asyncio.sleep(1)
-                act = await self.bot.wait_for_reaction(["⏪", "⏩"], message=menu, timeout=60)
-                if act == None:
-                    em.set_footer(text="---- Session expiré ----")
-                    await self.bot.edit_message(menu, embed=em)
-                    return
-                elif act.reaction.emoji == "⏪":
-                    saut += 1
-                elif act.reaction.emoji == "⏩":
-                    saut -= 1
-                else:
-                    pass
+                        pass
             else:
                 await self.bot.say("**L'utilisateur ne souhaite pas partager son historique.**")
         else:
