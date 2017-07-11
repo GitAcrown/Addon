@@ -822,6 +822,7 @@ class Ego:
             ec = self.ego.stat_color(user)
         else:
             ec = 0x2e6cc9
+        today = time.strftime("%d/%m/%Y", time.localtime())
         em = discord.Embed(title="{}".format(str(user)), color=ec, url=ego.perso["SITE"] if "SITE" in ego.perso else None)
         em.set_thumbnail(url=user.avatar_url)
         em.add_field(name="Surnom", value=user.display_name)
@@ -857,16 +858,31 @@ class Ego:
             fantome = "Cette personne n'est pas suivie par le système EGO"
         else:
             fantome = "Certaines informations proviennent du système EGO"
+
         em.set_footer(
             text="{} | {}".format(fantome, self.version), icon_url="http://i.imgur.com/DsBEbBw.png")
+        modtoday = today[:5]
+        add = False
+        if "ANNIV" in ego.perso:
+            if ego.perso["ANNIV"] == modtoday:
+                em.set_footer(text="Ce membre fête aujourd'hui son anniversaire | BON ANNIVERSAIRE !")
+                add = True
         msg = await self.bot.say(embed=em)
 
         await self.bot.add_reaction(msg, "🎮")
         await self.bot.add_reaction(msg, "🗓")
+        if add == True:
+            await self.bot.add_reaction(msg, "🎂")
         await asyncio.sleep(1)
-        rap = await self.bot.wait_for_reaction(["🎮","🗓"], message=msg, timeout=20)
+        rap = await self.bot.wait_for_reaction(["🎮","🗓","🎂"], message=msg, timeout=20)
         if rap == None:
             pass
+        elif rap.reaction.emoji == "🎂":
+            if add is True:
+                nem = discord.Embed(title="BON ANNIVERSAIRE {} !".format(user.name), description="Bon anniv' ! Passe une excellente journée !")
+                nem.set_thumbnail(url=user.avatar_url)
+                await self.bot.edit_message(msg, embed=nem)
+                return
         elif rap.reaction.emoji == "🎮":
             if self.ego.aff_auto(user, "JEUX") is True:
                 if user != ctx.message.author:
@@ -1084,10 +1100,10 @@ class Ego:
         author = message.author
         channel = message.channel
         server = message.server
+        today = time.strftime("%d/%m/%Y", time.localtime())
         if author.bot is True:
             if "BOT_MSG" in self.glob:
                 if server:
-                    today = time.strftime("%d/%m/%Y", time.localtime())
                     if today in self.glob["BOT_MSG"]:
                         if channel.id in self.glob["BOT_MSG"][today]:
                             self.glob["BOT_MSG"][today][channel.id] += 1
@@ -1116,6 +1132,17 @@ class Ego:
         ego = self.ego.log(author)
         if self.ego.is_fantome(author) is True:
             return
+        if "ANNIV" in ego.perso:
+            modtoday = today[:5]
+            an = today[-4:]
+            if ego.perso["ANNIV"] == modtoday:
+                if "ANNIV_FETE" in ego.perso:
+                    if an not in ego.perso["ANNIV_FETE"]:
+                        await self.bot.send_message(self.bot.get_channel("204585334925819904"), "**Bon anniversaire à** {} **!**".format(author.mention))
+                        ego.perso["ANNIV_FETE"].append(an)
+                else:
+                    ego.perso["ANNIV_FETE"] = []
+
         ego.stats["NB_MSG"] = ego.stats["NB_MSG"] + 1 if "NB_MSG" in ego.stats else 1
         if message.mentions != []:
             if "MENTION" in ego.stats:
@@ -1230,6 +1257,13 @@ class Ego:
         if a.avatar_url != b.avatar_url: #Avatar ?
             self.ego.event(a, "avatar", "×", "A changé son avatar")
         if a.top_role != b.top_role: #Rôle affiché ?
+            if a.top_role.name == "Prison":
+                self.ego.event(a, "karma", "!", "A été emprisonné")
+                if "KARMA" not in ego.stats:
+                    ego.stats["KARMA"] = 0
+                ego.stats["KARMA"] -= 1
+            if b.top_role.name == "Prison":
+                self.ego.event(a, "karma", "!", "Est sorti de prison")
             if not a.top_role.name == "@everyone":
                 if a.top_role > b.top_role:
                     self.ego.event(a, "role", "+", "A été promu {}".format(a.top_role.name))
