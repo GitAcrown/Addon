@@ -21,6 +21,7 @@ class Charm:
         self.stk = dataIO.load_json("data/charm/stk.json")
         self.sys = dataIO.load_json("data/charm/sys.json")
         self.old = dataIO.load_json("data/stick/img.json")
+        self.event = dataIO.load_json()
         ### Après avoir importé les anciens stickers importants:
         #TODO Retirer self.old
         #TODO Effacer l'ensemble de l'ancien dossier de sticker
@@ -61,6 +62,26 @@ class Charm:
         self.sys["NOTIF_CHANNEL"] = channel.id
         fileIO("data/charm/sys.json", "save", self.sys)
         await self.bot.say("Les notifications seront désormais affichées sur *{}*".format(channel.name))
+
+# FUN >>>>>>>>>>>>>>>>>>>>>>>>>>>>><
+
+    @commands.command(aliases= ["gb"], pass_context=True, no_pm=True)
+    async def ghostbuster(self, ctx):
+        """Permet de contacter aléatoirement un ghostfag du serveur."""
+        if "GB_LIST" not in self.sys:
+            self.sys["GB_LIST"] = []
+        server = ctx.message.server
+        await self.bot.whisper("**Recherche d'un ghostfag disponible et non contacté...**")
+        for m in server.members:
+            if m.roles == ["@everyone"]:
+                if m.status != discord.Status.offline:
+                    if m.id not in self.sys["GB_LIST"]:
+                        await asyncio.sleep(2)
+                        await self.bot.whisper("**Voilà votre cible:**\nPseudo: {}\nSurnom: {}\nID: {}".format(m.name, m.display_name, m.id))
+                        return
+        else:
+            await self.bot.whisper("**Aucun ghostfag n'est disponible ou ils ont déjà tous été contactés.**")
+
 
 # STICKERS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>><
 
