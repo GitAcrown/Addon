@@ -219,6 +219,7 @@ class Ego:
         self.bot = bot
         self.ego = EgoAPI(bot, "data/ego/profil.json")
         self.glob = dataIO.load_json("data/ego/glob.json") #Stats globaux
+        self.version = "V2.4 (&logs)"
 
     def solde_img(self, rewind=0): #Remonte de X jours (rewind) afin de calculer le solde migratoire
         nb_join = nb_quit = 0
@@ -253,27 +254,17 @@ class Ego:
     async def changelog(self, ctx):
         """Informations sur la dernière MAJ Majeure de EGO."""
         em = discord.Embed(color=0x5184a5)
-        c1 = "[BETA] Ajout des paramètres perso (&options)\n" \
-             "[BETA] Ajout du mode 'fantôme'\n" \
-             "Ajout de l'affichage du site\n" \
-             "Nouveau suivi de la bibliothèque de jeux\n" \
-             "Changements mineurs d'affichage\n" \
-             "Affichage de la bibliothèque de jeux\n" \
-             "Ajout comparaison de bibliothèques\n" \
-             "Nouvel algorithme de détection + rapide\n" \
-             "Nouvel affichage &logs\n" \
-             "Ajout de &find\n" \
-             "Améliorations de l'affichage de &jeu\n" \
-             "Réajout temporaire de &epop (ancien algorithme adapté)"
-        em.add_field(name="Version 2.2", value=c1)
-        c2 = "Ajout des statistiques serveur détaillés\n" \
-             "Réorganisation des commandes, rassemblées sous &ego (sauf &card et &scard)"
-        em.add_field(name="Version 2.3", value=c2)
-        bt = "Notifications (Anniversaire...)\n" \
-             "Retour des relations\n" \
-             "Historique complet"
+        c1 = "- Ajout des statistiques serveur détaillés\n" \
+             "- Réorganisation des commandes, rassemblées sous &ego (sauf &card et &scard)"
+        em.add_field(name="Version 2.3", value=c1)
+        c2 = "- Ajout de l'historique complet (bouton sur &card)\n" \
+             "- Ajout des stats des réactions sur messages"
+        em.add_field(name="Version 2.4", value=c2)
+        bt = "- Notifications (Anniversaire...)\n" \
+             "- Retour des relations\n" \
+             "- Calcul précis de l'activité d'un membre"
         em.add_field(name="Bientôt", value=bt, inline=False)
-        em.set_footer(text="Dernière MAJ publiée le 05/07", icon_url="http://i.imgur.com/DsBEbBw.png")
+        em.set_footer(text="Dernière MAJ publiée le 11/07", icon_url="http://i.imgur.com/DsBEbBw.png")
         await self.bot.say(embed=em)
 
     @commands.group(name="ego", pass_context=True)
@@ -294,7 +285,7 @@ class Ego:
             if saut == 0:
                 day = today
             elif saut > 0:
-                day = time.strftime("%d/%m/%Y", time.localtime(time.mktime(time.strptime(today, "%d/%m/%Y")) - (86400 * saut)))
+                day = time.strftime("%d/%m/%Y", time.localtime(time.mktime(time.strptime(today, "%d/%m/%Y")) - (86400 * saut))) #MACHINE A REMONTER LE TEMPS
             else:
                 await self.bot.say("**Erreur** | Impossible d'aller dans le futur, ça risquerait de détruire l'Espace-Temps...")
                 return
@@ -333,7 +324,7 @@ class Ego:
                                                  self.glob["NB_QUIT"][day],
                                                  (self.glob["NB_JOIN"][day] - self.glob["NB_QUIT"][day]))
                 em.add_field(name="Flux migratoire", value="{}".format(msg))
-            em.set_footer(text="Données issues de EGO | V2.3 (&logs)", icon_url="http://i.imgur.com/DsBEbBw.png")
+            em.set_footer(text="Données issues de EGO | {}".format(self.version), icon_url="http://i.imgur.com/DsBEbBw.png")
             if menu == None:
                 menu = await self.bot.say(embed=em)
             else:
@@ -373,7 +364,7 @@ class Ego:
             n += 1
         em.add_field(name="Top {}".format(top), value=msg)
         em.add_field(name="Votre place", value="{}e".format(place + 1))
-        em.set_footer(text="Ces informations sont issues du système Ego | V2.3 (&logs)", icon_url="http://i.imgur.com/DsBEbBw.png")
+        em.set_footer(text="Ces informations sont issues du système Ego | {}".format(self.version), icon_url="http://i.imgur.com/DsBEbBw.png")
         await self.bot.say(embed=em)
 
     @_ego.command(pass_context=True)
@@ -446,7 +437,7 @@ class Ego:
                 msg += "*{}* ({})\n".format(p[0], p[1])
         em = discord.Embed(color=ctx.message.author.color)
         em.add_field(name="Résultats de votre recherche", value=msg)
-        em.set_footer(text="Informations issues de EGO | V2.3 (&logs)", icon_url="http://i.imgur.com/DsBEbBw.png")
+        em.set_footer(text="Informations issues de EGO | {}".format(self.version), icon_url="http://i.imgur.com/DsBEbBw.png")
         await self.bot.say(embed=em)
 
     @_ego.command(aliases=["opt"], pass_context=True, no_pm=True)
@@ -853,12 +844,13 @@ class Ego:
         else:
             fantome = "Certaines informations proviennent du système EGO"
         em.set_footer(
-            text="{} | V2.3 (&logs)".format(fantome), icon_url="http://i.imgur.com/DsBEbBw.png")
+            text="{} | {}".format(fantome, self.version), icon_url="http://i.imgur.com/DsBEbBw.png")
         msg = await self.bot.say(embed=em)
 
         await self.bot.add_reaction(msg, "🎮")
+        await self.bot.add_reaction(msg, "🗓")
         await asyncio.sleep(1)
-        rap = await self.bot.wait_for_reaction("🎮", message=msg, timeout=20)
+        rap = await self.bot.wait_for_reaction(["🎮","🗓"], message=msg, timeout=20)
         if rap == None:
             pass
         elif rap.reaction.emoji == "🎮":
@@ -894,7 +886,7 @@ class Ego:
                     else:
                         msg = "Bibliothèque vide."
                     em.add_field(name="Bibliothèque", value=msg)
-                    em.set_footer(text="Les jeux en commun sont affichés en gras", icon_url="http://i.imgur.com/DsBEbBw.png")
+                    em.set_footer(text="Les jeux en commun sont affichés en gras | {}".format(self.version), icon_url="http://i.imgur.com/DsBEbBw.png")
                 else:
                     em = discord.Embed(title="Vos jeux", color=ec)
                     biblio = self.ego.biblio(user)
@@ -913,10 +905,73 @@ class Ego:
                     else:
                         msg = "Bibliothèque vide."
                     em.add_field(name="Bibliothèque", value=msg)
-                    em.set_footer(text="Certains jeux possédés peuvent ne pas avoir été vérifiés", icon_url="http://i.imgur.com/DsBEbBw.png")
+                    em.set_footer(text="Certains jeux possédés peuvent ne pas avoir été vérifiés | {}".format(self.version), icon_url="http://i.imgur.com/DsBEbBw.png")
                 await self.bot.say(embed=em)
             else:
-                await self.bot.say("L'utilisateur ne souhaite pas partager sa bibliothèque.")
+                await self.bot.say("**L'utilisateur ne souhaite pas partager sa bibliothèque.**")
+        elif rap.reaction.emoji == "🗓":
+            if self.ego.aff_auto(user, "HISTO") is True:
+                today = time.strftime("%d/%m/%Y", time.localtime())
+                saut = 0
+                day = menu = None
+                retour = False
+                while retour is False:
+                    if saut == 0:
+                        day = today
+                    elif saut > 0:
+                        day = time.strftime("%d/%m/%Y", time.localtime(
+                            time.mktime(time.strptime(today, "%d/%m/%Y")) - (86400 * saut)))  # MACHINE A REMONTER LE TEMPS
+                    else:
+                        await self.bot.say(
+                            "**Erreur** | Impossible d'aller dans le futur, ça risquerait de détruire l'Espace-Temps...")
+                        return
+                msg = ""
+                found = False
+                for h in ego.histo:
+                    if h[0] == day:
+                        found = True
+                        msg += "**{}** *{}*\n".format(h[1], h[2])
+                if found in True:
+                    if menu == None:
+                        em = discord.Embed(title="EGO Historique | *{}*".format(day), description=msg,
+                                           color=ctx.message.author.color)
+                        em.set_thumbnail(url=user.avatar_url)
+                        menu = await self.bot.say(embed=em)
+                    else:
+                        em = discord.Embed(title="EGO Historique | *{}*".format(day), description=msg,
+                                           color=ctx.message.author.color)
+                        em.set_thumbnail(url=user.avatar_url)
+                        await self.bot.edit_message(menu, embed=em)
+                else:
+                    if menu == None:
+                        em = discord.Embed(title="EGO Historique | *{}*".format(day),
+                                           description="Aucun historique trouvé pour ce jour",
+                                           color=ctx.message.author.color)
+                        em.set_thumbnail(url=user.avatar_url)
+                        menu = await self.bot.say(embed=em)
+                    else:
+                        em = discord.Embed(title="EGO Historique | *{}*".format(day),
+                                           description="Aucun historique trouvé pour ce jour",
+                                           color=ctx.message.author.color)
+                        em.set_thumbnail(url=user.avatar_url)
+                        await self.bot.edit_message(menu, embed=em)
+                await self.bot.add_reaction(menu, "⏪")
+                if saut > 0:
+                    await self.bot.add_reaction(menu, "⏩")
+                await asyncio.sleep(1)
+                act = await self.bot.wait_for_reaction(["⏪", "⏩"], message=menu, timeout=60)
+                if act == None:
+                    em.set_footer(text="---- Session expiré ----")
+                    await self.bot.edit_message(menu, embed=em)
+                    return
+                elif act.reaction.emoji == "⏪":
+                    saut += 1
+                elif act.reaction.emoji == "⏩":
+                    saut -= 1
+                else:
+                    pass
+            else:
+                await self.bot.say("**L'utilisateur ne souhaite pas partager son historique.**")
         else:
             return
 
@@ -989,7 +1044,7 @@ class Ego:
             else:
                 em.add_field(name="Erreur", value="Données trop minces pour afficher des statistiques")
             em.set_footer(
-                text="Informations issues de EGO | Pour obtenir des détails, utilisez '&ego servstats' | V2.3 (&logs)",
+                text="Informations issues de EGO | Pour obtenir des détails, utilisez '&ego servstats' | {}".format(self.version),
                 icon_url="http://i.imgur.com/DsBEbBw.png")
             await self.bot.say(embed=em)
         else:
