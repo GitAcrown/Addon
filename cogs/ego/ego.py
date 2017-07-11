@@ -930,30 +930,28 @@ class Ego:
                     for h in ego.histo:
                         if h[0] == day:
                             found = True
-                            msg += "**{}** *{}*\n".format(h[1], h[2])
-                    if found in True:
+                            msg += "**{}** *{}*\n".format(h[2], h[3])
+                    if found is True:
                         if menu == None:
                             em = discord.Embed(title="EGO Historique | *{}*".format(day), description=msg,
                                                color=ctx.message.author.color)
-                            em.set_thumbnail(url=user.avatar_url)
                             menu = await self.bot.say(embed=em)
                         else:
                             em = discord.Embed(title="EGO Historique | *{}*".format(day), description=msg,
                                                color=ctx.message.author.color)
-                            em.set_thumbnail(url=user.avatar_url)
+                            await self.bot.clear_reactions(menu)
                             await self.bot.edit_message(menu, embed=em)
                     else:
                         if menu == None:
                             em = discord.Embed(title="EGO Historique | *{}*".format(day),
                                                description="Aucun historique trouvé pour ce jour",
                                                color=ctx.message.author.color)
-                            em.set_thumbnail(url=user.avatar_url)
                             menu = await self.bot.say(embed=em)
                         else:
                             em = discord.Embed(title="EGO Historique | *{}*".format(day),
                                                description="Aucun historique trouvé pour ce jour",
                                                color=ctx.message.author.color)
-                            em.set_thumbnail(url=user.avatar_url)
+                            await self.bot.clear_reactions(menu)
                             await self.bot.edit_message(menu, embed=em)
                     await self.bot.add_reaction(menu, "⏪")
                     if saut > 0:
