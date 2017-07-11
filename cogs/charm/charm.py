@@ -73,7 +73,7 @@ class Charm:
         server = ctx.message.server
         await self.bot.whisper("**Recherche d'un ghostfag disponible et non contacté...**")
         for m in server.members:
-            if m.roles == ["@everyone"]:
+            if m.top_role == "@everyone":
                 if m.status != discord.Status.offline:
                     if m.id not in self.sys["GB_LIST"]:
                         await asyncio.sleep(2)
@@ -83,7 +83,6 @@ class Charm:
                         return
         else:
             await self.bot.whisper("**Aucun ghostfag n'est disponible ou ils ont déjà tous été contactés.**")
-
 
 # STICKERS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>><
 
