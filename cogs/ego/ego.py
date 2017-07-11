@@ -311,7 +311,7 @@ class Ego:
                     for b in self.glob["BOT_MSG"][day]:
                         tobot += self.glob["BOT_MSG"][day][b]
                     tot += "**Sans bot** {}".format(total - tobot)
-                em.add_field(name="Messages", value="{}".format(tot))
+                em.add_field(name="Messages", value=tot)
             if day in self.glob["NB_JOIN"] and self.glob["NB_QUIT"]:
                 if day in self.glob["NB_RETURN"]:
                     msg = "**Immigrés (Dont revenus):** {} ({})\n" \
@@ -323,7 +323,21 @@ class Ego:
                           "**Solde:** {}".format(self.glob["NB_JOIN"][day],
                                                  self.glob["NB_QUIT"][day],
                                                  (self.glob["NB_JOIN"][day] - self.glob["NB_QUIT"][day]))
-                em.add_field(name="Flux migratoire", value="{}".format(msg))
+                em.add_field(name="Flux migratoire", value=msg)
+            if day in self.glob["REACTS"]:
+                total = 0
+                elb = []
+                for e in self.glob["REACTS"][day]:
+                    total += self.glob["REACTS"][day][e]
+                    elb.append([e, self.glob["REACTS"][day][e]])
+                if total > 0:
+                    top = sorted(elb, key=operator.itemgetter(1), reverse=True)
+                    top = top[:5]
+                    msg = ""
+                    for i in top:
+                        msg += ":**{}**: {}\n".format(i[0], i[1])
+                    msg += "\n**Total** {}".format(total)
+                    em.add_field(name="Réactions", value=msg)
             em.set_footer(text="Données issues de EGO | {}".format(self.version), icon_url="http://i.imgur.com/DsBEbBw.png")
             if menu == None:
                 menu = await self.bot.say(embed=em)
