@@ -73,10 +73,10 @@ class Charm:
         server = ctx.message.server
         await self.bot.whisper("**Recherche d'un ghostfag disponible et non contacté...**")
         for m in server.members:
-            if m.top_role == "@everyone":
+            if m.top_role.name == "@everyone":
                 if m.status != discord.Status.offline:
                     if m.id not in self.sys["GB_LIST"]:
-                        await asyncio.sleep(2)
+                        await asyncio.sleep(1.5)
                         self.sys["GB_LIST"].append(m.id)
                         await self.bot.whisper("**Voilà votre cible:**\nPseudo: {}\nSurnom: {}\nID: {}".format(m.name, m.display_name, m.id))
                         fileIO("data/charm/sys.json", "save", self.sys)
