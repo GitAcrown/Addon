@@ -333,9 +333,9 @@ class Ego:
                 if total > 0:
                     top = sorted(elb, key=operator.itemgetter(1), reverse=True)
                     top = top[:5]
-                    msg = ""
+                    msg = "**Top 5**\n"
                     for i in top:
-                        msg += ":**{}**: {}\n".format(i[0], i[1])
+                        msg += "*:{}:* {}\n".format(i[0], i[1])
                     msg += "\n**Total** {}".format(total)
                     em.add_field(name="Réactions", value=msg)
             em.set_footer(text="Données issues de EGO | {}".format(self.version), icon_url="http://i.imgur.com/DsBEbBw.png")
