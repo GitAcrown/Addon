@@ -136,7 +136,7 @@ class Charm:
             em = discord.Embed(title="E.R.U. | Ajouter une ressource", description="Afin d'ajouter une ressource suivez le format ci-dessous:\n"
                                                                                    "**categorie**|**nom**|**description rapide**|**url de l'image représentant la ressource (logo...)**|**lien vers la ressource**")
             em.add_field(name="Catégories disponibles", value="Sciences\nHistgeo\nEcopol\nCulture\nInfos\nDivers")
-            em.set_footer(text="Entrez ci-dessous les informations de votre ressource en respectant le format ci-dessus (| = Barre du 6)")
+            em.set_footer(text="Entrez ci-dessous les informations de votre ressource en respectant le format ci-dessus (| = Altgr 6)")
             txt = await self.bot.whisper(embed=em)
             verif = False
             while verif is False:
