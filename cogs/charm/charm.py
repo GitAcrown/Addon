@@ -20,6 +20,8 @@ class Charm:
         self.bot = bot
         self.stk = dataIO.load_json("data/charm/stk.json")
         self.sys = dataIO.load_json("data/charm/sys.json")
+        self.ress = dataIO.load_json("data/charm/ress.json")
+        # ============= #
         self.old = dataIO.load_json("data/stick/img.json")
         ### Après avoir importé les anciens stickers importants:
         #TODO Retirer self.old
@@ -31,11 +33,139 @@ class Charm:
         else:
             return False
 
+    def erucheck(self, reaction, user):
+        if user.bot is False:
+            return True
+        else:
+            return False
+
     def old_stick(self, nom):
         if nom in self.old["STICKER"]:
             return True
         else:
             return False
+
+    def s_eru(self, num, list):
+        for i in list:
+            if num == i[0]:
+                return i
+        else:
+            return False
+
+# RESS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>><
+
+    @commands.command(pass_context=True)
+    async def eru(self, ctx, modif:bool = False):
+        """Accès à l'Encyclopedie des Ressources Utiles.
+        
+        Différents liens, classés par domaine."""
+        if modif is False:
+            menu = False
+            while True:
+                liste = ""
+                emoji = []
+                for dom in self.ress:
+                    liste += "{} **{}**\n".format(self.ress[dom]["EMOJI"], self.ress[dom]["NOM"])
+                    emoji.append(self.ress[dom]["EMOJI"])
+                em = discord.Embed(title="Encyclopedie des Ressources Utiles | Menu", description=liste, color=0x212427)
+                em.set_footer(text="Cliquez sur une réaction pour choisir un domaine")
+                if menu is False:
+                    menu = await self.bot.say(embed=em)
+                else:
+                    await self.bot.clear_reactions(menu)
+                    menu = await self.bot.edit_message(menu, embed=em)
+                for e in emoji:
+                    await self.bot.add_reaction(menu, e)
+                await asyncio.sleep(0.5)
+                choix = await self.bot.wait_for_reaction(emoji, message=menu, timeout=30, check=self.erucheck)
+                if choix is None:
+                    em.set_footer(text="---- Timeout atteint ----")
+                    await self.bot.edit_message(menu, embed=em)
+                    return
+                else:
+                    for dom in self.ress:
+                        if choix.reaction.emoji == self.ress[dom]["EMOJI"]: # On cherche à quel domaine appartient cet emoji
+                            rlist = []
+                            n = 1
+                            for r in self.ress[dom]["RESSOURCES"]:
+                                rlist.append([n, self.ress[dom]["RESSOURCES"][r]["nom"], self.ress[dom]["RESSOURCES"][r]["desc"], self.ress[dom]["RESSOURCES"][r]["image"], self.ress[dom]["RESSOURCES"][r]["lien"]])
+                                n += 1
+                            if rlist != []:
+                                disp = random.choice(rlist)
+                                num = disp[0]
+                                sort = sorted(rlist, key=operator.itemgetter(0), reverse=True)
+                                max = sort[0][0]  # Le dernier de la liste
+                                retour = False
+                                while retour is False:
+                                    if num < 1:
+                                        num = max
+                                    elif num > max:
+                                        num = 1
+                                    else:
+                                        pass
+                                    for rb in rlist:
+                                        if num == rb[0]:
+                                            disp = rb
+                                    em = discord.Embed(title="E.R.U. | {} - *{}*".format(self.ress[dom]["NOM"].title(), disp[1]),
+                                                       description=disp[2], color=0x212427, url=disp[4])
+                                    em.set_thumbnail(url=disp[3])
+                                    em.set_footer(text="Utilisez les réactions ci-dessous pour naviguer")
+                                    await self.bot.clear_reactions(menu)
+                                    menu = await self.bot.edit_message(menu, embed=em)
+                                    await self.bot.add_reaction(menu, "⏪")
+                                    await self.bot.add_reaction(menu, "⏹")
+                                    await self.bot.add_reaction(menu, "⏩")
+                                    act = await self.bot.wait_for_reaction(["⏪","⏹", "⏩"], message=menu, timeout=90, check=self.erucheck)
+                                    if act == None:
+                                        em.set_footer(text="---- Session expiré ----")
+                                        await self.bot.edit_message(menu, embed=em)
+                                        return
+                                    elif act.reaction.emoji == "⏪":
+                                        num += 1
+                                    elif act.reaction.emoji == "⏹":
+                                        retour = True
+                                    elif act.reaction.emoji == "⏩":
+                                        num -= 1
+                                    else:
+                                        pass
+                            else:
+                                em.set_footer(text="Aucune ressource n'est disponible pour ce domaine | Retour au menu")
+                                await self.bot.edit_message(menu, embed=em)
+                                await asyncio.sleep(1.5)
+        else:
+            em = discord.Embed(title="E.R.U. | Ajouter une ressource", description="Afin d'ajouter une ressource suivez le format ci-dessous:\n"
+                                                                                   "**categorie**|**nom**|**description rapide**|**url de l'image représentant la ressource (logo...)**|**lien vers la ressource**")
+            em.add_field(name="Catégories disponibles", value="Sciences\nHistgeo\nEcopol\nCulture\nInfos\nDivers")
+            em.set_footer(text="Entrez ci-dessous les informations de votre ressource en respectant le format ci-dessus (| = Barre du 6)")
+            txt = await self.bot.whisper(embed=em)
+            verif = False
+            while verif is False:
+                rep = await self.bot.wait_for_message(author=ctx.message.author, channel=txt.channel, timeout=300)
+                if rep is None:
+                    await self.bot.whisper("Vous avez mis trop de temps | Bye :wave:")
+                    return
+                else:
+                    ress = rep.content.split("|")
+                    if ress[0].upper() in self.ress:
+                        msg = "**Nom** *{}*\n" \
+                              "**Description** *{}*\n" \
+                              "**URL Image** *{}*\n" \
+                              "**Lien ressource** *{}*\n\n" \
+                              "__Verifiez les informations. Si c'est bon, tapez 'OK' sinon tapez 'retour'__".format(ress[1], ress[2], ress[3], ress[4])
+                        await self.bot.whisper(msg)
+                        rop = await self.bot.wait_for_message(author=ctx.message.author, channel=txt.channel, timeout=120)
+                        if rop is None:
+                            await self.bot.whisper("Vous avez mis trop de temps | Bye :wave:")
+                            return
+                        elif rop.content.lower() == "ok":
+                            await self.bot.whisper("Votre ressource est enregistrée avec succès !")
+                            self.ress[ress[0].upper()]["RESSOURCES"][ress[1].lower()] = {"nom": ress[1], "desc": ress[2], "image": ress[3], "lien": ress[4]}
+                            fileIO("data/charm/ress.json", "save", self.ress)
+                            return
+                        else:
+                            await self.bot.whisper("Veuillez donc entrer de nouveau les informations de votre ressource en suivant le format indiqué.")
+                    else:
+                        await self.bot.whisper("Cette catégorie n'existe pas. Verifiez l'orthographe et réessayez.")
 
 # TRIGGERS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>><
 
@@ -62,7 +192,7 @@ class Charm:
         fileIO("data/charm/sys.json", "save", self.sys)
         await self.bot.say("Les notifications seront désormais affichées sur *{}*".format(channel.name))
 
-# FUN >>>>>>>>>>>>>>>>>>>>>>>>>>>>><
+# GhostButser (Pour les ghostfags) >>>>>>>>>>>>>>>>>>>>>>>>>>>>><
 
     @commands.command(aliases= ["gb"], pass_context=True, no_pm=True)
     async def ghostbuster(self, ctx):
@@ -434,6 +564,12 @@ def check_folders():
 
 def check_files():
     default = {"NOTIF_CHANNEL": None, "WELCOME_MSG": None}
+    eru_base = {"SCIENCES": {"NOM": "Sciences", "EMOJI": "🔬", "COLOR": 0xdb2929, "RESSOURCES": {}},
+                "HISTGEO": {"NOM": "Histoire & Geographie", "EMOJI": "🗺", "COLOR": 0xe5ca27, "RESSOURCES": {}},
+                "ECOPOL": {"NOM": "Economie & Politique", "EMOJI": "🔖", "COLOR": 0x2997db, "RESSOURCES": {}},
+                "CULTURE": {"NOM": "Culture", "EMOJI": "🗿", "COLOR": 0x2f29db, "RESSOURCES": {}},
+                "INFOS": {"NOM": "Infos", "EMOJI": "📰", "COLOR": 0xf4f4f4, "RESSOURCES": {}},
+                "DIVERS": {"NOM": "Divers", "EMOJI": "❔", "COLOR": 0x55c182, "RESSOURCES": {}}}
     if not os.path.isfile("data/charm/stk.json"):
         print("Creation du fichier de Charm stk.json...")
         fileIO("data/charm/stk.json", "save", {"USERS": {}, "STICKERS": {}})
@@ -441,6 +577,10 @@ def check_files():
     if not os.path.isfile("data/charm/sys.json"):
         print("Création du fichier systeme Charm...")
         fileIO("data/charm/sys.json", "save", default)
+
+    if not os.path.isfile("data/charm/ress.json"):
+        print("Création du fichier encyclopedie Charm...")
+        fileIO("data/charm/ress.json", "save", eru_base)
 
 def setup(bot):
     check_folders()
