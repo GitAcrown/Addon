@@ -14,6 +14,7 @@ class EgoAPI:
     def __init__(self, bot, path):
         self.bot = bot
         self.user = dataIO.load_json(path)
+        self.cycle_task = bot.loop.create_task(self.ego_update())
 
     def save(self): #Sauvegarde l'ensemble des données utilisateur
         fileIO("data/ego/profil.json", "save", self.user)
@@ -213,6 +214,24 @@ class EgoAPI:
         sort = sort[:top]
         return [sort, place]
 
+# AUTO UPDATE
+
+    async def ego_update(self):
+        await self.bot.wait_until_ready()
+        try:
+            await asyncio.sleep(15)  # Temps de mise en route
+            while True:
+                for p in self.user: # KARMA
+                    if "KARMA" in self.user[p]["STATS"]:
+                        if self.user[p]["STATS"]["KARMA"] < 0:
+                            self.user[p]["STATS"]["KARMA"] += 1
+                    else:
+                        self.user[p]["STATS"]["KARMA"] = 0
+                self.save()
+                await asyncio.sleep(86400)  # Toutes les 24h
+        except asyncio.CancelledError:
+            pass
+
 class Ego:
     """Système Ego | Assistant personnel et suivi de statistiques"""
     def __init__(self, bot):
@@ -258,10 +277,10 @@ class Ego:
              "- Réorganisation des commandes, rassemblées sous &ego (sauf &card et &scard)"
         em.add_field(name="Version 2.3", value=c1)
         c2 = "- Ajout de l'historique complet (bouton sur &card)\n" \
-             "- Ajout des stats des réactions sur messages"
+             "- Ajout des stats des réactions sur messages\n" \
+             "[BETA] Ajout d'un système de Karma"
         em.add_field(name="Version 2.4", value=c2)
-        bt = "- Notifications (Anniversaire...)\n" \
-             "- Retour des relations\n" \
+        bt = "- Retour des relations\n" \
              "- Calcul précis de l'activité d'un membre"
         em.add_field(name="Bientôt", value=bt, inline=False)
         em.set_footer(text="Dernière MAJ publiée le 11/07", icon_url="http://i.imgur.com/DsBEbBw.png")
@@ -858,7 +877,11 @@ class Ego:
             fantome = "Cette personne n'est pas suivie par le système EGO"
         else:
             fantome = "Certaines informations proviennent du système EGO"
-
+        if "KARMA" in ego.stats:
+            em.add_field(name="Karma", value=ego.stats["KARMA"])
+        else:
+            ego.stats["KARMA"] = 0
+            em.add_field(name="Karma", value=ego.stats["KARMA"])
         em.set_footer(
             text="{} | {}".format(fantome, self.version), icon_url="http://i.imgur.com/DsBEbBw.png")
         modtoday = today[:5]
@@ -1261,7 +1284,7 @@ class Ego:
                 self.ego.event(a, "karma", "!", "A été emprisonné")
                 if "KARMA" not in ego.stats:
                     ego.stats["KARMA"] = 0
-                ego.stats["KARMA"] -= 1
+                ego.stats["KARMA"] -= 3
             if b.top_role.name == "Prison":
                 self.ego.event(a, "karma", "!", "Est sorti de prison")
             if not a.top_role.name == "@everyone":
