@@ -364,18 +364,18 @@ class Ego:
                 await self.bot.clear_reactions(menu)
                 menu = await self.bot.edit_message(menu, embed=em)
             await self.bot.add_reaction(menu, "⏪")
-            await self.bot.add_reaction(menu, "#⃣")
+            await self.bot.add_reaction(menu, "🔢")
             if saut > 0:
                 await self.bot.add_reaction(menu, "⏩")
             await asyncio.sleep(1)
-            act = await self.bot.wait_for_reaction(["⏪","⏩"], message=menu, timeout=60)
+            act = await self.bot.wait_for_reaction(["⏪", "🔢", "⏩"], message=menu, timeout=60)
             if act == None:
                 em.set_footer(text="---- Session expiré ----")
                 await self.bot.edit_message(menu, embed=em)
                 return
             elif act.reaction.emoji == "⏪":
                 saut += 1
-            elif act.reaction.emoji == "#⃣":
+            elif act.reaction.emoji == "🔢":
                 em.set_footer(text="Entrez la date désirée ci-dessous (dd/mm/aaaa)".format(self.version), icon_url="http://i.imgur.com/DsBEbBw.png")
                 await self.bot.edit_message(menu, embed=em)
                 rep = await self.bot.wait_for_message(author=act.user, channel=menu.channel, timeout=30)
