@@ -364,6 +364,7 @@ class Ego:
                 await self.bot.clear_reactions(menu)
                 menu = await self.bot.edit_message(menu, embed=em)
             await self.bot.add_reaction(menu, "⏪")
+            await self.bot.add_reaction(menu, "#⃣")
             if saut > 0:
                 await self.bot.add_reaction(menu, "⏩")
             await asyncio.sleep(1)
@@ -374,6 +375,23 @@ class Ego:
                 return
             elif act.reaction.emoji == "⏪":
                 saut += 1
+            elif act.reaction.emoji == "#⃣":
+                em.set_footer(text="Entrez la date désirée ci-dessous (dd/mm/aaaa)".format(self.version), icon_url="http://i.imgur.com/DsBEbBw.png")
+                await self.bot.edit_message(menu, embed=em)
+                rep = await self.bot.wait_for_message(author=act.user, channel=menu.channel, timeout=30)
+                if rep is None:
+                    em.set_footer(text="DInvalide | Retour".format(self.version),
+                                  icon_url="http://i.imgur.com/DsBEbBw.png")
+                    await self.bot.edit_message(menu, embed=em)
+                    await asyncio.sleep(2)
+                elif len(rep.content) == 10:
+                    saut += int((time.mktime(time.strptime(day, "%d/%m/%Y")) - time.mktime(time.strptime(rep.content, "%d/%m/%Y")))/86400)
+                    await self.bot.delete_message(rep)
+                else:
+                    em.set_footer(text="Invalide | Retour".format(self.version),
+                                  icon_url="http://i.imgur.com/DsBEbBw.png")
+                    await self.bot.edit_message(menu, embed=em)
+                    await asyncio.sleep(2)
             elif act.reaction.emoji == "⏩":
                 saut -= 1
             else:
