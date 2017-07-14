@@ -475,7 +475,7 @@ class Ego:
                               "\n" \
                               "== Réactions ==\n" \
                               "{}\n" \
-                              "Total\t{}".format(deb, fin, arrtotal, deptotal, rettotal, msgtxt, nbmsgtotal, nbmsgsbot, reacttxt, reacttotal)
+                              "Total\t{}".format(deb, fin, arrtotal, deptotal, rettotal, msgtxt, nbmsgtotal, (nbmsgtotal - nbmsgsbot), reacttxt, reacttotal)
                         file.write(msg)
                         file.close()
                         try:
