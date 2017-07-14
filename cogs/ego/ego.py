@@ -238,7 +238,7 @@ class Ego:
         self.bot = bot
         self.ego = EgoAPI(bot, "data/ego/profil.json")
         self.glob = dataIO.load_json("data/ego/glob.json") #Stats globaux
-        self.version = "V2.4 (&logs)"
+        self.version = "V2.4.5 (&logs)"
 
     def solde_img(self, rewind=0): #Remonte de X jours (rewind) afin de calculer le solde migratoire
         nb_join = nb_quit = 0
@@ -278,8 +278,10 @@ class Ego:
         em.add_field(name="Version 2.3", value=c1)
         c2 = "- Ajout de l'historique complet (bouton sur &card)\n" \
              "- Ajout des stats des réactions sur messages\n" \
+             "- Ajout d'un bouton pour accéder rapidement à une date sur &ego stats\n" \
+             "- Ajout de l'extraction des données globales sur &ego stats\n" \
              "[BETA] Ajout d'un système de Karma"
-        em.add_field(name="Version 2.4", value=c2)
+        em.add_field(name="Version 2.4.5", value=c2)
         bt = "- Retour des relations\n" \
              "- Calcul précis de l'activité d'un membre"
         em.add_field(name="Bientôt", value=bt, inline=False)
@@ -493,6 +495,11 @@ class Ego:
                     await self.bot.say("Erreur | Format invalide (Rappel: jj/mm/aaaa;jj/mm/aaaa)")
             else:
                 await self.bot.say("Erreur | Format invalide (Rappel: jj/mm/aaaa;jj/mm/aaaa)")
+
+    @_ego.command(pass_context=True)
+    async def infos(self, ctx):
+        """Affiche à propos du fonctionnement simplifié de EGO"""
+        await self.bot.say("**Affiche détaillant le fonctionnement de EGO**\nhttp://i.imgur.com/E2NbfVk.png")
 
     @_ego.command(pass_context=True, no_pm=True)
     async def epop(self, ctx, top=5):
