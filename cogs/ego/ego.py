@@ -980,7 +980,6 @@ class Ego:
         today = time.strftime("%d/%m/%Y", time.localtime())
         em = discord.Embed(title="{}".format(str(user)), color=ec,
                            url=ego.perso["SITE"] if "SITE" in ego.perso else None)
-        em.add_field(name="Surnom", value=user.display_name)
         em.add_field(name="ID", value=str(user.id))
         passed = (ctx.message.timestamp - user.created_at).days
         em.add_field(name="Age du compte", value=str(passed) + " jours")
