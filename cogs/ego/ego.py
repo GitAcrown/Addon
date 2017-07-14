@@ -975,7 +975,7 @@ class Ego:
         
         Vous pouvez obtenir l'identifiant en mode développeur ou avec &card (Paramètres > Affichage)"""
         user = self.bot.get_user_info(id)
-        ego = self.ego.log(user)
+        ego = self.ego.offlog(id)
         ec = 0x191919
         today = time.strftime("%d/%m/%Y", time.localtime())
         em = discord.Embed(title="{}".format(str(user)), color=ec,
