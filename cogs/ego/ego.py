@@ -412,8 +412,8 @@ class Ego:
                         chan = {}
                         react = {}
                         while day != lend:
+                            total = 0
                             if day in self.glob["NB_MSG"]:
-                                total = 0
                                 try:
                                     for c in self.glob["NB_MSG"][day]:
                                         if not self.bot.get_channel(c).is_private:
@@ -430,14 +430,17 @@ class Ego:
                                     for c in self.glob["NB_MSG"][day]:
                                         total += self.glob["NB_MSG"][day][c]
                             nbmsgtotal += total
+                            total = 0
                             if day in self.glob["BOT_MSG"]:
                                 for b in self.glob["BOT_MSG"][day]:
-                                    nbmsgsbot += self.glob["BOT_MSG"][day][b]
+                                    total += self.glob["BOT_MSG"][day][b]
+                            nbmsgsbot += total
                             if day in self.glob["NB_JOIN"] and self.glob["NB_QUIT"]:
                                 if day in self.glob["NB_RETURN"]:
                                     arrtotal += self.glob["NB_JOIN"][day]
                                     deptotal += self.glob["NB_QUIT"][day]
                                     rettotal += self.glob["NB_RETURN"][day]
+                            total = 0
                             if day in self.glob["REACTS"]:
                                 total = 0
                                 for e in self.glob["REACTS"][day]:
