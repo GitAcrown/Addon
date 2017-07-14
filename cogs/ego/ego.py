@@ -44,6 +44,24 @@ class EgoAPI:
         st = self.user[user.id]["STATS"]
         return Profil(id, b, h, sa, p ,st)
 
+    def offlog(self, id):
+        if id not in self.user:
+            creat = time.time()
+            self.user[id] = {"ID": id,
+                             "BORN" : creat,
+                             "HISTO" : [], #Historique du membre
+                             "SAVED": [], #Sauvegardes (Messages, Memo...)
+                             "PERSO" : {}, #Informations perso (A venir)
+                             "STATS" : {}} #Statistiques sur le membre
+            self.save()
+        Profil = namedtuple('Profil', ['id', 'born', 'histo', 'saved', 'perso', 'stats'])
+        b = self.user[id]["BORN"]
+        h = self.user[id]["HISTO"]
+        sa = self.user[id]["SAVED"]
+        p = self.user[id]["PERSO"]
+        st = self.user[id]["STATS"]
+        return Profil(id, b, h, sa, p, st)
+
     def event(self, user, rubrique:str, symb:str, descr:str):
         ego = self.log(user)
         date = time.strftime("%d/%m/%Y", time.localtime())
@@ -950,6 +968,44 @@ class Ego:
                 else:
                     await self.bot.whisper("Bye :wave:")
                     return
+
+    @commands.command(aliases=["oc"], pass_context=True)
+    async def offcard(self, ctx, id:str):
+        """Affiche une carte de membre réduite pour une personne ayant quitté le serveur.
+        
+        Vous pouvez obtenir l'identifiant en mode développeur ou avec &card (Paramètres > Affichage)"""
+        user = self.bot.get_user_info(id)
+        ego = self.ego.log(user)
+        ec = 0x191919
+        today = time.strftime("%d/%m/%Y", time.localtime())
+        em = discord.Embed(title="{}".format(str(user)), color=ec,
+                           url=ego.perso["SITE"] if "SITE" in ego.perso else None)
+        em.add_field(name="Surnom", value=user.display_name)
+        em.add_field(name="ID", value=str(user.id))
+        passed = (ctx.message.timestamp - user.created_at).days
+        em.add_field(name="Age du compte", value=str(passed) + " jours")
+        if self.ego.aff_auto(user, "HISTO") is True:
+            liste = ego.histo[-3:]
+            liste.reverse()
+            hist = ""
+            if liste != []:
+                for i in liste:
+                    hist += "**{}** *{}*\n".format(i[2], i[3])
+            else:
+                hist = "Aucun historique"
+            em.add_field(name="Historique", value="{}".format(hist))
+        if self.ego.is_fantome(user) is True:
+            fantome = "Cette personne n'est pas suivie par le système EGO"
+        else:
+            fantome = "Certaines informations proviennent du système EGO"
+        if "KARMA" in ego.stats:
+            em.add_field(name="Karma", value=ego.stats["KARMA"])
+        else:
+            ego.stats["KARMA"] = 0
+            em.add_field(name="Karma", value=ego.stats["KARMA"])
+        em.set_footer(
+            text="{} | {}".format(fantome, self.version), icon_url="http://i.imgur.com/DsBEbBw.png")
+        await self.bot.say(embed=em)
 
     @commands.command(aliases=["c"], pass_context=True)
     async def card(self, ctx, user: discord.Member = None):
