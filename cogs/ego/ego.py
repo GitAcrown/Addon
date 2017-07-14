@@ -455,10 +455,10 @@ class Ego:
                         file = open("data/ego/{}.txt".format(filename), "w")
                         msgtxt = ""
                         for c in chan:
-                            msgtxt += "{}   {}".format(chan[c]["NOM"], chan[c]["NBMSG"])
+                            msgtxt += "{}   {}\n".format(chan[c]["NOM"], chan[c]["NBMSG"])
                         reacttxt = ""
                         for r in react:
-                            reacttxt += "{}     {}".format(react[r]["NOM"], react[r]["NB"])
+                            reacttxt += "{}     {}\n".format(react[r]["NOM"], react[r]["NB"])
                         msg = "EGO STATS | Du {} au {}\n\n" \
                               "Immigration\n" \
                               "Immigrants   {}\n" \
