@@ -449,7 +449,7 @@ class Ego:
                             reacttotal += total
                             #Jour suivant
                             day = time.strftime("%d/%m/%Y", time.localtime(time.mktime(time.strptime(day, "%d/%m/%Y")) + 86400))
-                        filename = "stats_{}_{}".format(deb, fin)
+                        filename = "ego stats"
                         if not os.path.isfile("data/ego/{}.txt".format(filename)):
                             fileIO("data/ego/{}.txt".format(filename), "save", "")
                         file = open("data/ego/{}.txt".format(filename), "w")
