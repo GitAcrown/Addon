@@ -293,109 +293,201 @@ class Ego:
             await send_cmd_help(ctx)
 
     @_ego.command(pass_context=True, no_pm=True)
-    async def stats(self, ctx):
-        """Affiche les détails des statistiques sur le serveur."""
+    async def stats(self, ctx, dates=None):
+        """Affiche les détails des statistiques sur le serveur.
+        
+        Si <dates> est rentré sous le format jj/mm/aaaa;jj/mm/aaaa un fichier txt sera créé afin de rassembler les stats."""
         server = ctx.message.server
         today = time.strftime("%d/%m/%Y", time.localtime())
         saut = 0
         day = menu = None
-        retour = False
-        while retour is False:
-            if saut == 0:
-                day = today
-            elif saut > 0:
-                day = time.strftime("%d/%m/%Y", time.localtime(time.mktime(time.strptime(today, "%d/%m/%Y")) - (86400 * saut))) #MACHINE A REMONTER LE TEMPS
-            else:
-                await self.bot.say("**Erreur** | Impossible d'aller dans le futur, ça risquerait de détruire l'Espace-Temps...")
-                return
-            em = discord.Embed(title="EGO Stats | {} - *{}*".format(server.name, day), color=ctx.message.author.color)
-            em.set_thumbnail(url=server.icon_url)
-            if day in self.glob["NB_MSG"]:
-                tot = ""
-                total = 0
-                try:
-                    for c in self.glob["NB_MSG"][day]:
-                        if not self.bot.get_channel(c).is_private:
-                            if self.bot.get_channel(c).server.id == server.id:
-                                nom = self.bot.get_channel(c).name.title()
-                                tot += "**{}** {}\n".format(nom, self.glob["NB_MSG"][day][c])
-                                total += self.glob["NB_MSG"][day][c]
-                except:
+        if dates is None:
+            retour = False
+            while retour is False:
+                if saut == 0:
+                    day = today
+                elif saut > 0:
+                    day = time.strftime("%d/%m/%Y", time.localtime(time.mktime(time.strptime(today, "%d/%m/%Y")) - (86400 * saut))) #MACHINE A REMONTER LE TEMPS
+                else:
+                    await self.bot.say("**Erreur** | Impossible d'aller dans le futur, ça risquerait de détruire l'Espace-Temps...")
+                    return
+                em = discord.Embed(title="EGO Stats | {} - *{}*".format(server.name, day), color=ctx.message.author.color)
+                em.set_thumbnail(url=server.icon_url)
+                if day in self.glob["NB_MSG"]:
+                    tot = ""
                     total = 0
-                    for c in self.glob["NB_MSG"][day]:
-                        total += self.glob["NB_MSG"][day][c]
-                tot += "\n**Total** {}\n".format(total)
-                if day in self.glob["BOT_MSG"]:
-                    tobot = 0
-                    for b in self.glob["BOT_MSG"][day]:
-                        tobot += self.glob["BOT_MSG"][day][b]
-                    tot += "**Sans bot** {}".format(total - tobot)
-                em.add_field(name="Messages", value=tot)
-            if day in self.glob["NB_JOIN"] and self.glob["NB_QUIT"]:
-                if day in self.glob["NB_RETURN"]:
-                    msg = "**Immigrés (Dont revenus):** {} ({})\n" \
-                          "**Emigrés:** {}\n" \
-                          "**Solde:** {}".format(self.glob["NB_JOIN"][day], self.glob["NB_RETURN"][day], self.glob["NB_QUIT"][day], (self.glob["NB_JOIN"][day] - self.glob["NB_QUIT"][day]))
+                    try:
+                        for c in self.glob["NB_MSG"][day]:
+                            if not self.bot.get_channel(c).is_private:
+                                if self.bot.get_channel(c).server.id == server.id:
+                                    nom = self.bot.get_channel(c).name.title()
+                                    tot += "**{}** {}\n".format(nom, self.glob["NB_MSG"][day][c])
+                                    total += self.glob["NB_MSG"][day][c]
+                    except:
+                        total = 0
+                        for c in self.glob["NB_MSG"][day]:
+                            total += self.glob["NB_MSG"][day][c]
+                    tot += "\n**Total** {}\n".format(total)
+                    if day in self.glob["BOT_MSG"]:
+                        tobot = 0
+                        for b in self.glob["BOT_MSG"][day]:
+                            tobot += self.glob["BOT_MSG"][day][b]
+                        tot += "**Sans bot** {}".format(total - tobot)
+                    em.add_field(name="Messages", value=tot)
+                if day in self.glob["NB_JOIN"] and self.glob["NB_QUIT"]:
+                    if day in self.glob["NB_RETURN"]:
+                        msg = "**Immigrés (Dont revenus):** {} ({})\n" \
+                              "**Emigrés:** {}\n" \
+                              "**Solde:** {}".format(self.glob["NB_JOIN"][day], self.glob["NB_RETURN"][day], self.glob["NB_QUIT"][day], (self.glob["NB_JOIN"][day] - self.glob["NB_QUIT"][day]))
+                    else:
+                        msg = "**Immigrés:** {}\n" \
+                              "**Emigrés:** {}\n" \
+                              "**Solde:** {}".format(self.glob["NB_JOIN"][day],
+                                                     self.glob["NB_QUIT"][day],
+                                                     (self.glob["NB_JOIN"][day] - self.glob["NB_QUIT"][day]))
+                    em.add_field(name="Flux migratoire", value=msg)
+                if day in self.glob["REACTS"]:
+                    total = 0
+                    elb = []
+                    for e in self.glob["REACTS"][day]:
+                        total += self.glob["REACTS"][day][e]
+                        elb.append([e, self.glob["REACTS"][day][e]])
+                    if total > 0:
+                        top = sorted(elb, key=operator.itemgetter(1), reverse=True)
+                        top = top[:5]
+                        msg = "**Top 5**\n"
+                        for i in top:
+                            msg += "*:{}:* {}\n".format(i[0], i[1])
+                        msg += "\n**Total** {}".format(total)
+                        em.add_field(name="Réactions", value=msg)
+                em.set_footer(text="Données issues de EGO | {}".format(self.version), icon_url="http://i.imgur.com/DsBEbBw.png")
+                if menu == None:
+                    menu = await self.bot.say(embed=em)
                 else:
-                    msg = "**Immigrés:** {}\n" \
-                          "**Emigrés:** {}\n" \
-                          "**Solde:** {}".format(self.glob["NB_JOIN"][day],
-                                                 self.glob["NB_QUIT"][day],
-                                                 (self.glob["NB_JOIN"][day] - self.glob["NB_QUIT"][day]))
-                em.add_field(name="Flux migratoire", value=msg)
-            if day in self.glob["REACTS"]:
-                total = 0
-                elb = []
-                for e in self.glob["REACTS"][day]:
-                    total += self.glob["REACTS"][day][e]
-                    elb.append([e, self.glob["REACTS"][day][e]])
-                if total > 0:
-                    top = sorted(elb, key=operator.itemgetter(1), reverse=True)
-                    top = top[:5]
-                    msg = "**Top 5**\n"
-                    for i in top:
-                        msg += "*:{}:* {}\n".format(i[0], i[1])
-                    msg += "\n**Total** {}".format(total)
-                    em.add_field(name="Réactions", value=msg)
-            em.set_footer(text="Données issues de EGO | {}".format(self.version), icon_url="http://i.imgur.com/DsBEbBw.png")
-            if menu == None:
-                menu = await self.bot.say(embed=em)
-            else:
-                await self.bot.clear_reactions(menu)
-                menu = await self.bot.edit_message(menu, embed=em)
-            await self.bot.add_reaction(menu, "⏪")
-            await self.bot.add_reaction(menu, "🔢")
-            if saut > 0:
-                await self.bot.add_reaction(menu, "⏩")
-            await asyncio.sleep(1)
-            act = await self.bot.wait_for_reaction(["⏪", "🔢", "⏩"], message=menu, timeout=60)
-            if act == None:
-                em.set_footer(text="---- Session expiré ----")
-                await self.bot.edit_message(menu, embed=em)
-                return
-            elif act.reaction.emoji == "⏪":
-                saut += 1
-            elif act.reaction.emoji == "🔢":
-                em.set_footer(text="Entrez la date désirée ci-dessous (dd/mm/aaaa)".format(self.version), icon_url="http://i.imgur.com/DsBEbBw.png")
-                await self.bot.edit_message(menu, embed=em)
-                rep = await self.bot.wait_for_message(author=act.user, channel=menu.channel, timeout=30)
-                if rep is None:
-                    em.set_footer(text="DInvalide | Retour".format(self.version),
-                                  icon_url="http://i.imgur.com/DsBEbBw.png")
+                    await self.bot.clear_reactions(menu)
+                    menu = await self.bot.edit_message(menu, embed=em)
+                await self.bot.add_reaction(menu, "⏪")
+                await self.bot.add_reaction(menu, "🔢")
+                if saut > 0:
+                    await self.bot.add_reaction(menu, "⏩")
+                await asyncio.sleep(1)
+                act = await self.bot.wait_for_reaction(["⏪", "🔢", "⏩"], message=menu, timeout=60)
+                if act == None:
+                    em.set_footer(text="---- Session expiré ----")
                     await self.bot.edit_message(menu, embed=em)
-                    await asyncio.sleep(2)
-                elif len(rep.content) == 10:
-                    saut += int((time.mktime(time.strptime(day, "%d/%m/%Y")) - time.mktime(time.strptime(rep.content, "%d/%m/%Y")))/86400)
-                    await self.bot.delete_message(rep)
+                    return
+                elif act.reaction.emoji == "⏪":
+                    saut += 1
+                elif act.reaction.emoji == "🔢":
+                    em.set_footer(text="Entrez la date désirée ci-dessous (dd/mm/aaaa)".format(self.version), icon_url="http://i.imgur.com/DsBEbBw.png")
+                    await self.bot.edit_message(menu, embed=em)
+                    rep = await self.bot.wait_for_message(author=act.user, channel=menu.channel, timeout=30)
+                    if rep is None:
+                        em.set_footer(text="Invalide | Retour".format(self.version),
+                                      icon_url="http://i.imgur.com/DsBEbBw.png")
+                        await self.bot.edit_message(menu, embed=em)
+                        await asyncio.sleep(2)
+                    elif len(rep.content) == 10:
+                        saut += int((time.mktime(time.strptime(day, "%d/%m/%Y")) - time.mktime(time.strptime(rep.content, "%d/%m/%Y")))/86400)
+                        await self.bot.delete_message(rep)
+                    else:
+                        em.set_footer(text="Invalide | Retour".format(self.version),
+                                      icon_url="http://i.imgur.com/DsBEbBw.png")
+                        await self.bot.edit_message(menu, embed=em)
+                        await asyncio.sleep(2)
+                elif act.reaction.emoji == "⏩":
+                    saut -= 1
                 else:
-                    em.set_footer(text="Invalide | Retour".format(self.version),
-                                  icon_url="http://i.imgur.com/DsBEbBw.png")
-                    await self.bot.edit_message(menu, embed=em)
-                    await asyncio.sleep(2)
-            elif act.reaction.emoji == "⏩":
-                saut -= 1
+                    pass
+        else:
+            if ";" in dates:
+                if len(dates) == 21:
+                    deb = day = dates.split(";")[0]
+                    fin = dates.split(";")[1]
+                    lend = time.strftime("%d/%m/%Y", time.localtime(time.mktime(time.strptime(fin, "%d/%m/%Y")) + 86400))
+                    if time.mktime(time.strptime(deb, "%d/%m/%Y")) <= time.mktime(time.strptime(fin, "%d/%m/%Y")):
+                        nbmsgtotal = total = nbmsgsbot = 0
+                        arrtotal = deptotal = rettotal = 0
+                        reacttotal = 0
+                        chan = {}
+                        react = {}
+                        while day != lend:
+                            if day in self.glob["NB_MSG"]:
+                                total = 0
+                                try:
+                                    for c in self.glob["NB_MSG"][day]:
+                                        if not self.bot.get_channel(c).is_private:
+                                            if self.bot.get_channel(c).server.id == server.id:
+                                                if self.bot.get_channel(c).id not in chan:
+                                                    chan[self.bot.get_channel(c).id] = {"ID": self.bot.get_channel(c).id,
+                                                                                        "NOM": self.bot.get_channel(c).name,
+                                                                                        "NBMSG": self.glob["NB_MSG"][day][c]}
+                                                else:
+                                                    chan[self.bot.get_channel(c).id]["NBMSG"] += self.glob["NB_MSG"][day][c]
+                                                total += self.glob["NB_MSG"][day][c]
+                                except:
+                                    total = 0
+                                    for c in self.glob["NB_MSG"][day]:
+                                        total += self.glob["NB_MSG"][day][c]
+                            nbmsgtotal += total
+                            if day in self.glob["BOT_MSG"]:
+                                for b in self.glob["BOT_MSG"][day]:
+                                    nbmsgsbot += self.glob["BOT_MSG"][day][b]
+                            if day in self.glob["NB_JOIN"] and self.glob["NB_QUIT"]:
+                                if day in self.glob["NB_RETURN"]:
+                                    arrtotal += self.glob["NB_JOIN"][day]
+                                    deptotal += self.glob["NB_QUIT"][day]
+                                    rettotal += self.glob["NB_RETURN"][day]
+                            if day in self.glob["REACTS"]:
+                                total = 0
+                                for e in self.glob["REACTS"][day]:
+                                    total += self.glob["REACTS"][day][e]
+                                    if e not in react:
+                                        react[e] = {"NOM": e, "NB": self.glob["REACTS"][day][e]}
+                                    else:
+                                        react[e]["NB"] += self.glob["REACTS"][day][e]
+                            reacttotal += total
+                            #Jour suivant
+                            day = time.strftime("%d/%m/%Y", time.localtime(time.mktime(time.strptime(day, "%d/%m/%Y")) + 86400))
+                        filename = "stats_{}_{}".format(deb, fin)
+                        if not os.path.isfile("data/ego/{}.txt".format(filename)):
+                            fileIO("data/ego/{}.txt".format(filename), "save", "")
+                        file = open("data/ego/{}.txt".format(filename), "w")
+                        msgtxt = ""
+                        for c in chan:
+                            msgtxt += "{}   {}".format(chan[c]["NOM"], chan[c]["NBMSG"])
+                        reacttxt = ""
+                        for r in react:
+                            reacttxt += "{}     {}".format(react[r]["NOM"], react[r]["NB"])
+                        msg = "EGO STATS | Du {} au {}\n\n" \
+                              "Immigration\n" \
+                              "Immigrants   {}\n" \
+                              "Emigrants    {}\n" \
+                              "Revenants    {}\n" \
+                              "\n" \
+                              "Messages\n" \
+                              "{}\n" \
+                              "Total    {}\n" \
+                              "Sans Bot     {}\n" \
+                              "\n" \
+                              "Réactions\n" \
+                              "{}\n" \
+                              "Total    {}".format(deb, fin, arrtotal, deptotal, rettotal, msgtxt, nbmsgtotal, nbmsgsbot, reacttxt, reacttotal)
+                        file.write(msg)
+                        file.close()
+                        try:
+                            await self.bot.say("Upload en cours...")
+                            await self.bot.send_file(ctx.message.channel, "data/ego/{}.txt".format(filename))
+                            await asyncio.sleep(1)
+                            os.remove("data/ego/{}.txt".format(filename))
+                        except:
+                            await self.bot.say("Erreur | Impossible de créer ou de supprimer le fichier.")
+                    else:
+                        await self.bot.say("Erreur | Vérifiez que vous avez mis la date la plus ancienne dabord.")
+                else:
+                    await self.bot.say("Erreur | Format invalide (Rappel: jj/mm/aaaa;jj/mm/aaaa)")
             else:
-                pass
+                await self.bot.say("Erreur | Format invalide (Rappel: jj/mm/aaaa;jj/mm/aaaa)")
 
     @_ego.command(pass_context=True, no_pm=True)
     async def epop(self, ctx, top=5):
