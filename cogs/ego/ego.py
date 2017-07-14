@@ -478,15 +478,17 @@ class Ego:
                               "Total\t{}".format(deb, fin, arrtotal, deptotal, rettotal, msgtxt, nbmsgtotal, (nbmsgtotal - nbmsgsbot), reacttxt, reacttotal)
                         file.write(msg)
                         file.close()
+                        await self.bot.say("Préparation de votre commande...")
+                        await asyncio.sleep(0.5)
                         try:
                             await self.bot.say("Upload en cours...")
                             await self.bot.send_file(ctx.message.channel, "data/ego/{}.txt".format(filename))
                             await asyncio.sleep(1)
                             os.remove("data/ego/{}.txt".format(filename))
                         except:
-                            await self.bot.say("Erreur | Impossible de créer ou de supprimer le fichier.")
+                            await self.bot.say("Erreur | Fichier introuvable.")
                     else:
-                        await self.bot.say("Erreur | Vérifiez que vous avez mis la date la plus ancienne dabord.")
+                        await self.bot.say("Erreur | Vérifiez que vous avez mis la date la plus ancienne dabord. (Rappel: deb;fin)")
                 else:
                     await self.bot.say("Erreur | Format invalide (Rappel: jj/mm/aaaa;jj/mm/aaaa)")
             else:
