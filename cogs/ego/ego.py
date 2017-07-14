@@ -455,24 +455,24 @@ class Ego:
                         file = open("data/ego/{}.txt".format(filename), "w")
                         msgtxt = ""
                         for c in chan:
-                            msgtxt += "{}   {}\n".format(chan[c]["NOM"], chan[c]["NBMSG"])
+                            msgtxt += "{}\t{}\n".format(chan[c]["NOM"], chan[c]["NBMSG"])
                         reacttxt = ""
                         for r in react:
-                            reacttxt += "{}     {}\n".format(react[r]["NOM"], react[r]["NB"])
+                            reacttxt += "{}\t{}\n".format(react[r]["NOM"], react[r]["NB"])
                         msg = "EGO STATS | Du {} au {}\n\n" \
-                              "Immigration\n" \
-                              "Immigrants   {}\n" \
-                              "Emigrants    {}\n" \
-                              "Revenants    {}\n" \
+                              "== Immigration ==\n" \
+                              "Immigrants\t{}\n" \
+                              "Emigrants\t{}\n" \
+                              "Revenants\t{}\n" \
                               "\n" \
-                              "Messages\n" \
+                              "== Messages ==\n" \
                               "{}\n" \
-                              "Total    {}\n" \
-                              "Sans Bot     {}\n" \
+                              "Total\t{}\n" \
+                              "Sans Bot\t{}\n" \
                               "\n" \
-                              "Réactions\n" \
+                              "== Réactions ==\n" \
                               "{}\n" \
-                              "Total    {}".format(deb, fin, arrtotal, deptotal, rettotal, msgtxt, nbmsgtotal, nbmsgsbot, reacttxt, reacttotal)
+                              "Total\t{}".format(deb, fin, arrtotal, deptotal, rettotal, msgtxt, nbmsgtotal, nbmsgsbot, reacttxt, reacttotal)
                         file.write(msg)
                         file.close()
                         try:
