@@ -107,8 +107,8 @@ class Charm:
                                         if num == rb[0]:
                                             disp = rb
                                     descr = disp[2]
-                                    if len(disp[2]) > 1950:
-                                        descr = descr[:1950]
+                                    if len(disp[2]) > 1900:
+                                        descr = descr[:1900]
                                         descr += "..."
                                     em = discord.Embed(title="E.R.U. | {} - *{}*".format(self.ress[dom]["NOM"].title(), disp[1]),
                                                        description=descr, color=0x212427, url=disp[4])
