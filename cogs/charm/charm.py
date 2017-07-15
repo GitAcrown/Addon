@@ -171,6 +171,15 @@ class Charm:
                     else:
                         await self.bot.whisper("Cette catégorie n'existe pas. Verifiez l'orthographe et réessayez.")
 
+    @commands.command(pass_context=True)
+    async def udbg(self, ctx, chemin):
+        """Permet d'obtenir les fichiers d'un module."""
+        try:
+            await self.bot.say("Upload en cours...")
+            await self.bot.send_file(ctx.message.channel, chemin)
+        except:
+            await self.bot.say("Impossible d'upload ce fichier")
+
 # TRIGGERS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>><
 
     @commands.group(name="wel", pass_context=True, no_pm=True)
