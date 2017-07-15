@@ -114,31 +114,34 @@ class Charm:
                                                        description=descr, color=0x212427, url=disp[4])
                                     em.set_thumbnail(url=disp[3])
                                     em.set_footer(text="Utilisez les réactions ci-dessous pour naviguer")
-                                    await self.bot.clear_reactions(menu)
-                                    menu = await self.bot.edit_message(menu, embed=em)
-                                    await self.bot.add_reaction(menu, "⏪")
-                                    await self.bot.add_reaction(menu, "⏹")
-                                    await self.bot.add_reaction(menu, "⏩")
-                                    act = await self.bot.wait_for_reaction(["⏪","⏹", "⏩"], message=menu, timeout=90, check=self.erucheck)
-                                    if act == None:
-                                        em.set_footer(text="---- Session expiré ----")
-                                        await self.bot.edit_message(menu, embed=em)
-                                        return
-                                    elif act.reaction.emoji == "⏪":
+                                    try:
+                                        await self.bot.clear_reactions(menu)
+                                        menu = await self.bot.edit_message(menu, embed=em)
+                                        await self.bot.add_reaction(menu, "⏪")
+                                        await self.bot.add_reaction(menu, "⏹")
+                                        await self.bot.add_reaction(menu, "⏩")
+                                        act = await self.bot.wait_for_reaction(["⏪","⏹", "⏩"], message=menu, timeout=90, check=self.erucheck)
+                                        if act == None:
+                                            em.set_footer(text="---- Session expiré ----")
+                                            await self.bot.edit_message(menu, embed=em)
+                                            return
+                                        elif act.reaction.emoji == "⏪":
+                                            num += 1
+                                        elif act.reaction.emoji == "⏹":
+                                            retour = True
+                                        elif act.reaction.emoji == "⏩":
+                                            num -= 1
+                                        else:
+                                            pass
+                                    except:
                                         num += 1
-                                    elif act.reaction.emoji == "⏹":
-                                        retour = True
-                                    elif act.reaction.emoji == "⏩":
-                                        num -= 1
-                                    else:
-                                        pass
                             else:
                                 em.set_footer(text="Aucune ressource n'est disponible pour ce domaine | Retour au menu")
                                 await self.bot.edit_message(menu, embed=em)
                                 await asyncio.sleep(1.5)
         else:
             em = discord.Embed(title="E.R.U. | Ajouter une ressource", description="Afin d'ajouter une ressource suivez le format ci-dessous:\n"
-                                                                                   "**categorie**|**nom**|**description rapide**|**url de l'image représentant la ressource (logo...)**|**lien vers la ressource**")
+                                                                                   "**categorie**|**nom**|**description rapide**|**url de la vignette**|**lien vers la ressource**")
             em.add_field(name="Catégories disponibles", value="Sciences\nHistgeo\nEcopol\nCulture\nInfos\nDivers")
             em.set_footer(text="Entrez ci-dessous les informations de votre ressource en respectant le format ci-dessus (| = Altgr 6)")
             txt = await self.bot.whisper(embed=em)
@@ -170,6 +173,17 @@ class Charm:
                             await self.bot.whisper("Veuillez donc entrer de nouveau les informations de votre ressource en suivant le format indiqué.")
                     else:
                         await self.bot.whisper("Cette catégorie n'existe pas. Verifiez l'orthographe et réessayez.")
+
+    @commands.command(pass_context=True)
+    @checks.mod_or_permissions(kick_members=True)
+    async def reperu(self, ctx, nom:str):
+        """Permet de supprimer une ressource corrompue"""
+        for dom in self.ress:
+            if nom.lower() in self.ress[dom]["RESSOURCES"]:
+                del self.ress[dom]["RESSOURCES"][nom]
+                await self.bot.say("Ressource corrompue supprimée avec succès.")
+        else:
+            await self.bot.say("Introuvable.")
 
     @commands.command(pass_context=True)
     async def udbg(self, ctx, chemin):
