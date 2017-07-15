@@ -106,8 +106,11 @@ class Charm:
                                     for rb in rlist:
                                         if num == rb[0]:
                                             disp = rb
+                                    if len(disp[2]) > 1950:
+                                        descr = disp[2][:1950]
+                                        descr += "..."
                                     em = discord.Embed(title="E.R.U. | {} - *{}*".format(self.ress[dom]["NOM"].title(), disp[1]),
-                                                       description=disp[2], color=0x212427, url=disp[4])
+                                                       description=descr, color=0x212427, url=disp[4])
                                     em.set_thumbnail(url=disp[3])
                                     em.set_footer(text="Utilisez les réactions ci-dessous pour naviguer")
                                     await self.bot.clear_reactions(menu)
