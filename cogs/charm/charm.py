@@ -559,7 +559,7 @@ class Charm:
                             liste = []
                             for s in self.stk["STICKERS"]:
                                 liste.append(s)
-                            img = self.similarite(stk, liste, 3)
+                            img = self.similarite(stk, liste, 2)
                             if stk not in [e.name for e in server.emojis]:
                                 return_img = [self.stk["STICKERS"][img]["URL"], self.stk["STICKERS"][img]["CHEMIN"],
                                               self.stk["STICKERS"][img]["FORMAT"]]
