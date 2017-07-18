@@ -557,7 +557,7 @@ class Charm:
                         else:
                             liste = []
                             for s in self.stk["STICKERS"]:
-                                liste += s
+                                liste.append(s)
                             img = self.similarite(stk, liste)
                             return_img = [self.stk["STICKERS"][img]["URL"], self.stk["STICKERS"][img]["CHEMIN"],
                                           self.stk["STICKERS"][img]["FORMAT"]]
