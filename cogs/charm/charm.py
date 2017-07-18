@@ -543,14 +543,15 @@ class Charm:
                                 else:
                                     return
                         else:
-                            prochenb = 5 #Définis la tolérance d'erreur
+                            prochenb = 10
                             for stry in self.stk["STICKERS"]:
                                 sim = self.levenshtein(stry, stk)
                                 if sim < prochenb:
-                                    await self.bot.send_message(channel, "Recherche: {}".format(stry))
+                                    await self.bot.send_message(channel, "*S.Err?* {}".format(stry))
                                     prochenb = sim
                                     return_img = [self.stk["STICKERS"][stry]["URL"], self.stk["STICKERS"][stry]["CHEMIN"], self.stk["STICKERS"][stry]["FORMAT"]]
-                            await self.bot.send_message(channel, "Vous voulez dire {} ?".format(stry))
+                                else:
+                                    pass
 
                         if return_img[2] == "INTEGRE":
                             em = discord.Embed(color=author.color)
