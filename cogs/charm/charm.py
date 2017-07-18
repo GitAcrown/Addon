@@ -69,6 +69,16 @@ class Charm:
             previous_row = current_row
         return previous_row[-1]
 
+    def similarite(self, mot, liste, tolerance = 5):
+        prochenb = tolerance
+        prochenom = None
+        for i in liste:
+            if self.levenshtein(i, mot) < prochenb:
+                prochenom = i
+                prochenb = self.levenshtein(i, mot)
+        else:
+            return prochenom
+
         # RESS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>><
 
     @commands.command(pass_context=True)
@@ -543,15 +553,11 @@ class Charm:
                                 else:
                                     return
                         else:
-                            prochenb = 10
-                            for stry in self.stk["STICKERS"]:
-                                sim = self.levenshtein(stry, stk)
-                                if sim < prochenb:
-                                    await self.bot.send_message(channel, "*S.Err?* {}".format(stry))
-                                    prochenb = sim
-                                    return_img = [self.stk["STICKERS"][stry]["URL"], self.stk["STICKERS"][stry]["CHEMIN"], self.stk["STICKERS"][stry]["FORMAT"]]
-                                else:
-                                    pass
+                            for s in self.stk["STICKERS"]:
+                                liste += s
+                            img = self.similarite(stk, liste)
+                            return_img = [self.stk["STICKERS"][img]["URL"], self.stk["STICKERS"][img]["CHEMIN"],
+                                          self.stk["STICKERS"][img]["FORMAT"]]
 
                         if return_img[2] == "INTEGRE":
                             em = discord.Embed(color=author.color)
