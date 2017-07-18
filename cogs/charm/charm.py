@@ -484,6 +484,7 @@ class Charm:
         author = message.author
         channel = message.channel
         mentions = message.mentions
+        server = message.server
         #Système AFK
         if "AFK" not in self.sys:
             self.sys["AFK"] = []
@@ -562,6 +563,8 @@ class Charm:
                             if img not in [e.name for e in server.emojis]:
                                 return_img = [self.stk["STICKERS"][img]["URL"], self.stk["STICKERS"][img]["CHEMIN"],
                                               self.stk["STICKERS"][img]["FORMAT"]]
+                            else:
+                                return
 
                         if return_img[2] == "INTEGRE":
                             em = discord.Embed(color=author.color)
