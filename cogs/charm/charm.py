@@ -559,8 +559,9 @@ class Charm:
                             for s in self.stk["STICKERS"]:
                                 liste.append(s)
                             img = self.similarite(stk, liste)
-                            return_img = [self.stk["STICKERS"][img]["URL"], self.stk["STICKERS"][img]["CHEMIN"],
-                                          self.stk["STICKERS"][img]["FORMAT"]]
+                            if img not in [e.name for e in server.emojis]:
+                                return_img = [self.stk["STICKERS"][img]["URL"], self.stk["STICKERS"][img]["CHEMIN"],
+                                              self.stk["STICKERS"][img]["FORMAT"]]
 
                         if return_img[2] == "INTEGRE":
                             em = discord.Embed(color=author.color)
