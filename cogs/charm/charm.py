@@ -52,7 +52,24 @@ class Charm:
         else:
             return False
 
-# RESS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>><
+    def levenshtein(self, s1, s2):
+        if len(s1) < len(s2):
+            return levenshtein(s2, s1)
+        if len(s2) == 0:
+            return len(s1)
+        previous_row = range(len(s2) + 1)
+        for i, c1 in enumerate(s1):
+            current_row = [i + 1]
+            for j, c2 in enumerate(s2):
+                insertions = previous_row[
+                                 j + 1] + 1
+                deletions = current_row[j] + 1
+                substitutions = previous_row[j] + (c1 != c2)
+                current_row.append(min(insertions, deletions, substitutions))
+            previous_row = current_row
+        return previous_row[-1]
+
+        # RESS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>><
 
     @commands.command(pass_context=True)
     async def eru(self, ctx, modif:bool = False):
@@ -182,6 +199,7 @@ class Charm:
             if nom.lower() in self.ress[dom]["RESSOURCES"]:
                 del self.ress[dom]["RESSOURCES"][nom]
                 await self.bot.say("Ressource corrompue supprimée avec succès.")
+                return
         else:
             await self.bot.say("Introuvable.")
 
@@ -524,7 +542,12 @@ class Charm:
                                 else:
                                     return
                         else:
-                            break
+                            prochenb = 999 #OSEF du chiffre
+                            for stry in self.stk["STICKERS"]:
+                                sim = self.levenshtein(stry, stk)
+                                if sim < prochenb:
+                                    prochenb = sim
+                                    return_img = [self.stk["STICKERS"][stry]["URL"], self.stk["STICKERS"][stry]["CHEMIN"], self.stk["STICKERS"][stry]["FORMAT"]]
 
                         if return_img[2] == "INTEGRE":
                             em = discord.Embed(color=author.color)
@@ -550,7 +573,7 @@ class Charm:
                             except:
                                 print("L'URL de :{}: est indisponible. Je ne peux pas l'envoyer. (Format: URL/Defaut)".format(stk))
                     else:
-                        await self.bot.send_message(author, "**Ne spammez pas les stickers.**\nCela est considéré comme du spam.")
+                        await self.bot.send_message(author, "**Ne spammez pas les stickers !**")
                         break
 
     async def member_join(self, user :discord.Member):
