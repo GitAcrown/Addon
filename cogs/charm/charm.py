@@ -54,7 +54,7 @@ class Charm:
 
     def levenshtein(self, s1, s2):
         if len(s1) < len(s2):
-            return levenshtein(s2, s1)
+            return levenshtein(self, s2, s1)
         if len(s2) == 0:
             return len(s1)
         previous_row = range(len(s2) + 1)
