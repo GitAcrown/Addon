@@ -550,9 +550,7 @@ class Charm:
                                     await self.bot.send_message(channel, "Recherche: {}".format(stry))
                                     prochenb = sim
                                     return_img = [self.stk["STICKERS"][stry]["URL"], self.stk["STICKERS"][stry]["CHEMIN"], self.stk["STICKERS"][stry]["FORMAT"]]
-                                await asyncio.sleep(0.1)
-                            else:
-                                await self.bot.send_message(channel, "Vous voulez dire {} ?".format(stry))
+                            await self.bot.send_message(channel, "Vous voulez dire {} ?".format(stry))
 
                         if return_img[2] == "INTEGRE":
                             em = discord.Embed(color=author.color)
