@@ -547,11 +547,10 @@ class Charm:
                             for stry in self.stk["STICKERS"]:
                                 sim = self.levenshtein(stry, stk)
                                 if sim < prochenb:
+                                    await self.bot.send_message(channel, "Recherche: {}".format(stry))
                                     prochenb = sim
                                     return_img = [self.stk["STICKERS"][stry]["URL"], self.stk["STICKERS"][stry]["CHEMIN"], self.stk["STICKERS"][stry]["FORMAT"]]
                                 await asyncio.sleep(0.1)
-                            if not return_img:
-                                return
                             else:
                                 await self.bot.send_message(channel, "Vous voulez dire {} ?".format(stry))
 
