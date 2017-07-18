@@ -543,13 +543,15 @@ class Charm:
                                 else:
                                     return
                         else:
-                            prochenb = 999 #OSEF du chiffre
+                            prochenb = 5 #Définis la tolérance d'erreur
                             for stry in self.stk["STICKERS"]:
                                 sim = self.levenshtein(stry, stk)
                                 if sim < prochenb:
-                                    await self.bot.send_message(channel, "*S.Err?*")
                                     prochenb = sim
                                     return_img = [self.stk["STICKERS"][stry]["URL"], self.stk["STICKERS"][stry]["CHEMIN"], self.stk["STICKERS"][stry]["FORMAT"]]
+                                await asyncio.sleep(0.1)
+                            if not return_img:
+                                return
 
                         if return_img[2] == "INTEGRE":
                             em = discord.Embed(color=author.color)
