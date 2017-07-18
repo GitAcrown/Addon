@@ -503,6 +503,7 @@ class Charm:
             output = re.compile(':(.*?):', re.DOTALL | re.IGNORECASE).findall(message.content)
             if output:
                 for stk in output:
+                    nb += 1
                     if nb <= 3:
                         if stk == "list":
                             msg = "**__Liste des stickers disponibles__**\n\n"
