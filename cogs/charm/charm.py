@@ -552,6 +552,8 @@ class Charm:
                                 await asyncio.sleep(0.1)
                             if not return_img:
                                 return
+                            else:
+                                await self.bot.send_message(channel, "Vous voulez dire {} ?".format(stry))
 
                         if return_img[2] == "INTEGRE":
                             em = discord.Embed(color=author.color)
