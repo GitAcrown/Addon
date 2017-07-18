@@ -553,6 +553,7 @@ class Charm:
                                 else:
                                     return
                         else:
+                            liste = []
                             for s in self.stk["STICKERS"]:
                                 liste += s
                             img = self.similarite(stk, liste)
