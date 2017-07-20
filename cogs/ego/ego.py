@@ -14,7 +14,8 @@ class EgoAPI:
     def __init__(self, bot, path):
         self.bot = bot
         self.user = dataIO.load_json(path)
-        self.cycle_task = bot.loop.create_task(self.ego_update())
+        self.cycle_task = bot.loop.create_task(self.ego_karma())
+        self.second_cycle_task = bot.loop.create_task(self.ego_activity())
 
     def save(self): #Sauvegarde l'ensemble des données utilisateur
         fileIO("data/ego/profil.json", "save", self.user)
@@ -234,7 +235,7 @@ class EgoAPI:
 
 # AUTO UPDATE
 
-    async def ego_update(self):
+    async def ego_karma(self):
         await self.bot.wait_until_ready()
         try:
             await asyncio.sleep(15)  # Temps de mise en route
@@ -257,6 +258,50 @@ class Ego:
         self.ego = EgoAPI(bot, "data/ego/profil.json")
         self.glob = dataIO.load_json("data/ego/glob.json") #Stats globaux
         self.version = "V2.4.5 (&logs)"
+        self.cycle_task = bot.loop.create_task(self.ego_activity())
+
+    async def ego_activity(self):
+        await self.bot.wait_until_ready()
+        try:
+            await asyncio.sleep(10)  # Temps de mise en route
+            server = self.bot.get_server("204585334925819904")
+            while True:
+                if "ACTLOGS_VOC_ACTIF" in self.glob:
+                    nb = 0
+                    today = time.strftime("%d/%m/%Y", time.localtime())
+                    heure = time.strftime("%H", time.localtime())
+                    if heure in self.glob["ACTLOGS_VOC_ACTIF"]:
+                        for user in server.users:
+                            if user.voice.voice_channel != None:
+                                if user.voice.is_afk is False:
+                                    if user.voice.self_deaf is False:
+                                        if user.voice.self_mute is False:
+                                            nb += 1
+                        self.glob["ACTLOGS_VOC_ACTIF"][heure][today] = nb
+                    else:
+                        self.glob["ACTLOGS_VOC_ACTIF"][heure] = {}  # Ngb
+                else:
+                    self.glob["ACTLOG_VOC_ACTIF"] = {}  # Ngb
+                if "ACTLOGS_VOC_INACTIF" in self.glob:
+                    nb = 0
+                    today = time.strftime("%d/%m/%Y", time.localtime())
+                    heure = time.strftime("%H", time.localtime())
+                    if heure in self.glob["ACTLOGS_VOC_INACTIF"]:
+                        for user in server.users:
+                            if user.voice.voice_channel != None:
+                                if user.voice.is_afk is False:
+                                    if user.voice.self_deaf is False:
+                                        if user.voice.self_mute is True:
+                                            nb += 1
+                        self.glob["ACTLOGS_VOC_INACTIF"][heure][today] = nb
+                    else:
+                        self.glob["ACTLOGS_VOC_INACTIF"][heure] = {}  # Ngb
+                else:
+                    self.glob["ACTLOG_VOC_INACTIF"] = {}  # Ngb
+                fileIO("data/ego/glob.json", "save", self.glob)
+                await asyncio.sleep(3600)  # Toutes les 24h
+        except asyncio.CancelledError:
+            pass
 
     def solde_img(self, rewind=0): #Remonte de X jours (rewind) afin de calculer le solde migratoire
         nb_join = nb_quit = 0
@@ -969,43 +1014,6 @@ class Ego:
                     await self.bot.whisper("Bye :wave:")
                     return
 
-    @commands.command(aliases=["oc"], pass_context=True)
-    async def offcard(self, ctx, id:str):
-        """Affiche une carte de membre réduite pour une personne ayant quitté le serveur.
-        
-        Vous pouvez obtenir l'identifiant en mode développeur ou avec &card (Paramètres > Affichage)"""
-        user = self.bot.get_user_info(id)
-        ego = self.ego.offlog(id)
-        ec = 0x191919
-        today = time.strftime("%d/%m/%Y", time.localtime())
-        em = discord.Embed(title="{}".format(str(user)), color=ec,
-                           url=ego.perso["SITE"] if "SITE" in ego.perso else None)
-        em.add_field(name="ID", value=str(id))
-        passed = (ctx.message.timestamp - user.created_at).days
-        em.add_field(name="Age du compte", value=str(passed) + " jours")
-        if self.ego.aff_auto(user, "HISTO") is True:
-            liste = ego.histo[-3:]
-            liste.reverse()
-            hist = ""
-            if liste != []:
-                for i in liste:
-                    hist += "**{}** *{}*\n".format(i[2], i[3])
-            else:
-                hist = "Aucun historique"
-            em.add_field(name="Historique", value="{}".format(hist))
-        if self.ego.is_fantome(user) is True:
-            fantome = "Cette personne n'est pas suivie par le système EGO"
-        else:
-            fantome = "Certaines informations proviennent du système EGO"
-        if "KARMA" in ego.stats:
-            em.add_field(name="Karma", value=ego.stats["KARMA"])
-        else:
-            ego.stats["KARMA"] = 0
-            em.add_field(name="Karma", value=ego.stats["KARMA"])
-        em.set_footer(
-            text="{} | {}".format(fantome, self.version), icon_url="http://i.imgur.com/DsBEbBw.png")
-        await self.bot.say(embed=em)
-
     @commands.command(aliases=["c"], pass_context=True)
     async def card(self, ctx, user: discord.Member = None):
         """Affiche une carte de membre détaillée.
@@ -1327,6 +1335,21 @@ class Ego:
                 pass
         else:
             self.glob["NB_MSG"] = {} #Ngb
+        if "ACTLOGS_ECR" in self.glob:
+            if server:
+                today = time.strftime("%d/%m/%Y", time.localtime())
+                heure = time.strftime("%H", time.localtime())
+                if heure in self.glob["ACTLOGS_ECR"]:
+                    if today in self.glob["ACTLOGS_ECR"][heure]:
+                        self.glob["ACTLOGS_ECR"][heure][today] += 1
+                    else:
+                        self.glob["ACTLOGS_ECR"][heure][today] = 1
+                else:
+                    self.glob["ACTLOGS_ECR"][heure] = {} #Ngb
+            else:
+                pass
+        else:
+            self.glob["ACTLOG_ECR"] = {} #Ngb
         fileIO("data/ego/glob.json", "save", self.glob)
 
         ego = self.ego.log(author)
