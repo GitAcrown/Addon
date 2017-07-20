@@ -15,7 +15,6 @@ class EgoAPI:
         self.bot = bot
         self.user = dataIO.load_json(path)
         self.cycle_task = bot.loop.create_task(self.ego_karma())
-        self.second_cycle_task = bot.loop.create_task(self.ego_activity())
 
     def save(self): #Sauvegarde l'ensemble des données utilisateur
         fileIO("data/ego/profil.json", "save", self.user)
