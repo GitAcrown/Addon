@@ -570,11 +570,13 @@ class Charm:
                             em = discord.Embed(color=author.color)
                             em.set_image(url=return_img[0])
                             try:
+                                await self.bot.send_typing(channel)
                                 await self.bot.send_message(channel, embed=em)
                             except:
                                 print("L'URL de :{}: est indisponible. Je ne peux pas l'envoyer. (Format: INTEGRE)".format(stk))
                         elif return_img[2] == "UPLOAD":
                             try:
+                                await self.bot.send_typing(channel)
                                 await self.bot.send_file(channel, return_img[1])
                             except:
                                 print("Le fichier de :{}: n'existe plus ou n'a jamais existé. Je ne peux pas l'envoyer. (Format: UPLOAD)\nJe vais envoyer l'URL liée à la place...".format(stk))
@@ -586,6 +588,7 @@ class Charm:
                                             stk))
                         else:
                             try:
+                                await self.bot.send_typing(channel)
                                 await self.bot.send_message(channel, return_img[0])
                             except:
                                 print("L'URL de :{}: est indisponible. Je ne peux pas l'envoyer. (Format: URL/Defaut)".format(stk))
