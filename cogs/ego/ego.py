@@ -280,7 +280,7 @@ class Ego:
                     else:
                         self.glob["ACTLOGS_VOC_ACTIF"][heure] = {}  # Ngb
                 else:
-                    self.glob["ACTLOG_VOC_ACTIF"] = {}  # Ngb
+                    self.glob["ACTLOGS_VOC_ACTIF"] = {}  # Ngb
                 if "ACTLOGS_VOC_INACTIF" in self.glob:
                     nb = 0
                     today = time.strftime("%d/%m/%Y", time.localtime())
@@ -296,7 +296,7 @@ class Ego:
                     else:
                         self.glob["ACTLOGS_VOC_INACTIF"][heure] = {}  # Ngb
                 else:
-                    self.glob["ACTLOG_VOC_INACTIF"] = {}  # Ngb
+                    self.glob["ACTLOGS_VOC_INACTIF"] = {}  # Ngb
                 fileIO("data/ego/glob.json", "save", self.glob)
                 await asyncio.sleep(3600)  # Toutes les 24h
         except asyncio.CancelledError:
@@ -328,6 +328,12 @@ class Ego:
                 rewind -= 1
         solde = nb_join - nb_quit
         return [nb_join, nb_quit, solde]
+
+    def coef_act(self, day):
+        if day in self.glob["ACTLOG_ECR"]:
+            if day in self.glob["ACTLOG_VOC_INACTIF"]:
+                if day in self.glob["ACTLOG_VOC_ACTIF"]:
+
 
 #,Commandes >>>>>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
@@ -424,6 +430,7 @@ class Ego:
                             msg += "*:{}:* {}\n".format(i[0], i[1])
                         msg += "\n**Total** {}".format(total)
                         em.add_field(name="Réactions", value=msg)
+
                 em.set_footer(text="Données issues de EGO | {}".format(self.version), icon_url="http://i.imgur.com/DsBEbBw.png")
                 if menu == None:
                     menu = await self.bot.say(embed=em)
@@ -1348,7 +1355,7 @@ class Ego:
             else:
                 pass
         else:
-            self.glob["ACTLOG_ECR"] = {} #Ngb
+            self.glob["ACTLOGS_ECR"] = {} #Ngb
         fileIO("data/ego/glob.json", "save", self.glob)
 
         ego = self.ego.log(author)
