@@ -599,6 +599,8 @@ class Charm:
     async def member_join(self, user :discord.Member):
         ego = self.bot.get_cog('Ego').ego
         card = ego.log(user)
+        msgs = ["{} **est arrivé-e**", "{} **est entré-e sur le serveur**", "**Bienvenue à** {}", "**Nouvel arrivant:** {}"]
+        welcome = random.choice(msgs)
         if "NOTIF_CHANNEL" not in self.sys:
             self.sys["NOTIF_CHANNEL"] = "204585334925819904"
         if not self.sys["NOTIF_CHANNEL"] is None:
@@ -608,20 +610,23 @@ class Charm:
             if card.born < (time.time() - 3600):
                 await self.bot.send_message(channel, "{} **est revenu(e)**".format(user.mention))
             else:
-                await self.bot.send_message(channel, "{} **est arrivé(e)**".format(user.mention))
+                await self.bot.send_message(channel, welcome.format(user.mention))
             if "WELCOME_MSG" not in self.sys:
                 self.sys["WELCOME_MSG"] = None
             if not self.sys["WELCOME_MSG"] is None:
                 await self.bot.send_message(user, self.sys["WELCOME_MSG"])
 
     async def member_leave(self, user :discord.Member):
+        msgs = ["{} **est parti-e**", "{} **s'en va**", "**Au revoir** {}",
+                "**Départ de:** {}"]
+        bye = random.choice(msgs)
         if "NOTIF_CHANNEL" not in self.sys:
             self.sys["NOTIF_CHANNEL"] = "204585334925819904"
         if not self.sys["NOTIF_CHANNEL"] is None:
             channel = self.bot.get_channel(self.sys["NOTIF_CHANNEL"])
             if not channel.server.id == "204585334925819904":
                 return
-            await self.bot.send_message(channel, "{} **est parti(e)** :wave:".format(str(user)))
+            await self.bot.send_message(channel, bye.format(str(user)))
 
 def check_folders():
     if not os.path.exists("data/charm"):
