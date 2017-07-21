@@ -329,11 +329,7 @@ class Ego:
         solde = nb_join - nb_quit
         return [nb_join, nb_quit, solde]
 
-    def coef_act(self, day):
-        if day in self.glob["ACTLOG_ECR"]:
-            if day in self.glob["ACTLOG_VOC_INACTIF"]:
-                if day in self.glob["ACTLOG_VOC_ACTIF"]:
-
+#TODO: Ajout des stats heure/heure
 
 #,Commandes >>>>>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
