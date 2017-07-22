@@ -1024,6 +1024,7 @@ class Ego:
         if user is None:
             user = ctx.message.author
         ego = self.ego.log(user)
+        absent = False
         if not user.bot:
             ec = self.ego.stat_color(user)
         else:
@@ -1045,8 +1046,11 @@ class Ego:
                 msg = "+{} jours"
         em.add_field(name="Nb de jours", value=msg.format(passed))
         if self.ego.aff_auto(user, "RATIO") is True:
-            em.add_field(name="Ratio de messages", value="{}/jour".format(str(
-                round(ego.stats["NB_MSG"] / egodate, 2))))
+            if "NB_MSG" in ego.stats:
+                em.add_field(name="Ratio de messages", value="{}/jour".format(str(
+                    round(ego.stats["NB_MSG"] / egodate, 2))))
+            else:
+                absent = True
         rolelist = [r.name for r in user.roles]
         rolelist.remove('@everyone')
         em.add_field(name="Rôles", value=rolelist)
@@ -1062,6 +1066,8 @@ class Ego:
             em.add_field(name="Historique", value="{}".format(hist))
         if self.ego.is_fantome(user) is True:
             fantome = "Cette personne n'est pas suivie par le système EGO"
+        elif absent is True:
+            fantome = "Cette personne n'est pas dans les fichiers EGO"
         else:
             fantome = "Certaines informations proviennent du système EGO"
         if "KARMA" in ego.stats:
