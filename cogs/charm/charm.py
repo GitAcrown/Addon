@@ -655,7 +655,7 @@ class Charm:
                     n += 1
                 em = discord.Embed(description=msg, color=rcolor)
                 em.set_author(name=question, icon_url=ctx.message.author.avatar_url)
-                em.set_footer(text="Votez avec les réactions correspondantes ci-dessous | Un vote par membre")
+                em.set_footer(text="Chargement... Patientez quelques secondes...")
                 try:
                     await self.bot.delete_message(ctx.message)
                 except:
@@ -668,7 +668,9 @@ class Charm:
                         await self.bot.add_reaction(menu, e)
                     except:
                         pass
-                await asyncio.sleep(0.25)
+                await asyncio.sleep(2)
+                em.set_footer(text="Votez avec les réactions correspondantes ci-dessous | Un vote par membre")
+                await self.bot.edit_message(menu, embed=em)
                 self.sys["SONDAGES"][menu.id] = {"QUESTION": question,
                                                  "REPEMOJI": rep,
                                                  "DETECT": sch,
