@@ -427,6 +427,12 @@ class Ego:
                         msg += "\n**Total** {}".format(total)
                         em.add_field(name="Réactions", value=msg)
 
+                msg = ""
+                for heure in self.glob["ACTLOGS_ECR"]:
+                    if day in self.glob["ACTLOGS_ECR"][heure]:
+                        msg += "**[{};{}[** {}\n".format(heure, (int(heure) + 1), self.glob["ACTLOGS_ECR"][heure][day])
+                if msg != "":
+                    em.add_field(name="Nb messages/heure", value=msg)
                 em.set_footer(text="Données issues de EGO | {}".format(self.version), icon_url="http://i.imgur.com/DsBEbBw.png")
                 if menu == None:
                     menu = await self.bot.say(embed=em)
@@ -532,8 +538,8 @@ class Ego:
                         msg = "EGO STATS | Du {} au {}\n\n" \
                               "== Immigration ==\n" \
                               "Immigrants\t{}\n" \
+                              "Dont revenants\t{}\n" \
                               "Emigrants\t{}\n" \
-                              "Revenants\t{}\n" \
                               "\n" \
                               "== Messages ==\n" \
                               "{}\n" \
@@ -542,7 +548,7 @@ class Ego:
                               "\n" \
                               "== Réactions ==\n" \
                               "{}\n" \
-                              "Total\t{}".format(deb, fin, arrtotal, deptotal, rettotal, msgtxt, nbmsgtotal, (nbmsgtotal - nbmsgsbot), reacttxt, reacttotal)
+                              "Total\t{}".format(deb, fin, arrtotal, rettotal, deptotal, msgtxt, nbmsgtotal, (nbmsgtotal - nbmsgsbot), reacttxt, reacttotal)
                         file.write(msg)
                         file.close()
                         await self.bot.say("Préparation de votre commande...")
@@ -1251,48 +1257,7 @@ class Ego:
         em.add_field(name="Age", value="{} jours".format(passed))
         em.set_thumbnail(url=server.icon_url)
         em.set_footer(text="Certaines informations proviennent du système Ego | V2.3 (&logs)", icon_url="http://i.imgur.com/DsBEbBw.png")
-        msg = await self.bot.say(embed=em)
-
-        await self.bot.add_reaction(msg, "📊")
-        await asyncio.sleep(1)
-        rap = await self.bot.wait_for_reaction("📊", message=msg, timeout=20)
-        if rap == None:
-            pass
-        elif rap.reaction.emoji == "📊":
-            em = discord.Embed(title="Statistiques {}".format(server.name), color=ctx.message.author.color)
-            aff = True
-            if "NB_JOIN" and "NB_QUIT" in self.glob:
-                if auj in self.glob["NB_JOIN"]:
-                    todayj = self.glob["NB_JOIN"][auj]
-                    if auj in self.glob["NB_QUIT"]:
-                        todayq = self.glob["NB_QUIT"][auj]
-                        if hier in self.glob["NB_JOIN"]:
-                            laj = self.glob["NB_JOIN"][hier]
-                            if hier in self.glob["NB_QUIT"]:
-                                laq = self.glob["NB_QUIT"][hier]
-                            else:
-                                aff = False
-                        else:
-                            aff = False
-                    else:
-                        aff = False
-                else:
-                    aff = False
-            else:
-                aff = False
-            if aff != False:
-                to = "Arrivées : **{}**\n" \
-                     "Sorties : **{}**"
-                em.add_field(name="Aujourd'hui ({})".format(auj), value=to.format(todayj, todayq))
-                em.add_field(name="Hier ({})".format(hier), value=to.format(laj, laq))
-            else:
-                em.add_field(name="Erreur", value="Données trop minces pour afficher des statistiques")
-            em.set_footer(
-                text="Informations issues de EGO | Pour obtenir des détails, utilisez '&ego servstats' | {}".format(self.version),
-                icon_url="http://i.imgur.com/DsBEbBw.png")
-            await self.bot.say(embed=em)
-        else:
-            return
+        await self.bot.say(embed=em)
 
     @commands.command(name="egologs", pass_context=True, hidden=True)
     @checks.admin_or_permissions(kick_members=True)
