@@ -436,7 +436,7 @@ class Ego:
                         top = top[:5]
                         clasm = sorted(top, key=operator.itemgetter(0))
                         for c in clasm:
-                            msg += "**[{};{}[** {}\n"
+                            msg += "**[{};{}[** {}\n".format(c[0], c[1], c[2])
                 if msg != "":
                     em.add_field(name="Heures d'activité (Ecrit)", value=msg)
                 em.set_footer(text="Données issues de EGO | {}".format(self.version), icon_url="http://i.imgur.com/DsBEbBw.png")
