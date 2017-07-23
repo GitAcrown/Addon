@@ -431,7 +431,7 @@ class Ego:
                 elb = []
                 for heure in self.glob["ACTLOGS_ECR"]:
                     if day in self.glob["ACTLOGS_ECR"][heure]:
-                        elb.append([int(heure), (int(heure) - 1), self.glob["ACT_LOGS_ECR"][heure][day]])
+                        elb.append([int(heure), (int(heure) - 1), self.glob["ACTLOGS_ECR"][heure][day]])
                         top = sorted(elb, key=operator.itemgetter(2), reverse=True)
                         top = top[:5]
                         clasm = sorted(top, key=operator.itemgetter(0))
