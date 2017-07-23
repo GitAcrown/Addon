@@ -1449,7 +1449,7 @@ class Ego:
 
     async def l_react(self, reaction, user):
         cible = reaction.message.author
-        if reaction.emoji == "⚖":
+        if reaction.emoji == "❓":
             ego = self.ego.log(cible)
             absent = False
             if not cible.bot:
@@ -1457,13 +1457,13 @@ class Ego:
             else:
                 ec = 0x2e6cc9
             today = time.strftime("%d/%m/%Y", time.localtime())
-            em = discord.Embed(title="Casier de {}".format(str(cible)), color=ec)
+            em = discord.Embed(title="{}".format(str(cible)), color=ec)
             em.set_thumbnail(url=cible.avatar_url)
             em.add_field(name="Surnom", value=cible.display_name)
             em.add_field(name="ID", value=str(cible.id))
-            passed = (ctx.message.timestamp - cible.created_at).days
+            passed = (reaction.message.timestamp - cible.created_at).days
             em.add_field(name="Age du compte", value=str(passed) + " jours")
-            passed = (ctx.message.timestamp - cible.joined_at).days
+            passed = (reaction.message.timestamp - cible.joined_at).days
             msg = "{} jours"
             if self.ego.is_fantome(cible) is False:
                 egodate = self.ego.since(cible, "jour")
@@ -1492,10 +1492,10 @@ class Ego:
                     hist = "Aucun historique"
                 em.add_field(name="Historique", value="{}".format(hist))
             if "PSEUDOS" in ego.stats:
-                em.add_field(name="Pseudos", value="{}".format(ego.stats["PSEUDOS"][:5]))
+                em.add_field(name="5 Anciens pseudos", value="{}".format(ego.stats["PSEUDOS"][:5]))
             if "N_PSEUDOS" in ego.stats:
-                em.add_field(name="Surnoms", value="{}".format(ego.stats["N_PSEUDOS"][:5]))
-            if self.ego.is_fantome(user) is True:
+                em.add_field(name="5 Anciens surnoms", value="{}".format(ego.stats["N_PSEUDOS"][:5]))
+            if self.ego.is_fantome(cible) is True:
                 fantome = "Cette personne n'est pas suivie par le système EGO"
             elif absent is True:
                 fantome = "Cette personne n'est pas dans les fichiers EGO"
