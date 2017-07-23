@@ -273,16 +273,6 @@ class Charm:
 
 # STICKERS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>><
 
-    @commands.command(pass_context=True, no_pm=True, hidden=True)
-    async def egotest(self, ctx):
-        """Test la connexion entre Charm et EGO"""
-        try:
-            ego = self.bot.get_cog('Ego').ego
-            card = ego.log(ctx.message.author)
-            await self.bot.say(str(card.born))
-        except:
-            await self.bot.say("Ego n'est pas connecté.")
-
     @commands.group(name = "stk", pass_context=True)
     async def charm_stk(self, ctx):
         """Gestion Stickers"""
@@ -596,6 +586,16 @@ class Charm:
                         await self.bot.send_message(author, "**Ne spammez pas les stickers !**")
                         break
 
+    @commands.command(pass_context=True, no_pm=True, hidden=True)
+    async def egotest(self, ctx):
+        """Test la connexion entre Charm et EGO"""
+        try:
+            ego = self.bot.get_cog('Ego').ego
+            card = ego.log(ctx.message.author)
+            await self.bot.say(str(card.born))
+        except:
+            await self.bot.say("Ego n'est pas connecté.")
+
     async def member_join(self, user :discord.Member):
         ego = self.bot.get_cog('Ego').ego
         card = ego.log(user)
@@ -627,6 +627,94 @@ class Charm:
             if not channel.server.id == "204585334925819904":
                 return
             await self.bot.send_message(channel, bye.format(str(user)))
+
+# NOUVEAU POLL >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>><
+
+    @commands.command(aliases=["fp"], pass_context=True, no_pm=True)
+    @checks.mod_or_permissions(kick_members=True)
+    async def fastpoll(self, ctx, *qr):
+        """Permet de lancer un sondage rapide (Avec réactions)
+        Format de <qr>:
+        question;reponse1;reponse2;reponseN..."""
+        qr = " ".join(qr)
+        question = qr.split(";")[0]
+        repsf = qr.split(";")[1:]
+        emojis = [s for s in "🇦🇧🇨🇩🇪🇫🇬🇭🇮🇯🇰🇱🇲🇳🇴🇵🇶🇷🇸🇹🇺🇻🇼🇽🇾🇿"]
+        r = lambda: random.randint(0,255)
+        rcolor = int('0x%02X%02X%02X' % (r(), r(), r()), 16)
+        n = 0
+        rep = []
+        if len(repsf) <= 9:
+            if len(repsf) > 1:
+                msg = "__**Réponses**__\n"
+                sch = []
+                for r in repsf:
+                    rep.append([emojis[n], r])
+                    sch.append(emojis[n])
+                    msg += "{} *{}*\n".format(emojis[n], r)
+                    n += 1
+                em = discord.Embed(description=msg, color=rcolor)
+                em.set_author(name=question, icon_url=ctx.message.author.avatar_url)
+                em.set_footer(text="Votez avec les réactions correspondantes ci-dessous | Un vote par membre")
+                try:
+                    await self.bot.delete_message(ctx.message)
+                except:
+                    pass
+                menu = await self.bot.say(embed=em)
+                if "SONDAGES" not in self.sys:
+                    self.sys["SONDAGES"] = {}
+                for e in sch:
+                    try:
+                        await self.bot.add_reaction(menu, e)
+                    except:
+                        pass
+                await asyncio.sleep(0.25)
+                self.sys["SONDAGES"][menu.id] = {"QUESTION": question,
+                                                 "REPEMOJI": rep,
+                                                 "DETECT": sch,
+                                                 "AVOTE": [],
+                                                 "STATS": {},
+                                                 "DESC": msg,
+                                                 "TOTAL": 0,
+                                                 "AVATAR": ctx.message.author.avatar_url,
+                                                 "COLOR": rcolor}
+                fileIO("data/charm/sys.json", "save", self.sys)
+            else:
+                await self.bot.say("Vous devez rentrer au moins 2 réponses possible.")
+        else:
+            await self.bot.say("Vous ne pouvez pas rentrer plus de 9 réponses.")
+
+    async def fp_listen(self, reaction, user):
+        message = reaction.message
+        if "SONDAGES" in self.sys:
+            if message.id in self.sys["SONDAGES"]:
+                if reaction.emoji in self.sys["SONDAGES"][message.id]["DETECT"]:
+                    if user.id not in self.sys["SONDAGES"][message.id]["AVOTE"]:
+                        for r in self.sys["SONDAGES"][message.id]["REPEMOJI"]:
+                            if r[0] == reaction.emoji:
+                                if r[1] not in self.sys["SONDAGES"][message.id]["STATS"]:
+                                    self.sys["SONDAGES"][message.id]["STATS"][r[1]] = {"REPONSE": r[1],
+                                                                                       "NB": 1}
+                                else:
+                                    self.sys["SONDAGES"][message.id]["STATS"][r[1]]["NB"] += 1
+                                self.sys["SONDAGES"][message.id]["TOTAL"] += 1
+                                self.sys["SONDAGES"][message.id]["AVOTE"].append(user.id)
+                                msg = self.sys["SONDAGES"][message.id]["DESC"]
+                                msg += "▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n"
+                                for s in self.sys["SONDAGES"][message.id]["STATS"]:
+                                    msg += "**{}** - *{}* (*{}%*)\n".format(self.sys["SONDAGES"][message.id]["STATS"][s]["REPONSE"], self.sys["SONDAGES"][message.id]["STATS"][s]["NB"], round((self.sys["SONDAGES"][message.id]["STATS"][s]["NB"] / self.sys["SONDAGES"][message.id]["TOTAL"]) * 100, 1))
+                                msg += "\n**Total:** {}".format(self.sys["SONDAGES"][message.id]["TOTAL"])
+                                em = discord.Embed(description=msg, color=self.sys["SONDAGES"][message.id]["COLOR"])
+                                em.set_author(name=self.sys["SONDAGES"][message.id]["QUESTION"], icon_url=self.sys["SONDAGES"][message.id]["AVATAR"])
+                                em.set_footer(
+                                    text="Votez avec les réactions correspondantes ci-dessous | Un vote par membre")
+                                fileIO("data/charm/sys.json", "save", self.sys)
+                                await self.bot.edit_message(message, embed=em)
+                    else:
+                        try:
+                            await self.bot.send_message(user, "Tu as déjà voté !")
+                        except:
+                            pass
 
 def check_folders():
     if not os.path.exists("data/charm"):
@@ -662,7 +750,8 @@ def setup(bot):
     check_files()
     n = Charm(bot)
     bot.add_cog(n)
-    bot.add_listener(n.charm_msg, "on_message")
     # Triggers
+    bot.add_listener(n.charm_msg, "on_message")
     bot.add_listener(n.member_join, "on_member_join")
     bot.add_listener(n.member_leave, "on_member_remove")
+    bot.add_listener(n.fp_listen, "on_reaction_add")
