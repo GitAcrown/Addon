@@ -256,7 +256,7 @@ class Ego:
         self.bot = bot
         self.ego = EgoAPI(bot, "data/ego/profil.json")
         self.glob = dataIO.load_json("data/ego/glob.json") #Stats globaux
-        self.version = "V2.4.5 (&logs)"
+        self.version = "V2.6 (&logs)"
         self.cycle_task = bot.loop.create_task(self.ego_activity())
 
     async def ego_activity(self):
@@ -337,19 +337,19 @@ class Ego:
     async def changelog(self, ctx):
         """Informations sur la dernière MAJ Majeure de EGO."""
         em = discord.Embed(color=0x5184a5)
-        c1 = "- Ajout des statistiques serveur détaillés\n" \
-             "- Réorganisation des commandes, rassemblées sous &ego (sauf &card et &scard)"
-        em.add_field(name="Version 2.3", value=c1)
-        c2 = "- Ajout de l'historique complet (bouton sur &card)\n" \
+        c1 = "- Ajout de l'historique complet (bouton sur &card)\n" \
              "- Ajout des stats des réactions sur messages\n" \
              "- Ajout d'un bouton pour accéder rapidement à une date sur &ego stats\n" \
              "- Ajout de l'extraction des données globales sur &ego stats\n" \
              "[BETA] Ajout d'un système de Karma"
-        em.add_field(name="Version 2.4.5", value=c2)
+        em.add_field(name="Version 2.4", value=c1)
+        c2 = "- Enregistrement de l'activité écrite du serveur\n" \
+             "- Améliorations mineures"
+        em.add_field(name="Version 2.5", value=c2)
         bt = "- Retour des relations\n" \
-             "- Calcul précis de l'activité d'un membre"
+             "- Calcul de l'activité vocale du serveur\n"
         em.add_field(name="Bientôt", value=bt, inline=False)
-        em.set_footer(text="Dernière MAJ publiée le 11/07", icon_url="http://i.imgur.com/DsBEbBw.png")
+        em.set_footer(text="Dernière MAJ publiée le 23/07", icon_url="http://i.imgur.com/DsBEbBw.png")
         await self.bot.say(embed=em)
 
     @commands.group(name="ego", pass_context=True)
