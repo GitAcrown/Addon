@@ -1448,6 +1448,69 @@ class Ego:
         self.ego.save()
 
     async def l_react(self, reaction, user):
+        cible = reaction.message.author
+        if reaction.emoji == "⚖":
+            ego = self.ego.log(cible)
+            absent = False
+            if not cible.bot:
+                ec = self.ego.stat_color(cible)
+            else:
+                ec = 0x2e6cc9
+            today = time.strftime("%d/%m/%Y", time.localtime())
+            em = discord.Embed(title="Casier de {}".format(str(cible)), color=ec)
+            em.set_thumbnail(url=cible.avatar_url)
+            em.add_field(name="Surnom", value=cible.display_name)
+            em.add_field(name="ID", value=str(cible.id))
+            passed = (ctx.message.timestamp - cible.created_at).days
+            em.add_field(name="Age du compte", value=str(passed) + " jours")
+            passed = (ctx.message.timestamp - cible.joined_at).days
+            msg = "{} jours"
+            if self.ego.is_fantome(cible) is False:
+                egodate = self.ego.since(cible, "jour")
+                if egodate < 1:
+                    egodate = 1
+                if passed < egodate:
+                    msg = "+{} jours"
+            em.add_field(name="Nb de jours", value=msg.format(passed))
+            if self.ego.aff_auto(cible, "RATIO") is True:
+                if "NB_MSG" in ego.stats:
+                    em.add_field(name="Ratio de messages", value="{}/jour".format(str(
+                        round(ego.stats["NB_MSG"] / egodate, 2))))
+                else:
+                    absent = True
+            rolelist = [r.name for r in cible.roles]
+            rolelist.remove('@everyone')
+            em.add_field(name="Rôles", value=rolelist)
+            if self.ego.aff_auto(cible, "HISTO") is True:
+                liste = ego.histo[-5:]
+                liste.reverse()
+                hist = ""
+                if liste != []:
+                    for i in liste:
+                        hist += "**{}** *{}*\n".format(i[2], i[3])
+                else:
+                    hist = "Aucun historique"
+                em.add_field(name="Historique", value="{}".format(hist))
+            if "PSEUDOS" in ego.stats:
+                em.add_field(name="Pseudos", value="{}".format(ego.stats["PSEUDOS"][:5]))
+            if "N_PSEUDOS" in ego.stats:
+                em.add_field(name="Surnoms", value="{}".format(ego.stats["N_PSEUDOS"][:5]))
+            if self.ego.is_fantome(user) is True:
+                fantome = "Cette personne n'est pas suivie par le système EGO"
+            elif absent is True:
+                fantome = "Cette personne n'est pas dans les fichiers EGO"
+            else:
+                fantome = "Certaines informations proviennent du système EGO"
+            if "KARMA" in ego.stats:
+                em.add_field(name="Karma", value=ego.stats["KARMA"])
+            else:
+                ego.stats["KARMA"] = 0
+                em.add_field(name="Karma", value=ego.stats["KARMA"])
+            em.set_footer(
+                text="{} | {}".format(fantome, self.version), icon_url="http://i.imgur.com/DsBEbBw.png")
+            await self.bot.send_message(user, embed=em)
+            return
+
         if "REACTS" in self.glob:
             today = time.strftime("%d/%m/%Y", time.localtime())
             if reaction.custom_emoji is True:
