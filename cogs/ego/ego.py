@@ -427,17 +427,17 @@ class Ego:
                         msg += "\n**Total** {}".format(total)
                         em.add_field(name="Réactions", value=msg)
 
-                msg = ""
+                msg = "**Heures les plus actives**\n"
                 elb = []
                 for heure in self.glob["ACTLOGS_ECR"]:
                     if day in self.glob["ACTLOGS_ECR"][heure]:
-                        elb.append([int(heure), (int(heure) - 1), self.glob["ACTLOGS_ECR"][heure][day]])
-                        top = sorted(elb, key=operator.itemgetter(2), reverse=True)
-                        top = top[:5]
-                        clasm = sorted(top, key=operator.itemgetter(0))
-                        for c in clasm:
-                            msg += "**[{};{}[** {}\n".format(c[0], c[1], c[2])
-                        await self.bot.say(msg)
+                        elb.append([int(heure), (int(heure) + 1), self.glob["ACTLOGS_ECR"][heure][day]])
+                top = sorted(elb, key=operator.itemgetter(2), reverse=True)
+                top = top[:5]
+                clasm = sorted(top, key=operator.itemgetter(0))
+                for c in clasm:
+                    msg += "**[{};{}[** {}\n".format(c[0], c[1], c[2])
+                em.add_field(name="Activité à l'écrit", value=msg)
                 em.set_footer(text="Données issues de EGO | {}".format(self.version), icon_url="http://i.imgur.com/DsBEbBw.png")
                 if menu == None:
                     menu = await self.bot.say(embed=em)
