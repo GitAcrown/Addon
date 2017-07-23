@@ -492,6 +492,7 @@ class Ego:
                         reacttotal = 0
                         chan = {}
                         react = {}
+                        activ = {}
                         while day != lend:
                             total = 0
                             if day in self.glob["NB_MSG"]:
@@ -531,6 +532,12 @@ class Ego:
                                     else:
                                         react[e]["NB"] += self.glob["REACTS"][day][e]
                             reacttotal += total
+                            for h in self.glob["ACTLOGS_ECR"]:
+                                if day in self.glob["ACTLOGS_ECR"][h]:
+                                    if h not in activ:
+                                        activ[h] = self.glob["ACTLOGS_ECR"][h][day]
+                                    else:
+                                        activ[h] += self.glob["ACTLOGS_ECR"][h][day]
                             #Jour suivant
                             day = time.strftime("%d/%m/%Y", time.localtime(time.mktime(time.strptime(day, "%d/%m/%Y")) + 86400))
                         filename = "ego stats"
@@ -543,6 +550,10 @@ class Ego:
                         reacttxt = ""
                         for r in react:
                             reacttxt += "{}\t{}\n".format(react[r]["NOM"], react[r]["NB"])
+                        actlogs = ""
+                        for a in activ:
+                            itv = "[{};{}[".format(int(a), int(a) +1)
+                            actlogs += "{}\t{}\n".format(itv, activ[a])
                         msg = "EGO STATS | Du {} au {}\n\n" \
                               "== Immigration ==\n" \
                               "Immigrants\t{}\n" \
@@ -556,7 +567,10 @@ class Ego:
                               "\n" \
                               "== Réactions ==\n" \
                               "{}\n" \
-                              "Total\t{}".format(deb, fin, arrtotal, rettotal, deptotal, msgtxt, nbmsgtotal, (nbmsgtotal - nbmsgsbot), reacttxt, reacttotal)
+                              "Total\t{}" \
+                              "\n" \
+                              "== Activité HpH ==\n" \
+                              "{}".format(deb, fin, arrtotal, rettotal, deptotal, msgtxt, nbmsgtotal, (nbmsgtotal - nbmsgsbot), reacttxt, reacttotal, actlogs)
                         file.write(msg)
                         file.close()
                         await self.bot.say("Préparation de votre commande...")
