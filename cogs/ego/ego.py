@@ -551,9 +551,16 @@ class Ego:
                         for r in react:
                             reacttxt += "{}\t{}\n".format(react[r]["NOM"], react[r]["NB"])
                         actlogs = ""
+                        lbd = []
                         for a in activ:
-                            itv = "[{};{}[".format(int(a), int(a) +1)
-                            actlogs += "{}\t{}\n".format(itv, activ[a])
+                            lbd.append([int(a), int(a) +1, activ[a]])
+                        lbd = sorted(lbd, key=operator.itemgetter(0))
+                        if lbd != []:
+                            for l in lbd:
+                                itv = "[{};{}[".format(l[0], l[1])
+                                actlogs += "{}\t{}\n".format(itv, l[2])
+                        else:
+                            actlogs = "Données insuffisantes"
                         msg = "EGO STATS | Du {} au {}\n\n" \
                               "== Immigration ==\n" \
                               "Immigrants\t{}\n" \
@@ -567,7 +574,7 @@ class Ego:
                               "\n" \
                               "== Réactions ==\n" \
                               "{}\n" \
-                              "Total\t{}" \
+                              "Total\t{}\n" \
                               "\n" \
                               "== Activité HpH ==\n" \
                               "{}".format(deb, fin, arrtotal, rettotal, deptotal, msgtxt, nbmsgtotal, (nbmsgtotal - nbmsgsbot), reacttxt, reacttotal, actlogs)
