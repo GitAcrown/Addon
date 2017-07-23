@@ -270,7 +270,7 @@ class Ego:
                     today = time.strftime("%d/%m/%Y", time.localtime())
                     heure = time.strftime("%H", time.localtime())
                     if heure in self.glob["ACTLOGS_VOC_ACTIF"]:
-                        for user in server.users:
+                        for user in server.members:
                             if user.voice.voice_channel != None:
                                 if user.voice.is_afk is False:
                                     if user.voice.self_deaf is False:
@@ -286,7 +286,7 @@ class Ego:
                     today = time.strftime("%d/%m/%Y", time.localtime())
                     heure = time.strftime("%H", time.localtime())
                     if heure in self.glob["ACTLOGS_VOC_INACTIF"]:
-                        for user in server.users:
+                        for user in server.members:
                             if user.voice.voice_channel != None:
                                 if user.voice.is_afk is False:
                                     if user.voice.self_deaf is False:
