@@ -682,9 +682,9 @@ class Charm:
                                                  "COLOR": rcolor}
                 fileIO("data/charm/sys.json", "save", self.sys)
             else:
-                await self.bot.say("Vous devez rentrer au moins 2 réponses possible.")
+                await self.bot.say("Vous devez rentrer au moins 2 réponses possible.\n*fp question;option1;option2 (...)*")
         else:
-            await self.bot.say("Vous ne pouvez pas rentrer plus de 9 réponses.")
+            await self.bot.say("Vous ne pouvez pas rentrer plus de 9 réponses.\n*fp question;option1;option2 (...)*")
 
     async def fp_listen(self, reaction, user):
         message = reaction.message
