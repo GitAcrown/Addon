@@ -437,13 +437,15 @@ class Ego:
                         clasm = sorted(top, key=operator.itemgetter(0))
                         for c in clasm:
                             msg += "**[{};{}[** {}\n".format(c[0], c[1], c[2])
-                if msg != "":
-                    em.add_field(name="Heures d'activité (Ecrit)", value=msg)
+                        await self.bot.say(msg)
                 em.set_footer(text="Données issues de EGO | {}".format(self.version), icon_url="http://i.imgur.com/DsBEbBw.png")
                 if menu == None:
                     menu = await self.bot.say(embed=em)
                 else:
-                    await self.bot.clear_reactions(menu)
+                    try:
+                        await self.bot.clear_reactions(menu)
+                    except:
+                        pass
                     menu = await self.bot.edit_message(menu, embed=em)
                 await self.bot.add_reaction(menu, "⏪")
                 await self.bot.add_reaction(menu, "🔢")
