@@ -649,12 +649,16 @@ class Charm:
                 msg = ""
                 sch = []
                 for r in repsf:
+                    if r.startswith(" "):
+                        r = r[1:]
+                    if r.endswith(" "):
+                        r = r[:-1]
                     rep.append([emojis[n], r])
                     sch.append(emojis[n])
                     msg += "\{} *{}*\n".format(emojis[n], r)
                     n += 1
                 em = discord.Embed(color=rcolor)
-                em.set_author(name="#{}| {}".format(randomcode, question), icon_url=ctx.message.author.avatar_url)
+                em.set_author(name="#{} | {}".format(randomcode, question), icon_url=ctx.message.author.avatar_url)
                 em.add_field(name="Réponses", value=msg)
                 em.set_footer(text="Chargement... Patientez quelques secondes...")
                 try:
@@ -712,7 +716,8 @@ class Charm:
                                 em.add_field(name="Réponses", value=msg, inline=False)
                                 em.add_field(name="Résultats", value=res, inline=False)
                                 question = self.sys["SONDAGES"][message.id]["QUESTION"]
-                                em.set_author(name="#{}| {}".format(randomcode, question), icon_url=self.sys["SONDAGES"][message.id]["AVATAR"])
+                                randomcode = self.sys["SONDAGES"][message.id]["IDENT"]
+                                em.set_author(name="{} | {}".format(randomcode, question), icon_url=self.sys["SONDAGES"][message.id]["AVATAR"])
                                 em.set_footer(
                                     text="Votez avec les réactions correspondantes ci-dessous | Un vote par membre")
                                 fileIO("data/charm/sys.json", "save", self.sys)
