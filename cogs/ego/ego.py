@@ -1137,7 +1137,7 @@ class Ego:
         await self.bot.add_reaction(msg, "🎮")
         await self.bot.add_reaction(msg, "🗓")
         if user != ctx.message.author:
-            await self.bot.add_reaction(msg, "👥")
+            pass
         if add == True:
             await self.bot.add_reaction(msg, "🎂")
         await asyncio.sleep(1)
@@ -1269,51 +1269,48 @@ class Ego:
                 await self.bot.say("**L'utilisateur ne souhaite pas partager son historique.**")
         elif rap.reaction.emoji == "👥":
             if user != ctx.message.author:
-                try:
-                    ego1 = self.ego.log(user)
-                    ego2 = self.ego.log(ctx.message.author)
-                    if ego1.stats["NB_MSG"] > ego2.stats["NB_MSG"]:
-                        cr1 = (ego2.stats["NB_MSG"] / ego1.stats["NB_MSG"]) * 100
-                    else:
-                        cr1 = (ego1.stats["NB_MSG"] / ego2.stats["NB_MSG"]) * 100
-                    if ego2.id in ego1.stats["MENTION"]:
-                        m2tot = ego1.stats["MENTION"][ego2.id]
-                    else:
-                        m2tot = 0
-                    if ego1.id in ego2.stats["MENTION"]:
-                        m1tot = ego2.stats["MENTION"][ego1.id]
-                    else:
-                        m1tot = 0
-                    tot1 = tot2 = 0
-                    for m in ego1.stats["MENTION"]:
-                        tot1 += ego1.stats["MENTION"][m]
-                    prc2d1 = (m2tot / tot1) * 100
-                    for m in ego2.stats["MENTION"]:
-                        tot2 += ego2.stats["MENTION"][m]
-                    prc1d2 = (m1tot / tot2) * 100
-                    cr2 = (prc1d2 + prc2d1) / 2
-                    if self.ego.biblio(user):
-                        if self.ego.biblio(ctx.message.author):
-                            if self.ego.biblio(user) != []:
-                                for g in self.ego.biblio(user):
-                                    if g in self.ego.biblio(ctx.message.author):
-                                        commun += 1
+                ego1 = self.ego.log(user)
+                ego2 = self.ego.log(ctx.message.author)
+                if ego1.stats["NB_MSG"] > ego2.stats["NB_MSG"]:
+                    cr1 = (ego2.stats["NB_MSG"] / ego1.stats["NB_MSG"]) * 100
+                else:
+                    cr1 = (ego1.stats["NB_MSG"] / ego2.stats["NB_MSG"]) * 100
+                if ego2.id in ego1.stats["MENTION"]:
+                    m2tot = ego1.stats["MENTION"][ego2.id]
+                else:
+                    m2tot = 0
+                if ego1.id in ego2.stats["MENTION"]:
+                    m1tot = ego2.stats["MENTION"][ego1.id]
+                else:
+                    m1tot = 0
+                tot1 = tot2 = 0
+                for m in ego1.stats["MENTION"]:
+                    tot1 += ego1.stats["MENTION"][m]
+                prc2d1 = (m2tot / tot1) * 100
+                for m in ego2.stats["MENTION"]:
+                    tot2 += ego2.stats["MENTION"][m]
+                prc1d2 = (m1tot / tot2) * 100
+                cr2 = (prc1d2 + prc2d1) / 2
+                if self.ego.biblio(user):
+                    if self.ego.biblio(ctx.message.author):
+                        if self.ego.biblio(user) != []:
+                            for g in self.ego.biblio(user):
+                                if g in self.ego.biblio(ctx.message.author):
+                                    commun += 1
 
-                                totg1 = len(self.ego.biblio(user))
-                                totg2 = len(self.ego.biblio(ctx.message.author))
-                                prc1 = (commun / totg1) * 100
-                                prc2 = (commun / totg2) * 100
-                                cr3 = (prc1 + prc2) / 2
-                                tot = (cr1 + cr2 + cr3) / 3
-                            else:
-                                tot = (cr1 + cr2) / 2
+                            totg1 = len(self.ego.biblio(user))
+                            totg2 = len(self.ego.biblio(ctx.message.author))
+                            prc1 = (commun / totg1) * 100
+                            prc2 = (commun / totg2) * 100
+                            cr3 = (prc1 + prc2) / 2
+                            tot = (cr1 + cr2 + cr3) / 3
                         else:
                             tot = (cr1 + cr2) / 2
                     else:
                         tot = (cr1 + cr2) / 2
-                    await self.bot.say("**Votre compatibilité avec cette personne est de *{}%***".format(round(tot)))
-                except:
-                    await self.bot.say("**Votre compatibilité avec cette personne est incalculable (<1% ou manque de données)**")
+                else:
+                    tot = (cr1 + cr2) / 2
+                await self.bot.say("**Votre compatibilité avec cette personne est de *{}%***".format(round(tot)))
         else:
             return
 
