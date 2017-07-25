@@ -643,18 +643,20 @@ class Charm:
         r = lambda: random.randint(0,255)
         rcolor = int('0x%02X%02X%02X' % (r(), r(), r()), 16)
         n = 0
+        randomcode = random.randint(100, 999)
         rep = []
         if len(repsf) <= 9:
             if len(repsf) > 1:
-                msg = "__**Réponses**__\n"
+                msg = ""
                 sch = []
                 for r in repsf:
                     rep.append([emojis[n], r])
                     sch.append(emojis[n])
                     msg += "\{} *{}*\n".format(emojis[n], r)
                     n += 1
-                em = discord.Embed(description=msg, color=rcolor)
-                em.set_author(name=question, icon_url=ctx.message.author.avatar_url)
+                em = discord.Embed(color=rcolor)
+                em.set_author(name="#{}| {}".format(randomcode, question), icon_url=ctx.message.author.avatar_url)
+                em.add_field(name="Réponses", value=msg)
                 em.set_footer(text="Chargement... Patientez quelques secondes...")
                 try:
                     await self.bot.delete_message(ctx.message)
@@ -680,7 +682,7 @@ class Charm:
                                                  "TOTAL": 0,
                                                  "AVATAR": ctx.message.author.avatar_url,
                                                  "COLOR": rcolor,
-                                                 "IDENT": "#{}".format(random.randint(100, 999))}
+                                                 "IDENT": "#{}".format(randomcode)}
                 fileIO("data/charm/sys.json", "save", self.sys)
             else:
                 await self.bot.say("Vous devez rentrer au moins 2 réponses possible.\n*fp question;option1;option2 (...)*")
