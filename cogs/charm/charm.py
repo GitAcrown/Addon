@@ -651,7 +651,7 @@ class Charm:
                 for r in repsf:
                     rep.append([emojis[n], r])
                     sch.append(emojis[n])
-                    msg += "{} *{}*\n".format(emojis[n], r)
+                    msg += "\{} *{}*\n".format(emojis[n], r)
                     n += 1
                 em = discord.Embed(description=msg, color=rcolor)
                 em.set_author(name=question, icon_url=ctx.message.author.avatar_url)
@@ -668,7 +668,7 @@ class Charm:
                         await self.bot.add_reaction(menu, e)
                     except:
                         pass
-                await asyncio.sleep(2)
+                await asyncio.sleep(0.5)
                 em.set_footer(text="Votez avec les réactions correspondantes ci-dessous | Un vote par membre")
                 await self.bot.edit_message(menu, embed=em)
                 self.sys["SONDAGES"][menu.id] = {"QUESTION": question,
@@ -679,7 +679,8 @@ class Charm:
                                                  "DESC": msg,
                                                  "TOTAL": 0,
                                                  "AVATAR": ctx.message.author.avatar_url,
-                                                 "COLOR": rcolor}
+                                                 "COLOR": rcolor,
+                                                 "IDENT": "#{}".format(random.randint(100, 999))}
                 fileIO("data/charm/sys.json", "save", self.sys)
             else:
                 await self.bot.say("Vous devez rentrer au moins 2 réponses possible.\n*fp question;option1;option2 (...)*")
@@ -702,19 +703,22 @@ class Charm:
                                 self.sys["SONDAGES"][message.id]["TOTAL"] += 1
                                 self.sys["SONDAGES"][message.id]["AVOTE"].append(user.id)
                                 msg = self.sys["SONDAGES"][message.id]["DESC"]
-                                msg += "▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n"
+                                res = ""
                                 for s in self.sys["SONDAGES"][message.id]["STATS"]:
-                                    msg += "**{}** - *{}* (*{}%*)\n".format(self.sys["SONDAGES"][message.id]["STATS"][s]["REPONSE"], self.sys["SONDAGES"][message.id]["STATS"][s]["NB"], round((self.sys["SONDAGES"][message.id]["STATS"][s]["NB"] / self.sys["SONDAGES"][message.id]["TOTAL"]) * 100, 1))
-                                msg += "\n**Total:** {}".format(self.sys["SONDAGES"][message.id]["TOTAL"])
-                                em = discord.Embed(description=msg, color=self.sys["SONDAGES"][message.id]["COLOR"])
+                                    res += "**{}** - *{}* (*{}%*)\n".format(self.sys["SONDAGES"][message.id]["STATS"][s]["REPONSE"], self.sys["SONDAGES"][message.id]["STATS"][s]["NB"], round((self.sys["SONDAGES"][message.id]["STATS"][s]["NB"] / self.sys["SONDAGES"][message.id]["TOTAL"]) * 100, 1))
+                                res += "\n**Total:** {}".format(self.sys["SONDAGES"][message.id]["TOTAL"])
+                                em = discord.Embed(color=self.sys["SONDAGES"][message.id]["COLOR"])
+                                em.add_field(name="Réponses", value=msg, inline=False)
+                                em.add_field(name="Résultats", value=res, inline=False)
                                 em.set_author(name=self.sys["SONDAGES"][message.id]["QUESTION"], icon_url=self.sys["SONDAGES"][message.id]["AVATAR"])
                                 em.set_footer(
                                     text="Votez avec les réactions correspondantes ci-dessous | Un vote par membre")
                                 fileIO("data/charm/sys.json", "save", self.sys)
                                 await self.bot.edit_message(message, embed=em)
+                                await self.bot.send_message(user, "**{}** | Merci d'avoir voté !".format(self.sys["SONDAGES"][message.id]["IDENT"]))
                     else:
                         try:
-                            await self.bot.send_message(user, "Tu as déjà voté !")
+                            await self.bot.send_message(user, "**{}** | Tu as déjà voté !".format(self.sys["SONDAGES"][message.id]["IDENT"]))
                         except:
                             pass
 
