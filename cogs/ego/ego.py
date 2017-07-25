@@ -399,7 +399,7 @@ class Ego:
                         for b in self.glob["BOT_MSG"][day]:
                             tobot += self.glob["BOT_MSG"][day][b]
                         tot += "**Sans bot** {}".format(total - tobot)
-                    em.add_field(name="Messages", value=tot)
+                    em.add_field(name="Messages", value=tot, inline=True)
                 if day in self.glob["NB_JOIN"] and self.glob["NB_QUIT"]:
                     if day in self.glob["NB_RETURN"]:
                         msg = "**Immigrés (Dont revenus):** {} ({})\n" \
@@ -411,7 +411,7 @@ class Ego:
                               "**Solde:** {}".format(self.glob["NB_JOIN"][day],
                                                      self.glob["NB_QUIT"][day],
                                                      (self.glob["NB_JOIN"][day] - self.glob["NB_QUIT"][day]))
-                    em.add_field(name="Flux migratoire", value=msg)
+                    em.add_field(name="Flux migratoire", value=msg, inline=True)
                 if day in self.glob["REACTS"]:
                     total = 0
                     elb = []
@@ -425,19 +425,33 @@ class Ego:
                         for i in top:
                             msg += "*:{}:* {}\n".format(i[0], i[1])
                         msg += "\n**Total** {}".format(total)
-                        em.add_field(name="Réactions", value=msg)
+                        em.add_field(name="Réactions", value=msg, inline=True)
 
-                msg = "**Heures les plus actives**\n"
+                msg = "**Ecrit**\n"
                 elb = []
+                totalelb = 0
                 for heure in self.glob["ACTLOGS_ECR"]:
                     if day in self.glob["ACTLOGS_ECR"][heure]:
                         elb.append([int(heure), (int(heure) + 1), self.glob["ACTLOGS_ECR"][heure][day]])
+                        totalelb += self.glob["ACTLOGS_ECR"][heure][day]
                 top = sorted(elb, key=operator.itemgetter(2), reverse=True)
                 top = top[:5]
-                clasm = sorted(top, key=operator.itemgetter(0))
-                for c in clasm:
-                    msg += "**[{};{}[** {}\n".format(c[0], c[1], c[2])
-                em.add_field(name="Activité à l'écrit", value=msg)
+                for c in top:
+                    pourc = (c[2] / total) * 100
+                    msg += "**[{};{}[** {}%\n".format(c[0], c[1], pourc)
+                msg += "\n**Vocal**\n"
+                elb = []
+                totalelb = 0
+                for heure in self.glob["ACTLOGS_VOC_ACTIF"]:
+                    if day in self.glob["ACTLOGS_VOC_ACTIF"][heure]:
+                        elb.append([int(heure), (int(heure) + 1), self.glob["ACTLOGS_VOC_ACTIF"][heure][day]])
+                        totalelb += self.glob["ACTLOGS_VOC_ACTIF"][heure][day]
+                top = sorted(elb, key=operator.itemgetter(2), reverse=True)
+                top = top[:5]
+                for c in top:
+                    pourc = (c[2] / total) * 100
+                    msg += "**[{};{}[** {}%\n".format(c[0], c[1], pourc)
+                em.add_field(name="Activité", value=msg, inline=True)
                 em.set_footer(text="Données issues de EGO | {}".format(self.version), icon_url="http://i.imgur.com/DsBEbBw.png")
                 if menu == None:
                     menu = await self.bot.say(embed=em)
