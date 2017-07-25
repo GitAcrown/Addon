@@ -400,6 +400,31 @@ class Ego:
                             tobot += self.glob["BOT_MSG"][day][b]
                         tot += "**Sans bot** {}".format(total - tobot)
                     em.add_field(name="Messages", value=tot, inline=True)
+                msg = "**Ecrit**\n"
+                elb = []
+                totalelb = 0
+                for heure in self.glob["ACTLOGS_ECR"]:
+                    if day in self.glob["ACTLOGS_ECR"][heure]:
+                        elb.append([int(heure), (int(heure) + 1), self.glob["ACTLOGS_ECR"][heure][day]])
+                        totalelb += self.glob["ACTLOGS_ECR"][heure][day]
+                top = sorted(elb, key=operator.itemgetter(2), reverse=True)
+                top = top[:5]
+                for c in top:
+                    pourc = (c[2] / totalelb) * 100
+                    msg += "**[{};{}[** {}%\n".format(c[0], c[1], round(pourc, 2))
+                msg += "\n**Vocal**\n"
+                elb = []
+                totalelb = 0
+                for heure in self.glob["ACTLOGS_VOC_ACTIF"]:
+                    if day in self.glob["ACTLOGS_VOC_ACTIF"][heure]:
+                        elb.append([int(heure), (int(heure) + 1), self.glob["ACTLOGS_VOC_ACTIF"][heure][day]])
+                        totalelb += self.glob["ACTLOGS_VOC_ACTIF"][heure][day]
+                top = sorted(elb, key=operator.itemgetter(2), reverse=True)
+                top = top[:5]
+                for c in top:
+                    pourc = (c[2] / totalelb) * 100
+                    msg += "**[{};{}[** {}%\n".format(c[0], c[1], round(pourc))
+                em.add_field(name="Activité", value=msg, inline=True)
                 if day in self.glob["NB_JOIN"] and self.glob["NB_QUIT"]:
                     if day in self.glob["NB_RETURN"]:
                         msg = "**Immigrés (Dont revenus):** {} ({})\n" \
@@ -427,31 +452,6 @@ class Ego:
                         msg += "\n**Total** {}".format(total)
                         em.add_field(name="Réactions", value=msg, inline=True)
 
-                msg = "**Ecrit**\n"
-                elb = []
-                totalelb = 0
-                for heure in self.glob["ACTLOGS_ECR"]:
-                    if day in self.glob["ACTLOGS_ECR"][heure]:
-                        elb.append([int(heure), (int(heure) + 1), self.glob["ACTLOGS_ECR"][heure][day]])
-                        totalelb += self.glob["ACTLOGS_ECR"][heure][day]
-                top = sorted(elb, key=operator.itemgetter(2), reverse=True)
-                top = top[:5]
-                for c in top:
-                    pourc = (c[2] / totalelb) * 100
-                    msg += "**[{};{}[** {}%\n".format(c[0], c[1], round(pourc, 2))
-                msg += "\n**Vocal**\n"
-                elb = []
-                totalelb = 0
-                for heure in self.glob["ACTLOGS_VOC_ACTIF"]:
-                    if day in self.glob["ACTLOGS_VOC_ACTIF"][heure]:
-                        elb.append([int(heure), (int(heure) + 1), self.glob["ACTLOGS_VOC_ACTIF"][heure][day]])
-                        totalelb += self.glob["ACTLOGS_VOC_ACTIF"][heure][day]
-                top = sorted(elb, key=operator.itemgetter(2), reverse=True)
-                top = top[:5]
-                for c in top:
-                    pourc = (c[2] / totalelb) * 100
-                    msg += "**[{};{}[** {}%\n".format(c[0], c[1],round(pourc))
-                em.add_field(name="Activité", value=msg, inline=True)
                 em.set_footer(text="Données issues de EGO | {}".format(self.version), icon_url="http://i.imgur.com/DsBEbBw.png")
                 if menu == None:
                     menu = await self.bot.say(embed=em)
