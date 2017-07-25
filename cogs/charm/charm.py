@@ -631,7 +631,6 @@ class Charm:
 # NOUVEAU POLL >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>><
 
     @commands.command(aliases=["fp"], pass_context=True, no_pm=True)
-    @checks.mod_or_permissions(kick_members=True)
     async def fastpoll(self, ctx, *qr):
         """Permet de lancer un sondage rapide (Avec réactions)
         Format de <qr>:
@@ -712,7 +711,8 @@ class Charm:
                                 em = discord.Embed(color=self.sys["SONDAGES"][message.id]["COLOR"])
                                 em.add_field(name="Réponses", value=msg, inline=False)
                                 em.add_field(name="Résultats", value=res, inline=False)
-                                em.set_author(name=self.sys["SONDAGES"][message.id]["QUESTION"], icon_url=self.sys["SONDAGES"][message.id]["AVATAR"])
+                                question = self.sys["SONDAGES"][message.id]["QUESTION"]
+                                em.set_author(name="#{}| {}".format(randomcode, question), icon_url=self.sys["SONDAGES"][message.id]["AVATAR"])
                                 em.set_footer(
                                     text="Votez avec les réactions correspondantes ci-dessous | Un vote par membre")
                                 fileIO("data/charm/sys.json", "save", self.sys)
