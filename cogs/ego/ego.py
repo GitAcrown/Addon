@@ -437,7 +437,7 @@ class Ego:
                 top = sorted(elb, key=operator.itemgetter(2), reverse=True)
                 top = top[:5]
                 for c in top:
-                    pourc = (c[2] / total) * 100
+                    pourc = (c[2] / totalelb) * 100
                     msg += "**[{};{}[** {}%\n".format(c[0], c[1], round(pourc, 2))
                 msg += "\n**Vocal**\n"
                 elb = []
@@ -449,7 +449,7 @@ class Ego:
                 top = sorted(elb, key=operator.itemgetter(2), reverse=True)
                 top = top[:5]
                 for c in top:
-                    pourc = (c[2] / total) * 100
+                    pourc = (c[2] / totalelb) * 100
                     msg += "**[{};{}[** {}%\n".format(c[0], c[1],round(pourc))
                 em.add_field(name="Activité", value=msg, inline=True)
                 em.set_footer(text="Données issues de EGO | {}".format(self.version), icon_url="http://i.imgur.com/DsBEbBw.png")
