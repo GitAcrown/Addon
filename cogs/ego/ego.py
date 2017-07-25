@@ -1311,7 +1311,7 @@ class Ego:
                             tot = (cr1 + cr2) / 2
                     else:
                         tot = (cr1 + cr2) / 2
-                    await self.bot.say("**Votre compatibilité avec cette personne est de *{}%***".format(tot))
+                    await self.bot.say("**Votre compatibilité avec cette personne est de *{}%***".format(round(tot)))
                 except:
                     await self.bot.say("**Votre compatibilité avec cette personne est incalculable (<1% ou manque de données)**")
         else:
