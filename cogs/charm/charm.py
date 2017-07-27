@@ -599,7 +599,7 @@ class Charm:
     async def member_join(self, user :discord.Member):
         ego = self.bot.get_cog('Ego').ego
         card = ego.log(user)
-        msgs = ["{} **est arrivé.e**", "{} **est entré.e sur le serveur**", "**Bienvenue à** {}", "**Nouvel arrivant:** {}"]
+        msgs = ["{} **est arrivé(e)**", "{} **est entré(e) sur le serveur**", "**Bienvenue à** {}", "**Nouvel arrivant:** {}"]
         welcome = random.choice(msgs)
         if "NOTIF_CHANNEL" not in self.sys:
             self.sys["NOTIF_CHANNEL"] = "204585334925819904"
@@ -617,7 +617,7 @@ class Charm:
                 await self.bot.send_message(user, self.sys["WELCOME_MSG"])
 
     async def member_leave(self, user :discord.Member):
-        msgs = ["{} **est parti.e**", "{} **s'en va**", "**Au revoir** {}",
+        msgs = ["{} **est parti(e)**", "{} **s'en va**", "**Au revoir** {}",
                 "**Départ de:** {}", "{} **a quitté le serveur**"]
         bye = random.choice(msgs)
         if "NOTIF_CHANNEL" not in self.sys:
