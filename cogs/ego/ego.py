@@ -1453,6 +1453,9 @@ class Ego:
         self.ego.save()
 
     async def l_join(self, user):
+        serverid = user.server.id
+        if serverid != "204585334925819904":
+            return
         if "NB_JOIN" in self.glob:
             today = time.strftime("%d/%m/%Y", time.localtime())
             if today in self.glob["NB_JOIN"]:
@@ -1487,6 +1490,9 @@ class Ego:
         self.ego.save()
 
     async def l_quit(self, user):
+        serverid = user.server.id
+        if serverid != "204585334925819904":
+            return
         if "NB_QUIT" in self.glob:
             today = time.strftime("%d/%m/%Y", time.localtime())
             if today in self.glob["NB_QUIT"]:
