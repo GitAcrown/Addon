@@ -507,6 +507,8 @@ class Ego:
                         chan = {}
                         react = {}
                         activ = {}
+                        activvoc = {}
+                        nonactivvoc = {}
                         while day != lend:
                             total = 0
                             if day in self.glob["NB_MSG"]:
@@ -552,9 +554,23 @@ class Ego:
                                         activ[h] = self.glob["ACTLOGS_ECR"][h][day]
                                     else:
                                         activ[h] += self.glob["ACTLOGS_ECR"][h][day]
+                            for j in self.glob["ACTLOGS_VOC_ACTIF"]:
+                                if day in self.glob["ACTLOGS_VOC_ACTIF"][j]:
+                                    if j not in activvoc:
+                                        activvoc[j] = self.glob["ACTLOGS_VOC_ACTIF"][j][day]
+                                    else:
+                                        activvoc[j] += self.glob["ACTLOGS_VOC_ACTIF"][j][day]
+                            for k in self.glob["ACTLOGS_VOC_INACTIF"]:
+                                if day in self.glob["ACTLOGS_VOC_INACTIF"][k]:
+                                    if k not in nonactivvoc:
+                                        nonactivvoc[k] = self.glob["ACTLOGS_VOC_INACTIF"][k][day]
+                                    else:
+                                        nonactivvoc[k] += self.glob["ACTLOGS_VOC_INACTIF"][k][day]
                             #Jour suivant
                             day = time.strftime("%d/%m/%Y", time.localtime(time.mktime(time.strptime(day, "%d/%m/%Y")) + 86400))
-                        filename = "ego stats"
+                        d1 = "{}-{}-{}".format(deb.split("/")[0],deb.split("/")[1],deb.split("/")[2])
+                        d2 = "{}-{}-{}".format(fin.split("/")[0],fin.split("/")[1],fin.split("/")[2])
+                        filename = "EgoStats_{}_{}".format(d1, d2)
                         if not os.path.isfile("data/ego/{}.txt".format(filename)):
                             fileIO("data/ego/{}.txt".format(filename), "save", "")
                         file = open("data/ego/{}.txt".format(filename), "w")
@@ -565,6 +581,8 @@ class Ego:
                         for r in react:
                             reacttxt += "{}\t{}\n".format(react[r]["NOM"], react[r]["NB"])
                         actlogs = ""
+                        actlogsvoca = ""
+                        actlogsvoci = ""
                         lbd = []
                         for a in activ:
                             lbd.append([int(a), int(a) +1, activ[a]])
@@ -575,6 +593,26 @@ class Ego:
                                 actlogs += "{}\t{}\n".format(itv, l[2])
                         else:
                             actlogs = "Données insuffisantes"
+                        lbd = []
+                        for b in activvoc:
+                            lbd.append([int(b), int(b) +1, activvoc[b]])
+                        lbd = sorted(lbd, key=operator.itemgetter(0))
+                        if lbd != []:
+                            for l in lbd:
+                                itv = "[{};{}[".format(l[0], l[1])
+                                actlogsvoca += "{}\t{}\n".format(itv, l[2])
+                        else:
+                            actlogsvoca = "Données insuffisantes"
+                        lbd = []
+                        for c in nonactivvoc:
+                            lbd.append([int(b), int(b) +1, nonactivvoc[b]])
+                        lbd = sorted(lbd, key=operator.itemgetter(0))
+                        if lbd != []:
+                            for l in lbd:
+                                itv = "[{};{}[".format(l[0], l[1])
+                                actlogsvoci += "{}\t{}\n".format(itv, l[2])
+                        else:
+                            actlogsvoci = "Données insuffisantes"
                         msg = "EGO STATS | Du {} au {}\n\n" \
                               "== Immigration ==\n" \
                               "Immigrants\t{}\n" \
@@ -590,8 +628,14 @@ class Ego:
                               "{}\n" \
                               "Total\t{}\n" \
                               "\n" \
-                              "== Activité HpH ==\n" \
-                              "{}".format(deb, fin, arrtotal, rettotal, deptotal, msgtxt, nbmsgtotal, (nbmsgtotal - nbmsgsbot), reacttxt, reacttotal, actlogs)
+                              "== Activité écrite h/h ==\n" \
+                              "{}\n" \
+                              "\n" \
+                              "== Activité vocale active h/h ==\n" \
+                              "{}\n" \
+                              "\n" \
+                              "== Activité vocale inactive h/h ==\n" \
+                              "{}".format(deb, fin, arrtotal, rettotal, deptotal, msgtxt, nbmsgtotal, (nbmsgtotal - nbmsgsbot), reacttxt, reacttotal, actlogs, actlogsvoca, actlogsvoci)
                         file.write(msg)
                         file.close()
                         await self.bot.say("Préparation de votre commande...")
