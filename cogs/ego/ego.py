@@ -605,7 +605,7 @@ class Ego:
                             actlogsvoca = "Données insuffisantes"
                         lbd = []
                         for c in nonactivvoc:
-                            lbd.append([int(b), int(b) +1, nonactivvoc[b]])
+                            lbd.append([int(c), int(c) +1, nonactivvoc[c]])
                         lbd = sorted(lbd, key=operator.itemgetter(0))
                         if lbd != []:
                             for l in lbd:
