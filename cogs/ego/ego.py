@@ -633,7 +633,12 @@ class Ego:
                               "{}\n" \
                               "\n" \
                               "== Activité vocale inactive h/h ==\n" \
-                              "{}".format(deb, fin, arrtotal, rettotal, deptotal, msgtxt, nbmsgtotal, (nbmsgtotal - nbmsgsbot), reacttxt, reacttotal, actlogs, actlogsvoca, actlogsvoci)
+                              "{}\n" \
+                              "\n" \
+                              "A savoir :\n" \
+                              "- Les dates indiqués sont comprises dans le calcul\n" \
+                              "- L'activité écrite et vocale correspondent à des comptages et sont cumulés sur la période indiquée\n" \
+                              "- Le comptage se faisant au moment de l'action, la suppression (message ou réaction) n'affecte pas le calcul".format(deb, fin, arrtotal, rettotal, deptotal, msgtxt, nbmsgtotal, (nbmsgtotal - nbmsgsbot), reacttxt, reacttotal, actlogs, actlogsvoca, actlogsvoci)
                         file.write(msg)
                         file.close()
                         await self.bot.say("Préparation de votre commande...")
