@@ -250,6 +250,8 @@ class EgoAPI:
         except asyncio.CancelledError:
             pass
 
+# EGO =================================================================
+
 class Ego:
     """Système Ego | Assistant personnel et suivi de statistiques"""
     def __init__(self, bot):
@@ -331,25 +333,21 @@ class Ego:
 
 #TODO: Ajout des stats heure/heure
 
-#,Commandes >>>>>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<<<<
+#,Commandes >>>>
 
     @commands.command(name="logs", pass_context=True)
     async def changelog(self, ctx):
         """Informations sur la dernière MAJ Majeure de EGO."""
         em = discord.Embed(color=0x5184a5)
-        c1 = "- Ajout de l'historique complet (bouton sur &card)\n" \
-             "- Ajout des stats des réactions sur messages\n" \
-             "- Ajout d'un bouton pour accéder rapidement à une date sur &ego stats\n" \
-             "- Ajout de l'extraction des données globales sur &ego stats\n" \
-             "[BETA] Ajout d'un système de Karma"
-        em.add_field(name="Version 2.4", value=c1)
-        c2 = "- Enregistrement de l'activité écrite du serveur\n" \
-             "- Améliorations mineures"
-        em.add_field(name="Version 2.5", value=c2)
-        bt = "- Retour des relations\n" \
-             "- Calcul de l'activité vocale du serveur\n"
+        c1 = "- Ajout de l'activité écrite et vocale\n" \
+             "- Le nom du fichier EgoStats comprend désormais la date\n" \
+             "- Un bouton 'Compatibilité' est disponible sur la carte de membre\n" \
+             "- Ajouter ❓ à un message permet d'avoir un résumé de la carte de membre de l'auteur"
+        em.add_field(name="Version 2.6", value=c1)
+        bt = "- Refonte de &epop\n" \
+             "- Stats sur l'utilsation des stickers"
         em.add_field(name="Bientôt", value=bt, inline=False)
-        em.set_footer(text="Dernière MAJ publiée le 23/07", icon_url="http://i.imgur.com/DsBEbBw.png")
+        em.set_footer(text="Dernière MAJ publiée le 29/07", icon_url="http://i.imgur.com/DsBEbBw.png")
         await self.bot.say(embed=em)
 
     @commands.group(name="ego", pass_context=True)
