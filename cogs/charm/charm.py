@@ -508,6 +508,11 @@ class Charm:
                 for stk in output:
                     nb += 1
                     if nb <= 3:
+                        if stk == "random":
+                            liste = []
+                            for s in self.stk["STICKERS"]:
+                                liste.append(s)
+                            stk = random.choice(liste)
                         if stk == "list":
                             msg = "**__Liste des stickers disponibles__**\n\n"
                             n = 1
