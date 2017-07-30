@@ -173,9 +173,10 @@ class Just:
 
     async def bang(self, reaction, author):
         user = reaction.message.author
-        if author.server_permissions.manage_messages is True:
-            await self.bot.send_message(author, "**Fonction en pleine refonte**\nVisitez https://github.com/GitAcrown/Addon/issues/3 pour suivre l'avancement du développement.")
-            return
+        if reaction.emoji == "‼":
+            if author.server_permissions.manage_messages is True:
+                await self.bot.send_message(author, "**Fonction en pleine refonte**\nVisitez https://github.com/GitAcrown/Addon/issues/3 pour suivre l'avancement du développement.")
+                return
 
 def check_folders():
     folders = ("data", "data/just/")
