@@ -316,6 +316,7 @@ class Charm:
                     await self.bot.say("Ce nouveau nom existe déjà dans ma base de données. Donnez-lui en un autre à l'aide du paramètre NomImport.")
                     return
             chemin = self.old["STICKER"][nom]["CHEMIN"]
+            author = ctx.message.author
             filename = chemin.split('/')[-1]
             url = self.old["STICKER"][nom]["URL"]
             aff = self.old["STICKER"][nom]["AFF"]
