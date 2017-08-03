@@ -71,6 +71,18 @@ class Charm:
             previous_row = current_row
         return previous_row[-1]
 
+    def plusproche(self, liste_b, listes):
+        pt = {}
+        for e in liste_b:
+            for l in listes:
+                nom = ""
+                for i in l: nom += "{}/".format(i)
+                if e in l:
+                    if nom not in pt:
+                        pt[nom] = 1
+                    else:
+                        pt[nom] += 1
+
     def similarite(self, mot, liste, tolerance = 5):
         prochenb = tolerance
         prochenom = None
@@ -273,7 +285,7 @@ class Charm:
 
 # STICKERS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>><
 
-    @commands.group(name = "stk", pass_context=True)
+    @commands.group(name="stk", pass_context=True)
     async def charm_stk(self, ctx):
         """Gestion Stickers"""
         if ctx.invoked_subcommand is None:
@@ -286,6 +298,13 @@ class Charm:
         """Permet d'importer un ancien sticker et de le réencoder dans le nouveau format.
         
         Vous pouvez lui donner un nouveau nom en précisant NomImport"""
+        if not author.id in self.stk["USERS"]:
+            self.stk["USERS"][author.id] = {"ID": author.id,
+                                            "CUSTOM_URL": None,
+                                            "CUSTOM_FORMAT": None,
+                                            "COLLECTION": []}
+            fileIO("data/charm/stk.json", "save", self.stk)
+
         if nom in self.old["STICKER"]:
             if nomimport != None:
                 if nomimport in self.stk["STICKERS"]:
@@ -310,8 +329,30 @@ class Charm:
                 fileIO("data/charm/stk.json", "save", self.stk)
                 await self.bot.say("Image importée avec succès !")
             except:
-                await self.bot.say("Je ne peux pas importer cette image, elle n'est plus disponible (Sticker de 1ere gen.) ou ses données sont corrompues.\nVous pouvez la réajouter manuellement avec &stk submit.\n*Voici l'URL fournie lors de sa première création :* {}".format(url))
-                return
+                await self.bot.say("Les données de l'image sont corrompues ou sont obsolètes (Sticker de 1er Gen.)\n**Rétablissement automatique du sticker en cours...**")
+                if filename in os.listdir("data/charm/stkimg"):
+                    exten = filename.split(".")[1]
+                    nomsup = random.randint(1, 999999)
+                    filename = filename.split(".")[0] + str(nomsup) + "." + exten
+                try:
+                    f = open(filename, 'wb')
+                    f.write(request.urlopen(url).read())
+                    f.close()
+                    file = "data/charm/stkimg/" + filename
+                    os.rename(filename, file)
+                    self.stk["STICKERS"][nom] = {"NOM": nom,
+                                                 "URL": url,
+                                                 "CHEMIN": file,
+                                                 "FORMAT": "URL"}
+                    self.stk["USERS"][author.id]["COLLECTION"].append(nom)
+                    fileIO("data/charm/stk.json", "save", self.stk)
+                    await self.bot.say(
+                        "L'Image **{}** à été rétablie correctement.\nVous pouvez de nouveau l'utiliser avec *:{}:*".format(
+                            filename, nom))
+                except Exception as e:
+                    print("Impossible de télécharger une image : {}".format(e))
+                    await self.bot.say(
+                        "Impossible de rétablir cette image.\nL'URL n'est plus compatible. Changez l'image d'hébergeur et réajoutez la manuellement avec &stk submit\nUrl fournie à sa création: {}".format(url))
         else:
             await self.bot.say("Ce nom n'existe pas dans mes anciens fichiers de sticker. Désolé !")
 
@@ -499,7 +540,6 @@ class Charm:
                                 await self.bot.send_message(channel, "**{}** est AFK".format(afk[1]))
                         else:
                             await self.bot.send_message(channel, "**{}** est AFK".format(afk[1]))
-
         #Système Stickers
         nb = 0
         if ":" in message.content:
@@ -733,6 +773,8 @@ class Charm:
                             await self.bot.send_message(user, "**{}** | Tu as déjà voté !".format(self.sys["SONDAGES"][message.id]["IDENT"]))
                         except:
                             pass
+
+
 
 def check_folders():
     if not os.path.exists("data/charm"):
