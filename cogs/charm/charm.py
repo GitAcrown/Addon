@@ -298,6 +298,7 @@ class Charm:
         """Permet d'importer un ancien sticker et de le réencoder dans le nouveau format.
         
         Vous pouvez lui donner un nouveau nom en précisant NomImport"""
+        author = ctx.message.author
         if not author.id in self.stk["USERS"]:
             self.stk["USERS"][author.id] = {"ID": author.id,
                                             "CUSTOM_URL": None,
@@ -306,7 +307,7 @@ class Charm:
             fileIO("data/charm/stk.json", "save", self.stk)
 
         if nom in self.old["STICKER"]:
-            if nomimport != None:
+            if nomimport is not None:
                 if nomimport in self.stk["STICKERS"]:
                     await self.bot.say("Ce nouveau nom existe déjà dans ma base de données. Donnez-lui en un autre.")
                     return
@@ -316,7 +317,6 @@ class Charm:
                     await self.bot.say("Ce nouveau nom existe déjà dans ma base de données. Donnez-lui en un autre à l'aide du paramètre NomImport.")
                     return
             chemin = self.old["STICKER"][nom]["CHEMIN"]
-            author = ctx.message.author
             filename = chemin.split('/')[-1]
             url = self.old["STICKER"][nom]["URL"]
             aff = self.old["STICKER"][nom]["AFF"]
