@@ -1,16 +1,17 @@
-import discord
-from discord.ext import commands
-from .utils.dataIO import fileIO, dataIO
-from .utils import checks
-from __main__ import send_cmd_help, settings
-from urllib import request
-import re
 import asyncio
-import os
-import time
-import random
-import sys
 import operator
+import os
+import random
+import re
+import time
+from urllib import request
+
+import discord
+from __main__ import send_cmd_help
+from discord.ext import commands
+
+from .utils import checks
+from .utils.dataIO import fileIO, dataIO
 
 default = {}
 
@@ -567,6 +568,10 @@ class Charm:
                                 for m in msglist:
                                     await self.bot.send_message(author, m)
                                 return
+                        if stk == "vent": #EE
+                            await asyncio.sleep(0.5)
+                            await self.bot.send_typing(channel)
+                            return
                         if stk == "custom":
                             nb += 1
                             if author.id in self.stk["USERS"]:
