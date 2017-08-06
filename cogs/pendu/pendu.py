@@ -121,6 +121,8 @@ class Pendu:
         if self.data["PENDU_ON"] is True:
             if message.channel == chan:
                 author = message.author
+                if message.content.startswith("&") or message.content.startswith("!") or message.content.startswith(";;") or message.content.startswith("\\"):
+                    return
                 if message.content.lower() == "stop":
                     if author.server_permissions.manage_messages:
                         self.data["PENDU_ON"] = False
@@ -145,7 +147,6 @@ class Pendu:
                                     self.data["JOUEURS"][author.id]["TROUVE"].append(content)
                                 fileIO("data/pendu/data.json", "save", self.data)
                                 await self.bot.send_message(chan, "+{} lettre(s) trouvé(es) !".format(len(places)))
-                                await asyncio.sleep(0.5)
                                 self.data["TIMEOUT"] = time.time() + 120
                                 if self.data["VIES"] > 0:
                                     await self.bot.send_message(chan, "**{}**\n*Vies restantes: {}*".format("".join(self.data["ENCODE"]),
@@ -154,7 +155,6 @@ class Pendu:
                                     return
                             else:
                                 await self.bot.send_message(chan, "Vous avez déjà trouvé cette lettre !")
-                                await asyncio.sleep(0.5)
                                 self.data["TIMEOUT"] = time.time() + 120
                                 if self.data["VIES"] > 0:
                                     await self.bot.send_message(chan, "**{}**\n*Vies restantes: {}*".format("".join(self.data["ENCODE"]),
@@ -166,7 +166,6 @@ class Pendu:
                             self.data["VIES"] -= 1
                             await self.bot.send_message(chan, "**Loupé !**\n`-1 vie`")
                             fileIO("data/pendu/data.json", "save", self.data)
-                            await asyncio.sleep(0.5)
                             self.data["TIMEOUT"] = time.time() + 120
                             if self.data["VIES"] > 0:
                                 await self.bot.send_message(chan, "**{}**\n*Vies restantes: {}*".format(
@@ -186,7 +185,6 @@ class Pendu:
                             self.data["VIES"] -= 1
                             await self.bot.send_message(chan, "**Loupé !**\n`-1 vie`")
                             fileIO("data/pendu/data.json", "save", self.data)
-                            await asyncio.sleep(1.5)
                             self.data["TIMEOUT"] = time.time() + 120
                             await self.bot.send_message(chan, "**{}**\n*Vies restantes: {}*".format("".join(self.data["ENCODE"]),
                                                                                                     self.data["VIES"]))
