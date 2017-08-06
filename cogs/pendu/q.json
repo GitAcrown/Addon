@@ -1,8 +1,0 @@
-{
-    "AUTHOR" : "Acrown",
-    "DESCRIPTION" : "Jeu permettant de braquer des banques virtuelles.",
-    "DISABLED" : false,
-    "INSTALL_MSG" : "Merci pour votre installation. Utilisez [p]help pour plus d'aide.",
-    "NAME" : "payday",
-    "SHORT" : "Braquage de banques virtuelles !"
-}
