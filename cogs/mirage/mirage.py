@@ -95,7 +95,7 @@ class MirageAPI:
     def _add(self, user, somme: int, raison=None):
         """Ajoute du solde à un utilisateur"""
         acc = self.open(user)
-        acc.solde += somme
+        self.bank[user.id]["SOLDE"] += somme
         acc.history.append(["+", somme, raison])
         self.save()
         return True
@@ -104,7 +104,7 @@ class MirageAPI:
         """Retire du solde à un utilisateur"""
         acc = self.open(user)
         if self.enough(user, somme):
-            acc.solde -= somme
+            self.bank[user.id]["SOLDE"] -= somme
             acc.history.append(["-", somme, raison])
             self.save()
             return True
@@ -115,7 +115,7 @@ class MirageAPI:
         """Règle le solde de l'utilisateur à une valeur précise"""
         acc = self.open(user)
         if somme >= (0 - self.limit(user)[1]):
-            acc.solde = somme
+            self.bank[user.id]["SOLDE"] = somme
             acc.history.append(["!", somme, raison])
             self.save()
             return True
@@ -143,7 +143,7 @@ class Mirage:
             msg = ""
             met.reverse()
             for e in met:
-                msg += "**{}*{}*** {}".format(e[0], e[1], e[2] if len(e[2]) < 30 else e[2][:29] + "...")
+                msg += "**{}*{}*** {}\n".format(e[0], e[1], e[2] if len(e[2]) < 30 else e[2][:29] + "...")
         else:
             msg = "Aucune action"
         em.add_field(name="Actions", value=msg)
