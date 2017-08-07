@@ -102,7 +102,7 @@ class Pendu:
                 fileIO("data/pendu/data.json", "save", self.data)
                 return
         else:
-            await self.bot.say("Une partie est déjà en cours, je le sais...")
+            await self.bot.say("Une partie est déjà en cours.")
 
     def indexplus(self, mot, l):
         nb = mot.count(l)
@@ -115,6 +115,13 @@ class Pendu:
             else:
                 n += 1
         return tr
+    
+    @commands.command(pass_context=True, hidden=True)
+    async def resetpendu(self, ctx):
+        """Permet de reset le pendu en cas de blocage"""
+        self.data["PENDU_ON"] = False
+        fileIO("data/pendu/data.json", "save", self.data)
+        await self.bot.say("Reset effectué avec succès.")
 
     async def l_msg(self, message):
         chan = self.bot.get_channel(self.data["PENDU_CHAN"])
