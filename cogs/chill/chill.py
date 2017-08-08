@@ -19,19 +19,107 @@ class Chill:
         self.sys = dataIO.load_json("data/chill/sys.json")
         self.factory = dataIO.load_json("data/chill/factory.json")
 
+    @commands.command(pass_context=True)
+    async def int(self, ctx, message, url=None):
+        """Permet d'afficher un message en format INTEGRE"""
+        em = discord.Embed(color = ctx.message.author.color, description=message)
+        if url != None:
+            em.set_image(url=url)
+        em.set_author(name=ctx.message.author.name, icon_url=ctx.message.author.avatar_url)
+        await self.bot.say(embed=em)
+
+    @commands.command(pass_context=True)
+    async def debide(self, ctx, channelid):
+        """Module de débidage"""
+        channel = self.bot.get_channel(channelid)
+        s = 10
+        mess = None
+        while s > 0:
+            if mess is None:
+                msg = "**{}** secondes restantes avant débidage...".format(s)
+                mess = await self.bot.send_message(channel, msg)
+            else:
+                msg = "**{}** secondes restantes avant débidage...".format(s)
+                mess = await self.bot.edit_message(mess, msg)
+            s -= 1
+            await asyncio.sleep(1)
+        msg = "**BOOM**"
+        mess = await self.bot.edit_message(mess, msg)
+        await asyncio.sleep(2)
+        msg = "lol."
+        mess = await self.bot.edit_message(mess, msg)
+
+    @commands.command(pass_context=True)
+    async def repsec(self, ctx, channelid):
+        """Débide 2.0"""
+        channel = self.bot.get_channel(channelid)
+        await self.bot.send_message(channel, "Salut à vous.")
+        await asyncio.sleep(0.5)
+        rep = await self.bot.wait_for_message(channel=channel)
+        await self.bot.send_message(channel, "Pourquoi tu me parles {} ? Je suis pas ton ami fdp".format(rep.author.display_name))
+
+    @commands.command(pass_context=True)
+    async def emojis(self, ctx, chanbase: discord.Channel, first, nombre: int):
+        """Donne des statistiques sur l'utilisation des emojis.
+        Aide:
+        Chanbase = Channel d'appartenance du message 'First'
+        First = ID du message depuis lequel on cherche les statistiques
+        Nombre = Nombre de messages à analyser après 'First'
+        """
+        server = ctx.message.server
+        channels = server.channels
+        first = self.bot.get_message(chanbase, first)
+        n = 0
+        dico = {}
+        await self.bot.whisper("Patientez pendant que je récolte les statistiques liées à votre demande...")
+        for channel in channels:
+            async for message in self.bot.logs_from(channel, nombre, after=first):
+                out = re.compile(':(.*?):', re.DOTALL | re.IGNORECASE).findall(message.content)
+                if out:
+                    for o in out:
+                        n += 1
+                        if o in dico:
+                            dico[o]["NB"] += 1
+                        else:
+                            dico[o] = {"NOM": o,
+                                       "NB" : 1}
+        msg = "Emoji / Nombre\n"
+        c = 1
+        for e in dico:
+            msg += "{}> {}\n".format(dico[e]["NOM"], dico[e]["NB"])
+            if len(msg) > 1950 * c:
+                msg += "#"
+                c += 1
+        msg = msg.split("#")
+        for m in msg:
+            await self.bot.whisper(m)
+
+    @commands.command(aliases=["gb"], pass_context=True, no_pm=True)
+    async def ghostbuster(self, ctx, user: discord.Member):
+        """Permet de révéler une personne en 'Invisible'"""
+        if user.status == discord.Status.invisible:
+            await self.bot.say("**{}** est connecté. Il est juste invisible ¯\_(ツ)_/¯".format(user.display_name))
+        elif user.status == discord.Status.offline:
+            await self.bot.say("Cet utilisateur n'est pas connecté. Il n'est pas invisible...")
+        else:
+            await self.bot.say("Cet utilisateur est connecté mais n'est pas invisible.")
+
     @commands.command(pass_context=True, no_pm=True)
     async def decodex(self, ctx, *question):
         """Pose une question au decodex"""
         q = " ".join(question)
         if "?" in q:
-            await self.bot.send_typing(ctx.message.channel)
-            r = random.choice(["http://i.imgur.com/FpdvBHC.png","http://i.imgur.com/MvloOKT.png","http://i.imgur.com/VnEK487.png"])
-            em = discord.Embed()
-            em.set_image(url=r)
+            l = [["Vrai", 0x36ea1a, "Sans aucun doute !"],
+                 ["Plutôt vrai", 0x7fea1a, "Je n'en suis pas certain mais je suis confiant."],
+                 ["Incertain", 0xe8ea1a, "Je ne sais pas trop..."],
+                 ["Plutôt faux", 0xea831a, "Je pense que c'est faux mais mes sources sont contestables..."],
+                 ["Faux", 0xea1a1a, "C'est un mensonge ! #FAKENEWS"]]
+            r = random.choice(l)
+            em = discord.Embed(title=r[0], description=r[2], color=r[1])
             em.set_footer(text=q)
-            await self.bot.send_message(ctx.message.channel, embed=em)
+            await self.bot.say(embed=em)
         else:
-            await self.bot.say("Tapez une question !")
+            await self.bot.say("C'est pas une question !")
 
     @commands.command(pass_context=True)
     async def recup(self, ctx, *nom):
@@ -87,6 +175,7 @@ class Chill:
             if "Prison" not in [r.name for r in user.roles]:
                 await self.bot.add_roles(user, spe)
                 if mute == True:
+                    self.bot.server_voice_state(user, mute=True)
                     self.bot.server_voice_state(user, mute=True)
                 else:
                     pass
