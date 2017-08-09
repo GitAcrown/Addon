@@ -420,7 +420,7 @@ class Ego:
                 top = sorted(elb, key=operator.itemgetter(2), reverse=True)
                 top = top[:5]
                 for c in top:
-                    pourc = (c[2] / totalelb) * 100
+                    pourc = (c[2] / totalelb) * 100 if totallb > 0 else 0
                     msg += "**[{};{}[** {}%\n".format(c[0], c[1], round(pourc))
                 em.add_field(name="Activité", value=msg, inline=True)
                 if day in self.glob["NB_JOIN"] and self.glob["NB_QUIT"]:
