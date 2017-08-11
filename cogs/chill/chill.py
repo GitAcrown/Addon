@@ -57,48 +57,6 @@ class Chill:
         except:
             await self.bot.say("Impossible d'upload le fichier...")
 
-    @commands.command(pass_context=True)
-    async def int(self, ctx, message, url=None):
-        """Permet d'afficher un message en format INTEGRE"""
-        em = discord.Embed(color=ctx.message.author.color, description=message)
-        if url != None:
-            em.set_image(url=url)
-        em.set_author(name=ctx.message.author.name, icon_url=ctx.message.author.avatar_url)
-        await self.bot.say(embed=em)
-
-    @commands.command(pass_context=True, no_pm=True)
-    async def decodex(self, ctx, *question):
-        """Pose une question au decodex"""
-        q = " ".join(question)
-        if "?" in q:
-            l = [["Vrai", 0x36ea1a, "Sans aucun doute !"],
-                 ["Plutôt vrai", 0x7fea1a, "Je n'en suis pas certain mais je suis confiant."],
-                 ["Incertain", 0xe8ea1a, "Je ne sais pas trop..."],
-                 ["Plutôt faux", 0xea831a, "Je pense que c'est faux mais mes sources sont contestables..."],
-                 ["Faux", 0xea1a1a, "C'est un mensonge ! #FAKENEWS"]]
-            r = random.choice(l)
-            em = discord.Embed(title=r[0], description=r[2], color=r[1])
-            em.set_footer(text=q)
-            await self.bot.say(embed=em)
-        else:
-            await self.bot.say("C'est pas une question !")
-
-    @commands.command(pass_context=True)
-    async def recup(self, ctx, *nom):
-        """Permet de récupérer le fichier texte d'une playlist Audio"""
-        nom = " ".join(nom)
-        nom += ".txt"
-        channel = ctx.message.channel
-        server = ctx.message.server.id
-        if nom in os.listdir("data/audio/playlists/{}/".format(server)):
-            chemin = "data/audio/playlists/{}/{}".format(server, nom)
-            try:
-                await self.bot.send_file(channel, chemin)
-            except:
-                await self.bot.say("Impossible d'upload le fichier de playlist.")
-        else:
-            await self.bot.say("Désolé mais je n'ai pas trouvé cette playlist")
-
 def check_folders():
     folders = ("data", "data/chill/")
     for folder in folders:
