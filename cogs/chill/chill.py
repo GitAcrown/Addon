@@ -10,6 +10,7 @@ import datetime
 from cogs.utils.dataIO import fileIO, dataIO
 from __main__ import send_cmd_help
 from copy import deepcopy
+import operator
 
 default = {"ACQUIS": [], "PREFIX": "&", "FACTORY_PREFIX": ">","FACTORY_ACTIF" : True, "INTERDIT" : [], "NUMERO" : 1, "SPOIL_DB" : []}
 
