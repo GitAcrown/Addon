@@ -20,6 +20,44 @@ class Chill:
         self.factory = dataIO.load_json("data/chill/factory.json")
 
     @commands.command(pass_context=True)
+    async def spn(self, ctx, max: int, nom: str):
+        """Récupère les dates SPN."""
+        await self.bot.say("Début de récolte...")
+        cl = self.bot.get_all_channels()
+        channel = None
+        for c in cl:
+            if c.name.lower() == nom.lower():
+                channel = c
+        if channel is None:
+            await self.bot.say("Inaccessible.")
+            return
+        cmt = []
+        async for msg in self.bot.logs_from(channel, limit=max):
+            ts = msg.timestamp
+            strts = "{}/{}/{} {}:{}:{}".format(ts.day, ts.month, ts.year, ts.hour, ts.minute, ts.second)
+            cmt.append([strts, msg.content, msg.author.name])
+        await self.bot.say("Récolte terminée\nTri des résultats...")
+        ordre = []
+        for e in cmt:
+            tc = time.mktime(time.strptime(e[0], "%d/%m/%Y %H:%M:%S"))
+            ordre.append([tc, e[0], e[1], e[2]])
+        new = sorted(ordre, key=operator.itemgetter(0))
+        filename = "Spnstf_{}".format(str(random.randint(1, 99999)))
+        fileIO("data/chill/{}.txt".format(filename), "save", "")
+        file = open("data/chill/{}.txt".format(filename), "w", encoding="UTF-8")
+        txt = ""
+        for e in new:
+            txt += "{}[{}]\t{}\n".format(e[3], e[1], e[2])
+        file.write(txt)
+        file.close()
+        try:
+            await self.bot.send_file(ctx.message.channel, "data/chill/{}.txt".format(filename))
+            await asyncio.sleep(1.5)
+            os.remove("data/chill/{}.txt".format(filename))
+        except:
+            await self.bot.say("Impossible d'upload le fichier...")
+
+    @commands.command(pass_context=True)
     async def int(self, ctx, message, url=None):
         """Permet d'afficher un message en format INTEGRE"""
         em = discord.Embed(color=ctx.message.author.color, description=message)
