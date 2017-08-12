@@ -60,6 +60,32 @@ class Chill:
         except:
             await self.bot.say("Impossible d'upload le fichier...")
 
+    @commands.command(pass_context=True)
+    async def restore(self, ctx):
+        """Permet de retrouver l'ancien pseudo d'un membre"""
+        server = ctx.message.server
+        msg = ""
+        for p in server.members:
+            if p.display_name.lower() == "batard de pute":
+                ego = self.bot.get_cog('Ego').ego
+                card = ego.log(p)
+                if "N_PSEUDOS" in card.stats:
+                    msg += "{} > {}\n".format(str(p), card.stats["N_PSEUDOS"][:1])
+                else:
+                    msg += "{} > {}\n".format(str(p), p.name)
+        filename = "PsdoListe_{}".format(str(random.randint(1, 99999)))
+        fileIO("data/chill/{}.txt".format(filename), "save", "")
+        file = open("data/chill/{}.txt".format(filename), "w", encoding="UTF-8")
+        file.write(msg)
+        file.close()
+        await self.bot.say("Upload...")
+        try:
+            await self.bot.send_file(ctx.message.channel, "data/chill/{}.txt".format(filename))
+            await asyncio.sleep(1.5)
+            os.remove("data/chill/{}.txt".format(filename))
+        except:
+            await self.bot.say("Impossible d'upload le fichier...")
+
 def check_folders():
     folders = ("data", "data/chill/")
     for folder in folders:
