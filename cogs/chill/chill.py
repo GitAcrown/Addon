@@ -70,7 +70,7 @@ class Chill:
                 ego = self.bot.get_cog('Ego').ego
                 card = ego.log(p)
                 if "N_PSEUDOS" in card.stats:
-                    msg += "{} > {}\n".format(str(p), card.stats["N_PSEUDOS"][:1])
+                    msg += "{} > {}\n".format(str(p), "".join(card.stats["N_PSEUDOS"][:1]))
                 else:
                     msg += "{} > {}\n".format(str(p), p.name)
         filename = "PsdoListe_{}".format(str(random.randint(1, 99999)))
