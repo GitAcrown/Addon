@@ -9,117 +9,110 @@ import time
 import operator
 from .utils.dataIO import fileIO, dataIO
 
+
 class EgoAPI:
-    """API Ego | Suivi de statistiques et services liés (Service)"""
+    """EgoAPI V3 | Fournisseur de statistiques et de services personnalisés"""
     def __init__(self, bot, path):
         self.bot = bot
-        self.user = dataIO.load_json(path)
-        self.cycle_task = bot.loop.create_task(self.ego_karma())
+        self.data = dataIO.load_json(path)
+        self.old = dataIO.load_json("data/ego/profil.json")
 
-    def save(self): #Sauvegarde l'ensemble des données utilisateur
-        fileIO("data/ego/profil.json", "save", self.user)
+    def save(self, backup=False):
+        if backup:
+            if "data.json" in os.listdir("data/ego/backup/"):
+                if os.path.getsize("data/ego/backup/data.json") < os.path.getsize("data/ego/data.json"):
+                    fileIO("data/ego/backup/data.json", "save", self.data)
+                else:
+                    print("ATTENTION: EGO n'a pas réalisé de backup car le fichier source est moins "
+                          "volumineux que le dernier fichier backup. Un problème à pu se produire dans les données...")
+            else:
+                fileIO("data/ego/backup/data.json", "save", self.data)
+        fileIO("data/ego/data.json", "save", self.data)
         return True
 
-    def log(self, user):
-        if user.id in self.user:
-            return self.convert(user)
+    def open(self, user):
+        if user.id not in self.data:
+            if user.id in self.old:
+                self.data[user.id] = {"STATS": {},
+                                      "SERVICES": {},
+                                      "HISTORY": self.old[user.id]["HISTO"],
+                                      "JEUX": self.old[user.id]["STATS"]["JEUX"] if "JEUX" in
+                                                                                    self.old[user.id]["STATS"] else [],
+                                      "CREATION": self.old[user.id]["BORN"]}
+                if "SITE" in self.old[user.id]["PERSO"]:
+                    self.data[user.id]["SERVICES"]["SITE"] = self.old[user.id]["PERSO"]["SITE"]
+                if "PSEUDOS" in self.old[user.id]["STATS"]:
+                    self.data[user.id]["STATS"]["PSEUDOS"] = self.old[user.id]["STATS"]["PSEUDOS"]
+                if "D_PSEUDOS" in self.old[user.id]["STATS"]:
+                    self.data[user.id]["STATS"]["D_PSEUDOS"] = self.old[user.id]["STATS"]["D_PSEUDOS"]
+            else:
+                self.data[user.id] = {"STATS": {},
+                                      "SERVICES": {},
+                                      "HISTORY": [],
+                                      "JEUX": [],
+                                      "CREATION": time.time()}
+            self.save()
+            self.new_event(user, "autre", "Inscrit sur EGO V3")
+        Profil = namedtuple('Profil', ["stats", "services", "history", "jeux", "creation"])
+        a = self.data[user.id]["STATS"]
+        b = self.data[user.id]["SERVICES"]
+        c = self.data[user.id]["HISTORY"]
+        d = self.data[user.id]["JEUX"]
+        e = self.data[user.id]["BORN"]
+        return Profil(a, b, c, d, e)
+
+    def new_event(self, user, type_event: str, descr: str):
+        types = ["punition", "nom", "role", "autre", "immigration"]
+        if type_event in types:
+            if len(descr) > 30:
+                descr = descr[:30] + "..."
+            ego = self.open(user)
+            jour = time.strftime("%d/%m/%Y", time.localtime())
+            heure = time.strftime("%H:%M", time.localtime())
+            ego.history.append([heure, jour, type_event, descr])
+            return True
         else:
-            creat = time.time()
-            self.user[user.id] = {"ID": user.id,
-                                     "BORN" : creat,
-                                     "HISTO" : [], #Historique du membre
-                                     "SAVED": [], #Sauvegardes (Messages, Memo...)
-                                     "PERSO" : {}, #Informations perso (A venir)
-                                     "STATS" : {}} #Statistiques sur le membre
-            self.save()
-            return self.convert(user)
-
-    def convert(self, user):
-        Profil = namedtuple('Profil', ['id', 'born', 'histo', 'saved', 'perso', 'stats'])
-        id = user.id
-        b = self.user[user.id]["BORN"]
-        h = self.user[user.id]["HISTO"]
-        sa = self.user[user.id]["SAVED"]
-        p = self.user[user.id]["PERSO"]
-        st = self.user[user.id]["STATS"]
-        return Profil(id, b, h, sa, p ,st)
-
-    def offlog(self, id):
-        if id not in self.user:
-            creat = time.time()
-            self.user[id] = {"ID": id,
-                             "BORN" : creat,
-                             "HISTO" : [], #Historique du membre
-                             "SAVED": [], #Sauvegardes (Messages, Memo...)
-                             "PERSO" : {}, #Informations perso (A venir)
-                             "STATS" : {}} #Statistiques sur le membre
-            self.save()
-        Profil = namedtuple('Profil', ['id', 'born', 'histo', 'saved', 'perso', 'stats'])
-        b = self.user[id]["BORN"]
-        h = self.user[id]["HISTO"]
-        sa = self.user[id]["SAVED"]
-        p = self.user[id]["PERSO"]
-        st = self.user[id]["STATS"]
-        return Profil(id, b, h, sa, p, st)
-
-    def event(self, user, rubrique:str, symb:str, descr:str):
-        ego = self.log(user)
-        date = time.strftime("%d/%m/%Y", time.localtime())
-        ego.histo.append([date, rubrique, symb, descr])
-        self.save()
+            print("Impossible de créer un nouvel évenement pour {} (EventNotInList)".format(str(user)))
+            return False
 
     def since(self, user, format=None):
-        ego = self.log(user)
-        s = time.time() - ego.born
+        ego = self.open(user)
+        s = time.time() - ego.creation
         sm = s / 60  # en minutes
         sh = sm / 60  # en heures
         sj = sh / 24  # en jours
         sa = sj / 364.25  # en années
         if format == "année":
-            return int(sa)
+            return int(sa) if sa > 0 else 0.1
         elif format == "jour":
-            return int(sj)
+            return int(sj) if sj > 0 else 1
         elif format == "heure":
-            return int(sh)
+            return int(sh) if sh > 0 else 1
         elif format == "minute":
-            return int(sm)
+            return int(sm) if sm > 0 else 1
         else:
-            return int(s)
+            return int(s) if s > 0 else 1
 
     def stat_color(self, user):
         s = user.status
-        if s == discord.Status.online:
-            return 0x43B581
-        elif s == discord.Status.idle:
-            return 0xFAA61A
-        elif s == discord.Status.dnd:
-            return 0xF04747
+        if not user.bot:
+            if s == discord.Status.online:
+                return 0x43B581 #Vert
+            elif s == discord.Status.idle:
+                return 0xFAA61A #Jaune
+            elif s == discord.Status.dnd:
+                return 0xF04747 #Rouge
+            else:
+                return 0x9ea0a3 #Gris
         else:
-            return 0x9ea0a3
-
-    def poss_jeu(self, jeu):
-        verif = self.jeux_verif()
-        total = []
-        nom = None
-        for j in verif:
-            if jeu in j:
-                if nom == None:
-                    nom = j
-                for p in self.user:
-                    if "JEUX" in self.user[p]["PERSO"]:
-                        if j in self.user[p]["PERSO"]["JEUX"]:
-                            total.append(self.user[p]["ID"])
-        if total != []:
-            return [total, nom]
-        else:
-            return False
+            return 0x2e6cc9 #Bleu
 
     def jeux_verif(self):
         verif = []
         dispo = []
-        for p in self.user:
-            if "JEUX" in self.user[p]["PERSO"]:
-                for g in self.user[p]["PERSO"]["JEUX"]:
+        for p in self.data:  # On sort une liste des jeux vérifiés
+            if self.data[p]["JEUX"]:
+                for g in self.data[p]["JEUX"]:
                     if g not in verif:
                         verif.append(g)
                     else:
@@ -128,619 +121,469 @@ class EgoAPI:
         return dispo
 
     def biblio(self, user):
-        ego = self.log(user)
-        verif = self.jeux_verif()
-        if "JEUX" in ego.perso:
+        pot = self.open(user).jeux
+        liste = self.jeux_verif()
+        if pot.jeux:
             poss = []
-            for g in ego.perso["JEUX"]:
-                if g in verif:
+            for g in pot.jeux:
+                if g.lower() in liste:
                     poss.append(g)
-            if poss != []:
-                return poss
-            else:
-                return False
-        else:
-            return False
+            return poss if poss else False
+        return False
 
-    def is_fantome(self, user):
-        ego = self.log(user)
-        if "CONFIDENCE" in ego.perso:
-            if "FANTOME" in ego.perso["CONFIDENCE"]:
-                return ego.perso["CONFIDENCE"]["FANTOME"]
-            else:
-                return False
+    def affinite(self, auteur, user):
+        liste = [[self.data[user.id]["MENTIONS"][r], r] for r in self.data[user.id]["MENTIONS"]]
+        liste = sorted(liste, key=operator.itemgetter(0), reverse=True)
+        if auteur.id == liste[0][1]:
+            return "Meilleur ami(e)"
+        elif auteur.id in [i[1] for i in liste[:3]]:
+            return "Très forte"
+        elif auteur.id in [i[1] for i in liste[:5]]:
+            return "Forte"
+        elif auteur.id in [i[1] for i in liste[:20]]:
+            return "Moyenne"
         else:
-            return False
+            return "Faible"
 
-    def aff_auto(self, user, section):
-        ego = self.log(user)
-        if "CONFIDENCE" in ego.perso:
-            if self.is_fantome(user) is False:
-                if section in ego.perso["CONFIDENCE"]:
-                    return ego.perso["CONFIDENCE"][section]
+    def leven(self, s1, s2):
+        if len(s1) < len(s2):
+            m = s1
+            s1 = s2
+            s2 = m
+        if len(s2) == 0:
+            return len(s1)
+        previous_row = range(len(s2) + 1)
+        for i, c1 in enumerate(s1):
+            current_row = [i + 1]
+            for j, c2 in enumerate(s2):
+                insertions = previous_row[
+                                 j + 1] + 1
+                deletions = current_row[j] + 1
+                substitutions = previous_row[j] + (c1 != c2)
+                current_row.append(min(insertions, deletions, substitutions))
+            previous_row = current_row
+        return previous_row[-1]
+
+    def find_m(self, content): # Retrouve les mentions indirectes
+        listm = []
+        for e in content:
+            for p in self.bot.get_all_members():
+                ego = self.open(p)
+                if self.leven(p.name.lower(), e.lower()) <= 1:
+                    if p.id not in listm:
+                        listm.append(p.id)
+                elif self.leven(p.display_name.lower(), e.lower()) <= 1:
+                    if p.id not in listm:
+                        listm.append(p.id)
+                elif "SURNOM" in ego.services:
+                    if e.lower() == ego.services["SURNOM"].lower():
+                        if p.id not in listm:
+                            listm.append(p.id)
                 else:
-                    return True
-            else:
-                return False
-        else:
-            return True
+                    pass
+        return listm
 
-    def suspens(self, user, mode:bool):
-        ego = self.log(user)
-        if mode == True:
-            self.user[user.id]["STATS"] = {}
-            self.user[user.id]["HISTO"] = []
-            self.user[user.id]["SAVED"] = []
-            self.user[user.id]["PERSO"]["CONFIDENCE"]["FANTOME"] = True
-            self.save()
-        else:
-            self.user[user.id]["PERSO"]["CONFIDENCE"]["FANTOME"] = False
-            self.event(user, "autre", "?", "Est sorti(e) du mode fantôme")
-            self.save()
-        return True
-
-    def trad_day(self, input):
-        if input.lower() == "monday":
-            return "Lundi"
-        elif input.lower() == "tuesday":
-            return "Mardi"
-        elif input.lower() == "wednesday":
-            return "Mercredi"
-        elif input.lower() == "thursday":
-            return "Jeudi"
-        elif input.lower() == "friday":
-            return "Vendredi"
-        elif input.lower() == "saturday":
-            return "Samedi"
-        else:
-            return "Dimanche"
-
-    def find_pseudo(self, term: str, strict = False):
+    def find_pseudo(self, term: str):
         possible = []
-        for p in self.user:
-            if "PSEUDOS" in self.user[p]["STATS"]:
-                for i in self.user[p]["STATS"]["PSEUDOS"]:
+        for p in self.data:
+            if "PSEUDOS" in self.data[p]["STATS"]:
+                for i in self.data[p]["STATS"]["PSEUDOS"]:
                     if term.lower() in i.lower():
-                        possible.append([self.user[p]["ID"], i])
-            if strict is False:
-                if "N_PSEUDOS" in self.user[p]["STATS"]:
-                    for i in self.user[p]["STATS"]["N_PSEUDOS"]:
-                        if term.lower() in i.lower():
-                            if self.user[p]["ID"] not in possible:
-                                possible.append([self.user[p]["ID"], i])
-        if possible != []:
-            return possible
-        else:
-            return False
+                        possible.append([p, i])
+            if "D_PSEUDOS" in self.data[p]["STATS"]:
+                for i in self.data[p]["STATS"]["D_PSEUDOS"]:
+                    if term.lower() in i.lower():
+                        if p not in possible:
+                            possible.append([p, i])
+        return possible if possible else False
 
-    def pop_class(self, user, top=5):
-        liste = []
-        for p in self.user:
-            n = 0
-            for u in self.user:
-                if "MENTION" in self.user[u]["STATS"]:
-                    if p in self.user[u]["STATS"]["MENTION"]:
-                        n += self.user[u]["STATS"]["MENTION"][p]
-            t = self.user[p]["BORN"] / (60*60*24)
-            mn = n/t
-            if self.user[p]["ID"] == user.id:
-                k = [mn, self.user[p]["ID"]]
-            liste.append([mn, self.user[p]["ID"]])
-        sort = sorted(liste, key=operator.itemgetter(0))
-        sort.reverse()
-        place = sort.index(k)
-        sort = sort[:top]
-        return [sort, place]
-
-# AUTO UPDATE
-
-    async def ego_karma(self):
-        await self.bot.wait_until_ready()
-        try:
-            await asyncio.sleep(15)  # Temps de mise en route
-            while True:
-                for p in self.user: # KARMA
-                    if "KARMA" in self.user[p]["STATS"]:
-                        if self.user[p]["STATS"]["KARMA"] < 0:
-                            self.user[p]["STATS"]["KARMA"] += 1
-                    else:
-                        self.user[p]["STATS"]["KARMA"] = 0
-                self.save()
-                await asyncio.sleep(86400)  # Toutes les 24h
-        except asyncio.CancelledError:
-            pass
-
-# EGO =================================================================
 
 class Ego:
-    """Système Ego | Assistant personnel et suivi de statistiques"""
+    """Ego V3 | Fournisseur de statistiques et de services personnalisés"""
     def __init__(self, bot):
         self.bot = bot
-        self.ego = EgoAPI(bot, "data/ego/profil.json")
-        self.glob = dataIO.load_json("data/ego/glob.json") #Stats globaux
-        self.version = "V2.6 (&logs)"
-        self.cycle_task = bot.loop.create_task(self.ego_activity())
+        self.ego = EgoAPI(bot, "data/ego/data.json")
+        self.glb = dataIO.load_json("data/ego/glb.json")
+        self.version = "EGO V3 (&majs)"
+        self.logo_url = "http://i.imgur.com/nmJH3Zf.png"
+        self.cycle_task = bot.loop.create_task(self.ego_loop())
 
-    async def ego_activity(self):
-        await self.bot.wait_until_ready()
-        try:
-            await asyncio.sleep(10)  # Temps de mise en route
-            server = self.bot.get_server("204585334925819904")
-            while True:
-                if "ACTLOGS_VOC_ACTIF" in self.glob:
-                    nb = 0
-                    today = time.strftime("%d/%m/%Y", time.localtime())
-                    heure = time.strftime("%H", time.localtime())
-                    if heure in self.glob["ACTLOGS_VOC_ACTIF"]:
-                        for user in server.members:
-                            if user.voice.voice_channel != None:
-                                if user.voice.is_afk is False:
-                                    if user.voice.self_deaf is False:
-                                        if user.voice.self_mute is False:
-                                            nb += 1
-                        self.glob["ACTLOGS_VOC_ACTIF"][heure][today] = nb
-                    else:
-                        self.glob["ACTLOGS_VOC_ACTIF"][heure] = {}  # Ngb
-                else:
-                    self.glob["ACTLOGS_VOC_ACTIF"] = {}  # Ngb
-                if "ACTLOGS_VOC_INACTIF" in self.glob:
-                    nb = 0
-                    today = time.strftime("%d/%m/%Y", time.localtime())
-                    heure = time.strftime("%H", time.localtime())
-                    if heure in self.glob["ACTLOGS_VOC_INACTIF"]:
-                        for user in server.members:
-                            if user.voice.voice_channel != None:
-                                if user.voice.is_afk is False:
-                                    if user.voice.self_deaf is False:
-                                        if user.voice.self_mute is True:
-                                            nb += 1
-                        self.glob["ACTLOGS_VOC_INACTIF"][heure][today] = nb
-                    else:
-                        self.glob["ACTLOGS_VOC_INACTIF"][heure] = {}  # Ngb
-                else:
-                    self.glob["ACTLOGS_VOC_INACTIF"] = {}  # Ngb
-                fileIO("data/ego/glob.json", "save", self.glob)
-                await asyncio.sleep(3600)  # Toutes les 24h
-        except asyncio.CancelledError:
-            pass
-
-    def solde_img(self, rewind=0): #Remonte de X jours (rewind) afin de calculer le solde migratoire
-        nb_join = nb_quit = 0
-        today = time.strftime("%d/%m/%Y", time.localtime())
-        if today in self.glob["NB_JOIN"]:
-            nb_join += self.glob["NB_JOIN"][today]
-        else:
-            return False
-        if today in self.glob["NB_QUIT"]:
-            nb_quit += self.glob["NB_QUIT"][today]
-        else:
-            return False
-        if rewind > 0:
-            yst = today
-            while rewind > 0:
-                yst = time.strftime("%d/%m/%Y", time.localtime(time.mktime(time.strptime(yst, "%d/%m/%Y")) - 86400))
-                if yst in self.glob["NB_JOIN"]:
-                    nb_join += self.glob["NB_JOIN"][yst]
-                else:
-                    return False
-                if yst in self.glob["NB_QUIT"]:
-                    nb_quit += self.glob["NB_QUIT"][yst]
-                else:
-                    return False
-                rewind -= 1
-        solde = nb_join - nb_quit
-        return [nb_join, nb_quit, solde]
-
-#TODO: Ajout des stats heure/heure
-
-#,Commandes >>>>
-
-    @commands.command(name="logs", pass_context=True)
-    async def changelog(self, ctx):
-        """Informations sur la dernière MAJ Majeure de EGO."""
-        em = discord.Embed(color=0x5184a5)
-        c1 = "- Ajout de l'activité écrite et vocale\n" \
-             "- Le nom du fichier EgoStats comprend désormais la date\n" \
-             "- Un bouton 'Compatibilité' est disponible sur la carte de membre\n" \
-             "- Ajouter ❓ à un message permet d'avoir un résumé de la carte de membre de l'auteur"
-        em.add_field(name="Version 2.6", value=c1)
-        bt = "- Refonte de &epop\n" \
-             "- Stats sur l'utilsation des stickers"
-        em.add_field(name="Bientôt", value=bt, inline=False)
-        em.set_footer(text="Dernière MAJ publiée le 29/07", icon_url="http://i.imgur.com/DsBEbBw.png")
+    @commands.command(name="majs", pass_context=True)
+    async def changelog(self):
+        """Informations sur les MAJ de Ego et des modules auxilliaires."""
+        em = discord.Embed(title="EGO V3.0 | Voir Github",color=0x5184a5, url="https://github.com/GitAcrown/Addon/issues/3")
+        em.add_field(name="&card",
+                     value="+ Activité écrite et vocale par membre\n"
+                           "+ Affinité avec le membre\n"
+                           "+ L'historique est désormais journalier et horodaté\n"
+                           "+ Possibilité de refresh les informations\n"
+                           "+ Le code de l'invitation s'affiche dans l'historique\n"
+                           "+ Nouvel affichage en menu"
+                           "+ Anciens pseudos et surnoms")
+        em.add_field(name="&global",
+                     value="*(Fusion de stats et scard)*\n"
+                           "+ Temps de vocal et parole total (TTV & TTP)\n"
+                           "+ Possibilité de refresh les informations\n"
+                           "+ Nouvel affichage en menu")
+        em.add_field(name="Système",
+                     value="+ Meilleure détection des pseudos non-mentionnés\n"
+                           "+ Capacité à surveiller les invitations\n"
+                           "+ Plus grande précision dans le comptage de personnes en vocal\n"
+                           "+ Comptage du temps de parole/vocal à la seconde près pour chaque membre\n"
+                           "+ Classement des messages par channel\n"
+                           "+ Détection connexion/déconnexion\n"
+                           "+ Système de Rollback en cas de données corrompues\n"
+                           "- Les commandes ne sont plus considérées comme des messages\n"
+                           "- Le rôle prison n'est plus considéré comme un rôle supérieur aux rôles honorifiques")
+        em.add_field(name="Bientôt",
+                     value="+ Recherche de jeux\n"
+                           "+ Compilation de 'Tops' (Top actifs, e-pop, temps de parole...)\n"
+                           "+ Créer et gérer des groupes de jeu\n"
+                           "+ Créer et gérer des évenements\n"
+                           "+ Rappels personnalisés\n"
+                           "+ Personnalisation (Bio, Anniversaire, Surnom)\n"
+                           "+ Projet Oracle (Voir Github en cliquant plus haut)")
+        em.set_footer(text="MAJ publiée le 22/08 | Début de la récolte de stats V3: 22/08/2017", icon_url=self.logo_url)
         await self.bot.say(embed=em)
 
-    @commands.group(name="ego", pass_context=True)
-    async def _ego(self, ctx):
-        """Commandes EGO"""
-        if ctx.invoked_subcommand is None:
-            await send_cmd_help(ctx)
-
-    @_ego.command(pass_context=True, no_pm=True)
-    async def stats(self, ctx, dates=None):
-        """Affiche les détails des statistiques sur le serveur.
-        
-        Si <dates> est rentré sous le format jj/mm/aaaa;jj/mm/aaaa un fichier txt sera créé afin de rassembler les stats."""
+    @commands.command(name="global", pass_context=True, no_pm=True)
+    async def _global(self, ctx):
+        """Affiche des informations et des statistiques sur le serveur."""
         server = ctx.message.server
         today = time.strftime("%d/%m/%Y", time.localtime())
-        saut = 0
-        day = menu = None
-        if dates is None:
-            retour = False
-            while retour is False:
-                if saut == 0:
-                    day = today
-                elif saut > 0:
-                    day = time.strftime("%d/%m/%Y", time.localtime(time.mktime(time.strptime(today, "%d/%m/%Y")) - (86400 * saut))) #MACHINE A REMONTER LE TEMPS
-                else:
-                    await self.bot.say("**Erreur** | Impossible d'aller dans le futur, ça risquerait de détruire l'Espace-Temps...")
-                    return
-                em = discord.Embed(title="EGO Stats | {} - *{}*".format(server.name, day), color=ctx.message.author.color)
+        rewind = 0
+        menu = None
+        futur = False
+        while True:
+            if rewind == 0:
+                date = today
+            elif rewind > 0:
+                date = time.strftime("%d/%m/%Y",
+                                    time.localtime(time.mktime(time.strptime(today, "%d/%m/%Y")) - (86400 * rewind)))
+            else:
+                rewind += 1
+                date = time.strftime("%d/%m/%Y",
+                                     time.localtime(time.mktime(time.strptime(today, "%d/%m/%Y")) - (86400 * rewind)))
+                futur = True
+            if date in self.glb["DATES"]:
+                em = discord.Embed(title="EGO Data | **{}**".format(date if date != today else "Aujourd'hui"))
                 em.set_thumbnail(url=server.icon_url)
-                if day in self.glob["NB_MSG"]:
-                    tot = ""
-                    total = 0
-                    try:
-                        for c in self.glob["NB_MSG"][day]:
-                            if not self.bot.get_channel(c).is_private:
-                                if self.bot.get_channel(c).server.id == server.id:
-                                    nom = self.bot.get_channel(c).name.title()
-                                    tot += "**{}** {}\n".format(nom, self.glob["NB_MSG"][day][c])
-                                    total += self.glob["NB_MSG"][day][c]
-                    except:
-                        total = 0
-                        for c in self.glob["NB_MSG"][day]:
-                            total += self.glob["NB_MSG"][day][c]
-                    tot += "\n**Total** {}\n".format(total)
-                    if day in self.glob["BOT_MSG"]:
-                        tobot = 0
-                        for b in self.glob["BOT_MSG"][day]:
-                            tobot += self.glob["BOT_MSG"][day][b]
-                        tot += "**Sans bot** {}".format(total - tobot)
-                    em.add_field(name="Messages", value=tot, inline=True)
-                msg = "**Ecrit**\n"
-                elb = []
+                if futur:
+                    em.set_footer(text="Impossible d'aller dans le futur pour le moment ¯\_(ツ)_/¯",
+                                  icon_url=self.logo_url)
+                    await self.bot.edit_message(menu, embed=em)
+                    await asyncio.sleep(1)
+                    futur = False
+                salons = ""
+                if "CHANNEL_MSG" in self.glb["DATES"][date]:
+                    for e in self.glb["DATES"][date]["CHANNEL_MSG"]:
+                        channel = self.bot.get_channel(e)
+                        salons += "**{}:** {}\n".format(channel.name, self.glb["DATES"][date]["CHANNEL_MSG"][e])
+                    msgs = "{}\n" \
+                          "**Total:** {}\n" \
+                          "**Sans bot:** {}".format(salons, self.glb["DATES"][date]["TOTAL_MSG"],
+                                                     self.glb["DATES"][date]["TOTAL_MSG"] -
+                                                     self.glb["DATES"][date]["BOT_TOTAL_MSG"])
+                    em.add_field(name="Messages", value=msgs)
+                if "HORO_ECRIT" not in self.glb["DATES"][date]:
+                    self.glb["DATES"][date]["HORO_ECRIT"] = {}
+                if "HORO_VOCAL_ACTIF" not in self.glb["DATES"][date]:
+                    self.glb["DATES"][date]["HORO_VOCAL_ACTIF"] = {}
+                if "TOTAL_VOCAL" not in self.glb["DATES"][date]:
+                    self.glb["DATES"][date]["TOTAL_VOCAL"] = 0
+                if "TOTAL_PAROLE" not in self.glb["DATES"][date]:
+                    self.glb["DATES"][date]["TOTAL_PAROLE"] = 0
+                #TODO Enlever cette (^) sécurité après quelques jours...
+                elb = []  # Ecrit ---
                 totalelb = 0
-                for heure in self.glob["ACTLOGS_ECR"]:
-                    if day in self.glob["ACTLOGS_ECR"][heure]:
-                        elb.append([int(heure), (int(heure) + 1), self.glob["ACTLOGS_ECR"][heure][day]])
-                        totalelb += self.glob["ACTLOGS_ECR"][heure][day]
+                act_ecr = act_voc = ""
+                for heure in self.glb["DATES"][date]["HORO_ECRIT"]:
+                    elb.append([int(heure), (int(heure) + 1), self.glb["DATES"][date]["HORO_ECRIT"][heure]])
+                    totalelb += self.glb["DATES"][date]["HORO_ECRIT"][heure]
                 top = sorted(elb, key=operator.itemgetter(2), reverse=True)
                 top = top[:5]
                 for c in top:
                     pourc = (c[2] / totalelb) * 100
-                    msg += "**[{};{}[** {}%\n".format(c[0], c[1], round(pourc, 2))
-                msg += "\n**Vocal**\n"
-                elb = []
+                    act_ecr += "**[{};{}[:** {}%\n".format(c[0], c[1], round(pourc, 2))
+                elb = []  # Vocal ---
                 totalelb = 0
-                for heure in self.glob["ACTLOGS_VOC_ACTIF"]:
-                    if day in self.glob["ACTLOGS_VOC_ACTIF"][heure]:
-                        elb.append([int(heure), (int(heure) + 1), self.glob["ACTLOGS_VOC_ACTIF"][heure][day]])
-                        totalelb += self.glob["ACTLOGS_VOC_ACTIF"][heure][day]
+                for heure in self.glb["DATES"][date]["HORO_VOCAL_ACTIF"]:
+                    elb.append([int(heure), (int(heure) + 1), self.glb["DATES"][date]["HORO_VOCAL_ACTIF"][heure] / 2])
+                    totalelb += self.glb["DATES"][date]["HORO_ECRIT"][heure] / 2
                 top = sorted(elb, key=operator.itemgetter(2), reverse=True)
                 top = top[:5]
                 for c in top:
-                    pourc = (c[2] / totalelb) * 100 if totalelb > 0 else 0
-                    msg += "**[{};{}[** {}%\n".format(c[0], c[1], round(pourc))
-                em.add_field(name="Activité", value=msg, inline=True)
-                if day in self.glob["NB_JOIN"] and self.glob["NB_QUIT"]:
-                    if day in self.glob["NB_RETURN"]:
-                        msg = "**Immigrés (Dont revenus):** {} ({})\n" \
-                              "**Emigrés:** {}\n" \
-                              "**Solde:** {}".format(self.glob["NB_JOIN"][day], self.glob["NB_RETURN"][day], self.glob["NB_QUIT"][day], (self.glob["NB_JOIN"][day] - self.glob["NB_QUIT"][day]))
-                    else:
-                        msg = "**Immigrés:** {}\n" \
-                              "**Emigrés:** {}\n" \
-                              "**Solde:** {}".format(self.glob["NB_JOIN"][day],
-                                                     self.glob["NB_QUIT"][day],
-                                                     (self.glob["NB_JOIN"][day] - self.glob["NB_QUIT"][day]))
-                    em.add_field(name="Flux migratoire", value=msg, inline=True)
-                if day in self.glob["REACTS"]:
-                    total = 0
-                    elb = []
-                    for e in self.glob["REACTS"][day]:
-                        total += self.glob["REACTS"][day][e]
-                        elb.append([e, self.glob["REACTS"][day][e]])
-                    if total > 0:
-                        top = sorted(elb, key=operator.itemgetter(1), reverse=True)
-                        top = top[:5]
-                        msg = "**Top 5**\n"
-                        for i in top:
-                            msg += "*:{}:* {}\n".format(i[0], i[1])
-                        msg += "\n**Total** {}".format(total)
-                        em.add_field(name="Réactions", value=msg, inline=True)
+                    pourc = (c[2] / totalelb) * 100
+                    act_voc += "**[{};{}[:** {}%\n".format(c[0], c[1], round(pourc, 2))
+                ttv = self.glb["DATES"][date]["TOTAL_VOCAL"]  # secondes
+                ttp = self.glb["DATES"][date]["TOTAL_PAROLE"]  # secondes
+                for p in server.members:
+                    ego = self.ego.open(p)
+                    if "CAR_VOCAL" in ego.stats:
+                        if ego.stats["CAR_VOCAL"] > 0:
+                            ttv += ego.stats["CAR_VOCAL"]
+                    if "CAR_PAROLE" in ego.stats:
+                        if ego.stats["CAR_PAROLE"] > 0:
+                            ttp += ego.stats["CAR_PAROLE"]
+                ttv /= 1440  # heures
+                ttp /= 1440  # heures
+                acts = "**__Écrit__**\n" \
+                      "{}\n\n" \
+                      "**__Vocal__**\n" \
+                      "{}\n\n" \
+                      "**TTV:** {}\n" \
+                      "**TTP:** {}\n".format(act_ecr, act_voc, round(ttv, 2), round(ttp, 2))
+                em.add_field(name="Activité", value=acts)
+                min_ = self.glb["DATES"][date]["TOTAL_JOIN"] if "TOTAL_JOIN" in self.glb["DATES"][date] else 0
+                mre_ = self.glb["DATES"][date]["TOTAL_RETOUR"] if "TOTAL_RETOUR" in self.glb["DATES"][date] else 0
+                mem_ = self.glb["DATES"][date]["TOTAL_QUIT"] if "TOTAL_QUIT" in self.glb["DATES"][date] else 0
+                migra = "**Immigrants:** {}\n" \
+                        "**Dont revenants:** {}\n" \
+                        "**Émigrants:** {}\n" \
+                        "**Solde:** {}".format(min_, mre_, mem_, (min_ - mem_))
+                em.add_field(name="Flux migratoire", value=migra)
+                em.set_footer(text="Utilisez les réactions ci-dessous pour naviguer | {}".format(self.version),
+                              icon_url=self.logo_url)
+            else:
+                em = discord.Embed(title="EGO Data | **{}**".format(date if date != today else "Aujourd'hui"),
+                                   description= "Aucune donnée pour ce jour.")
+                em.set_thumbnail(url=server.icon_url)
 
-                em.set_footer(text="Données issues de EGO | {}".format(self.version), icon_url="http://i.imgur.com/DsBEbBw.png")
-                if menu == None:
-                    menu = await self.bot.say(embed=em)
-                else:
+            if menu is None:
+                menu = await self.bot.say(embed=em)
+            else:
+                try:
+                    await self.bot.clear_reactions(menu)
+                except:
+                    pass
+                menu = await self.bot.edit_message(menu, embed=em)
+            await self.bot.add_reaction(menu, "⬅")
+            await self.bot.add_reaction(menu, "⏬")
+            if rewind > 0:
+                await self.bot.add_reaction(menu, "➡")
+            if rewind == 0:
+                await self.bot.add_reaction(menu, "🔄")
+                await self.bot.add_reaction(menu, "ℹ")
+            act = await self.bot.wait_for_reaction(["⬅", "⏬", "➡", "🔄", "ℹ"], message=menu, timeout=60,
+                                                   check=self.check)
+            if act is None:
+                em.set_footer(text="Session expirée | {}".format(self.version), icon_url=self.logo_url)
+                await self.bot.edit_message(menu, embed=em)
+                try:
+                    await self.bot.clear_reactions(menu)
+                except:
+                    pass
+                return
+            elif act.reaction.emoji == "⬅":
+                rewind += 1
+            elif act.reaction.emoji == "⏬":
+                em.set_footer(text="Entrez la date désirée ci-dessous (dd/mm/aaaa) | {}".format(self.version),
+                              icon_url=self.logo_url)
+                await self.bot.edit_message(menu, embed=em)
+                rep = await self.bot.wait_for_message(author=act.user, channel=menu.channel, timeout=30)
+                if rep is None:
+                    em.set_footer(text="Timeout | Retour",
+                                  icon_url=self.logo_url)
+                    await self.bot.edit_message(menu, embed=em)
+                    await asyncio.sleep(0.5)
+                elif len(rep.content) == 10:
+                    rewind += int((time.mktime(time.strptime(date, "%d/%m/%Y")) - time.mktime(
+                        time.strptime(rep.content, "%d/%m/%Y"))) / 86400)
                     try:
-                        await self.bot.clear_reactions(menu)
+                        await self.bot.delete_message(rep)
                     except:
                         pass
-                    menu = await self.bot.edit_message(menu, embed=em)
-                await self.bot.add_reaction(menu, "⏪")
-                await self.bot.add_reaction(menu, "🔢")
-                if saut > 0:
-                    await self.bot.add_reaction(menu, "⏩")
-                await asyncio.sleep(1)
-                act = await self.bot.wait_for_reaction(["⏪", "🔢", "⏩"], message=menu, timeout=60)
-                if act == None:
-                    em.set_footer(text="---- Session expiré ----")
+                else:
+                    em.set_footer(text="Invalide | Retour".format(self.version),
+                                  icon_url=self.logo_url)
+                    await self.bot.edit_message(menu, embed=em)
+                    await asyncio.sleep(0.5)
+            elif act.reaction.emoji == "➡" and rewind > 0:
+                rewind -= 1
+            elif act.reaction.emoji == "🔄" and rewind == 0:
+                continue
+            elif act.reaction.emoji == "ℹ" and rewind == 0:
+                online = str(len([m.status for m in server.members if
+                                  str(m.status) == "online" or str(m.status) == "idle" or str(m.status) == "dnd"]))
+                total_users = str(len(server.members))
+                em = discord.Embed(title="EGO Data | {}".format(server.name), color=ctx.message.author.color)
+                em.add_field(name="ID", value="{}".format(server.id))
+                em.add_field(name="Région", value="{}".format(server.region))
+                em.add_field(name="Propriétaire", value="{}".format(server.owner))
+                em.add_field(name="Nb membres", value="**{}**/{}".format(online, total_users))
+                passed = (ctx.message.timestamp - server.created_at).days
+                em.add_field(name="Age", value="{} jours".format(passed))
+                em.set_thumbnail(url=server.icon_url)
+                em.set_footer(text="Utilisez la réaction ci-dessous pour retourner au menu | {}".format(
+                    self.version), icon_url=self.logo_url)
+                try:
+                    await self.bot.clear_reactions(menu)
+                except:
+                    pass
+                await self.bot.edit_message(menu, embed=em)
+                retour = await self.bot.wait_for_reaction(["⏹"], message=menu, timeout=60, check=self.check)
+                if retour is None:
+                    em.set_footer(text="Session expirée | {}".format(self.version), icon_url=self.logo_url)
                     await self.bot.edit_message(menu, embed=em)
                     return
-                elif act.reaction.emoji == "⏪":
-                    saut += 1
-                elif act.reaction.emoji == "🔢":
-                    em.set_footer(text="Entrez la date désirée ci-dessous (dd/mm/aaaa)".format(self.version), icon_url="http://i.imgur.com/DsBEbBw.png")
-                    await self.bot.edit_message(menu, embed=em)
-                    rep = await self.bot.wait_for_message(author=act.user, channel=menu.channel, timeout=30)
-                    if rep is None:
-                        em.set_footer(text="Invalide | Retour".format(self.version),
-                                      icon_url="http://i.imgur.com/DsBEbBw.png")
-                        await self.bot.edit_message(menu, embed=em)
-                        await asyncio.sleep(2)
-                    elif len(rep.content) == 10:
-                        saut += int((time.mktime(time.strptime(day, "%d/%m/%Y")) - time.mktime(time.strptime(rep.content, "%d/%m/%Y")))/86400)
-                        await self.bot.delete_message(rep)
-                    else:
-                        em.set_footer(text="Invalide | Retour".format(self.version),
-                                      icon_url="http://i.imgur.com/DsBEbBw.png")
-                        await self.bot.edit_message(menu, embed=em)
-                        await asyncio.sleep(2)
-                elif act.reaction.emoji == "⏩":
-                    saut -= 1
+                elif retour.reaction.emoji == "⏹":
+                    continue
                 else:
                     pass
-        else:
-            if ";" in dates:
-                if len(dates) == 21:
-                    deb = day = dates.split(";")[0]
-                    fin = dates.split(";")[1]
-                    lend = time.strftime("%d/%m/%Y", time.localtime(time.mktime(time.strptime(fin, "%d/%m/%Y")) + 86400))
-                    if time.mktime(time.strptime(deb, "%d/%m/%Y")) <= time.mktime(time.strptime(fin, "%d/%m/%Y")):
-                        nbmsgtotal = total = nbmsgsbot = 0
-                        arrtotal = deptotal = rettotal = 0
-                        reacttotal = 0
-                        chan = {}
-                        react = {}
-                        activ = {}
-                        activvoc = {}
-                        nonactivvoc = {}
-                        while day != lend:
-                            total = 0
-                            if day in self.glob["NB_MSG"]:
-                                try:
-                                    for c in self.glob["NB_MSG"][day]:
-                                        if not self.bot.get_channel(c).is_private:
-                                            if self.bot.get_channel(c).server.id == server.id:
-                                                if self.bot.get_channel(c).id not in chan:
-                                                    chan[self.bot.get_channel(c).id] = {"ID": self.bot.get_channel(c).id,
-                                                                                        "NOM": self.bot.get_channel(c).name,
-                                                                                        "NBMSG": self.glob["NB_MSG"][day][c]}
-                                                else:
-                                                    chan[self.bot.get_channel(c).id]["NBMSG"] += self.glob["NB_MSG"][day][c]
-                                                total += self.glob["NB_MSG"][day][c]
-                                except:
-                                    total = 0
-                                    for c in self.glob["NB_MSG"][day]:
-                                        total += self.glob["NB_MSG"][day][c]
-                            nbmsgtotal += total
-                            total = 0
-                            if day in self.glob["BOT_MSG"]:
-                                for b in self.glob["BOT_MSG"][day]:
-                                    total += self.glob["BOT_MSG"][day][b]
-                            nbmsgsbot += total
-                            if day in self.glob["NB_JOIN"] and self.glob["NB_QUIT"]:
-                                if day in self.glob["NB_RETURN"]:
-                                    arrtotal += self.glob["NB_JOIN"][day]
-                                    deptotal += self.glob["NB_QUIT"][day]
-                                    rettotal += self.glob["NB_RETURN"][day]
-                            total = 0
-                            if day in self.glob["REACTS"]:
-                                total = 0
-                                for e in self.glob["REACTS"][day]:
-                                    total += self.glob["REACTS"][day][e]
-                                    if e not in react:
-                                        react[e] = {"NOM": e, "NB": self.glob["REACTS"][day][e]}
-                                    else:
-                                        react[e]["NB"] += self.glob["REACTS"][day][e]
-                            reacttotal += total
-                            for h in self.glob["ACTLOGS_ECR"]:
-                                if day in self.glob["ACTLOGS_ECR"][h]:
-                                    if h not in activ:
-                                        activ[h] = self.glob["ACTLOGS_ECR"][h][day]
-                                    else:
-                                        activ[h] += self.glob["ACTLOGS_ECR"][h][day]
-                            for j in self.glob["ACTLOGS_VOC_ACTIF"]:
-                                if day in self.glob["ACTLOGS_VOC_ACTIF"][j]:
-                                    if j not in activvoc:
-                                        activvoc[j] = self.glob["ACTLOGS_VOC_ACTIF"][j][day]
-                                    else:
-                                        activvoc[j] += self.glob["ACTLOGS_VOC_ACTIF"][j][day]
-                            for k in self.glob["ACTLOGS_VOC_INACTIF"]:
-                                if day in self.glob["ACTLOGS_VOC_INACTIF"][k]:
-                                    if k not in nonactivvoc:
-                                        nonactivvoc[k] = self.glob["ACTLOGS_VOC_INACTIF"][k][day]
-                                    else:
-                                        nonactivvoc[k] += self.glob["ACTLOGS_VOC_INACTIF"][k][day]
-                            #Jour suivant
-                            day = time.strftime("%d/%m/%Y", time.localtime(time.mktime(time.strptime(day, "%d/%m/%Y")) + 86400))
-                        d1 = "{}-{}-{}".format(deb.split("/")[0],deb.split("/")[1],deb.split("/")[2])
-                        d2 = "{}-{}-{}".format(fin.split("/")[0],fin.split("/")[1],fin.split("/")[2])
-                        filename = "EgoStats_{}_{}".format(d1, d2)
-                        if not os.path.isfile("data/ego/{}.txt".format(filename)):
-                            fileIO("data/ego/{}.txt".format(filename), "save", "")
-                        file = open("data/ego/{}.txt".format(filename), "w")
-                        msgtxt = ""
-                        for c in chan:
-                            msgtxt += "{}\t{}\n".format(chan[c]["NOM"], chan[c]["NBMSG"])
-                        reacttxt = ""
-                        for r in react:
-                            reacttxt += "{}\t{}\n".format(react[r]["NOM"], react[r]["NB"])
-                        actlogs = ""
-                        actlogsvoca = ""
-                        actlogsvoci = ""
-                        lbd = []
-                        for a in activ:
-                            lbd.append([int(a), int(a) +1, activ[a]])
-                        lbd = sorted(lbd, key=operator.itemgetter(0))
-                        if lbd != []:
-                            for l in lbd:
-                                itv = "[{};{}[".format(l[0], l[1])
-                                actlogs += "{}\t{}\n".format(itv, l[2])
-                        else:
-                            actlogs = "Données insuffisantes"
-                        lbd = []
-                        for b in activvoc:
-                            lbd.append([int(b), int(b) +1, activvoc[b]])
-                        lbd = sorted(lbd, key=operator.itemgetter(0))
-                        if lbd != []:
-                            for l in lbd:
-                                itv = "[{};{}[".format(l[0], l[1])
-                                actlogsvoca += "{}\t{}\n".format(itv, l[2])
-                        else:
-                            actlogsvoca = "Données insuffisantes"
-                        lbd = []
-                        for c in nonactivvoc:
-                            lbd.append([int(c), int(c) +1, nonactivvoc[c]])
-                        lbd = sorted(lbd, key=operator.itemgetter(0))
-                        if lbd != []:
-                            for l in lbd:
-                                itv = "[{};{}[".format(l[0], l[1])
-                                actlogsvoci += "{}\t{}\n".format(itv, l[2])
-                        else:
-                            actlogsvoci = "Données insuffisantes"
-                        msg = "EGO STATS | Du {} au {}\n\n" \
-                              "== Immigration ==\n" \
-                              "Immigrants\t{}\n" \
-                              "Dont revenants\t{}\n" \
-                              "Emigrants\t{}\n" \
-                              "\n" \
-                              "== Messages ==\n" \
-                              "{}\n" \
-                              "Total\t{}\n" \
-                              "Sans Bot\t{}\n" \
-                              "\n" \
-                              "== Réactions ==\n" \
-                              "{}\n" \
-                              "Total\t{}\n" \
-                              "\n" \
-                              "== Activité écrite h/h ==\n" \
-                              "{}\n" \
-                              "\n" \
-                              "== Activité vocale active h/h ==\n" \
-                              "{}\n" \
-                              "\n" \
-                              "== Activité vocale inactive h/h ==\n" \
-                              "{}\n" \
-                              "\n" \
-                              "A savoir :\n" \
-                              "- Les dates indiqués sont comprises dans le calcul\n" \
-                              "- L'activité écrite et vocale correspondent à des comptages et sont cumulés sur la période indiquée\n" \
-                              "- Le comptage se faisant au moment de l'action, la suppression (message ou réaction) n'affecte pas le calcul".format(deb, fin, arrtotal, rettotal, deptotal, msgtxt, nbmsgtotal, (nbmsgtotal - nbmsgsbot), reacttxt, reacttotal, actlogs, actlogsvoca, actlogsvoci)
-                        file.write(msg)
-                        file.close()
-                        await self.bot.say("Préparation de votre commande...")
-                        await asyncio.sleep(0.5)
-                        try:
-                            await self.bot.say("Upload en cours...")
-                            await self.bot.send_file(ctx.message.channel, "data/ego/{}.txt".format(filename))
-                            await asyncio.sleep(1)
-                            os.remove("data/ego/{}.txt".format(filename))
-                        except:
-                            await self.bot.say("Erreur | Fichier introuvable.")
-                    else:
-                        await self.bot.say("Erreur | Vérifiez que vous avez mis la date la plus ancienne dabord. (Rappel: deb;fin)")
-                else:
-                    await self.bot.say("Erreur | Format invalide (Rappel: jj/mm/aaaa;jj/mm/aaaa)")
             else:
-                await self.bot.say("Erreur | Format invalide (Rappel: jj/mm/aaaa;jj/mm/aaaa)")
-
-    @_ego.command(pass_context=True)
-    async def infos(self, ctx):
-        """Affiche à propos du fonctionnement simplifié de EGO"""
-        await self.bot.say("**Affiche détaillant le fonctionnement de EGO**\nhttp://i.imgur.com/E2NbfVk.png")
-
-    @_ego.command(pass_context=True, no_pm=True)
-    async def epop(self, ctx, top=5):
-        """Affiche le top X des personnes les plus populaires du serveur et votre place sur ce top.
-
-        Par défaut le top 5."""
-        author = ctx.message.author
-        server = ctx.message.server
-        sort = self.ego.pop_class(author, top)
-        place = sort[1]
-        em = discord.Embed(color=author.color, title="EGO | Les E-Pop du serveur")
-        msg = ""
-        n = 1
-        for p in sort[0]:
-            user = server.get_member(p[1])
-            msg += "{} | *{}*\n".format(n, str(user))
-            n += 1
-        em.add_field(name="Top {}".format(top), value=msg)
-        em.add_field(name="Votre place", value="{}e".format(place + 1))
-        em.set_footer(text="Ces informations sont issues du système Ego | {}".format(self.version), icon_url="http://i.imgur.com/DsBEbBw.png")
-        await self.bot.say(embed=em)
-
-    @_ego.command(pass_context=True)
-    async def jeu(self, ctx, opt: str=None):
-        """Permet de voir qui possède le jeu auquel vous jouez.
-        
-        Si un jeu est précisé, il sera recherché au lieu de celui que vous êtes en train de jouer."""
-        author = ctx.message.author
-        if opt is None:
-            if author.game != None:
-                opt = author.game.name.lower()
-            else:
-                await self.bot.say("Vous ne jouez à aucun jeu.")
+                em.set_footer(text="Réaction invalide | {}".format(self.version), icon_url=self.logo_url)
+                await self.bot.edit_message(menu, embed=em)
                 return
-        else:
-            opt = opt.lower()
-        server = ctx.message.server
-        for m in server.members:
-            if m.game != None:
-                ego = self.ego.log(m)
-                if "JEUX" in ego.perso:
-                    if m.game.name.lower() not in ego.perso["JEUX"]:
-                        ego.perso["JEUX"].append(m.game.name.lower())
-                else:
-                    ego.perso["JEUX"] = [m.game.name.lower()]
-        if self.ego.poss_jeu(opt) == False:
-            await self.bot.say("Je n'ai pas assez de données pour ce jeu, je suis pour le moment incapable de vous dire si d'autres personnes le possède.\nRéssayez une prochaine fois !")
-            return
-        liste = self.ego.poss_jeu(opt)[0]
-        nom = self.ego.poss_jeu(opt)[1]
-        msg = ""
-        n = 1
-        for p in liste:
-            msg += "- *{}*\n".format(server.get_member(p))
-            if len(msg) >= 1950 * n:
-                n += 1
-                msg += "!!"
-        else:
-            lmsg = msg.split("!!")
-            try:
-                if "!!" not in lmsg:
-                    em = discord.Embed(color=author.color)
-                    em.add_field(name="Propriétaires de {}*".format(nom.title()), value=msg)
-                    em.set_footer(text="* ou version similaire")
-                    await self.bot.say(embed=em)
-                else:
-                    await self.bot.say("Propriétaires de {} *ou version similaire*\n\n")
-                    for m in lmsg:
-                        await self.bot.say(m)
-            except:
-                await self.bot.say("Le nombre de joueurs est trop important. Discord n'autorise pas l'affichage d'un tel pavé...")
 
-    @_ego.command(pass_context=True, no_pm=True)
-    async def find(self, ctx, recherche, strict:bool = False):
-        """Permet de retrouver à qui appartient un pseudo ou un surnom.
-        Si le pseudo est composé, utilisez des guillemets pour l'entrer.
-        
-        Prend en compte les anciens pseudos enregistrés par EGO."""
-        liste = self.ego.find_pseudo(recherche, strict)
-        if liste is False:
+    @commands.command(aliases=["carte", "c"], pass_context=True)
+    async def card(self, ctx, user: discord.Member = None):
+        """Affiche les informations détaillées d'un membre."""
+        if user is None: user = ctx.message.author
+        menu = None
+        while True:
+            ego = self.ego.open(user)
+            color = self.ego.stat_color(user)
+            date = time.strftime("%d/%m/%Y", time.localtime())
+            em = discord.Embed(title="{}".format(str(user) if user != ctx.message.author else "Votre profil"),
+                               color=color)
+            em.set_thumbnail(url=user.avatar_url)
+            if user.display_name.lower() != user.name.lower():
+                em.add_field(name="Pseudo", value=user.display_name)
+            em.add_field(name="ID", value=user.id)
+            passed = (ctx.message.timestamp - user.created_at).days
+            em.add_field(name="Création", value=str(passed) + " jours")
+            passed = (ctx.message.timestamp - user.joined_at).days
+            rpas = passed if passed >= self.ego.since(user, "jour") else "+" + passed
+            em.add_field(name="Ancienneté", value=rpas + " jours")
+            ecr = round(ego.stats["NB_MSG"] / self.ego.since(user, "jour")) if "NB_MSG" in ego.stats else 0
+            if "TOTAL_PAROLE" in ego.stats:
+                if "TOTAL_VOCAL" in ego.stats:
+                    hvoc = round(ego.stats["TOTAL_PAROLE"] + ego.stats["TOTAL_VOCAL"] + ego.stats["CAR_PAROLE"]
+                                 + ego.stats["CAR_VOCAL"]) * 3600
+                    voc = hvoc / self.ego.since(user, "jour")
+                else:
+                    voc = 0
+            else:
+                voc = 0
+            act = "**Écrit:** {}msg/j\n" \
+                  "**Vocal:** {}h/j".format(ecr, voc)
+            em.add_field(name="Activité", value=act)
+            rolelist = " ,".join([r.name for r in user.roles if r.name != "@everyone"])
+            em.add_field(name="Rôles", value=rolelist)
+            em.add_field(name="Auparavant", value="**Pseudos:** {}\n**Surnoms:** {}".format(" ,".join(
+                ego.stats["PSEUDOS"][:3]), " ,".join(ego.stats["D_PSEUDOS"][:3])))
+            liste = []
+            for e in ego.history:
+                if e[1] == date:
+                    mel = "{} {}".format(e[0], e[1])
+                    sec = time.mktime(time.strptime(mel, "%H:%M %d/%m/%Y"))
+                    liste.append([sec, e[0], e[1], e[2], e[3]])
+            if liste:
+                msg = ""
+                order = sorted(liste, key=operator.itemgetter(0), reverse=True)
+                top = order[:3]
+                for t in top:
+                    msg += "**{}** *{}*\n".format(t[1], t[4])
+            else:
+                msg = "*Aucune action*"
+            em.add_field(name="Aujourd'hui", value=msg)
+            if ctx.message.author != user:
+                em.add_field(name="Affinité", value=self.ego.affinite(ctx.message.author, user))
+            em.set_footer(text="Utilisez les réactions ci-dessous pour naviguer | {}".format(self.version),
+                          icon_url=self.logo_url)
+            if menu is None:
+                menu = await self.bot.say(embed=em)
+            else:
+                try:
+                    await self.bot.clear_reactions(menu)
+                except:
+                    pass
+                menu = await self.bot.edit_message(menu, embed=em)
+            await self.bot.add_reaction(menu, "🕹")  # Jeux
+            if user == ctx.message.author:
+                await self.bot.add_reaction(menu, "⚙")
+            await self.bot.add_reaction(menu, "🔄")  # Refresh
+            rap = await self.bot.wait_for_reaction(["🕹", "🔄", "⚙"], message=menu, timeout=60, check=self.check)
+            if rap is None:
+                em.set_footer(text="Session expirée | {}".format(self.version), icon_url=self.logo_url)
+                await self.bot.edit_message(menu, embed=em)
+                try:
+                    await self.bot.clear_reactions(menu)
+                except:
+                    pass
+                return
+            elif rap.reaction.emoji == "⚙" and user == ctx.message.author:
+                await self.bot.whisper("**Fonctionnalité en cours de développement !**\n"
+                                       "Bientôt: \n"
+                                       "+ Ajout d'une petite bio à votre carte\n"
+                                       "+ Ajout de la date de votre anniversaire\n"
+                                       "+ Ajout d'un surnom\n"
+                                       "+ Ajout d'un site web personnel")
+                try:
+                    await self.bot.clear_reactions(menu)
+                except:
+                    pass
+                return
+            elif rap.reaction.emoji == "🕹":
+                aff = ""
+                if ctx.message.author != user:
+                    selfbib = self.ego.biblio(ctx.message.author)
+                    userbib = self.ego.biblio(user)
+                    if userbib:
+                        for g in userbib:
+                            if g.lower() in selfbib:
+                                aff += "__*{}*__\n".format(g.title())
+                            else:
+                                aff += "*{}*\n".format(g.title())
+                    else:
+                        aff = "???"
+                    em = discord.Embed(
+                        title="Jeux de {}".format(user.name) if user != ctx.message.author else "Vos jeux",
+                        color=color, description=aff)
+                    resul = "Les jeux en commun sont soulignés" if userbib else "Bibliothèque vide " \
+                                                                                       "ou non detectée"
+                    em.set_footer(text="{} | {}".format(resul, self.version), icon_url=self.logo_url)
+                else:
+                    selfbib = self.ego.biblio(ctx.message.author)
+                    if selfbib:
+                        for g in selfbib:
+                            aff += "*{}*\n".format(g.title())
+                    else:
+                        aff = "???"
+                    em = discord.Embed(
+                        title="Jeux de {}".format(user.name) if user != ctx.message.author else "Vos jeux",
+                        color=color, description=aff)
+                    resul = "Utilisez la réaction ci-dessous pour revenir à votre profil" if \
+                        selfbib else "Bibliothèque vide ou non detectée"
+                    em.set_footer(text="{} | {}".format(resul, self.version), icon_url=self.logo_url)
+                try:
+                    await self.bot.clear_reactions(menu)
+                except:
+                    pass
+                await self.bot.edit_message(menu, embed=em)
+                retour = await self.bot.wait_for_reaction(["⏹"], message=menu, timeout=60, check=self.check)
+                if retour is None:
+                    em.set_footer(text="Session expirée | {}".format(self.version), icon_url=self.logo_url)
+                    await self.bot.edit_message(menu, embed=em)
+                    return
+                elif retour.reaction.emoji == "⏹":
+                    continue
+                else:
+                    pass
+                # TODO Pouvoir constituer un groupe de jeu
+            elif rap.reaction.emoji == "🔄":
+                continue
+            else:
+                em.set_footer(text="Réaction invalide | {}".format(self.version), icon_url=self.logo_url)
+                await self.bot.edit_message(menu, embed=em)
+                return
+
+    @commands.command(pass_context=True, no_pm=True)
+    async def find(self, ctx, *recherche):
+        """Permet de retrouver à qui appartient un pseudo ou un surnom."""
+        recherche = " ".join(recherche)
+        liste = self.ego.find_pseudo(recherche)
+        if not liste:
             await self.bot.say("Aucun résultat trouvé. Essayez d'être moins précis et/ou vérifiez l'orthographe.")
             return
         server = ctx.message.server
@@ -751,975 +594,447 @@ class Ego:
                 msg += "**{}** ({})\n".format(str(mp), p[1])
             except:
                 msg += "*{}* ({})\n".format(p[0], p[1])
-        em = discord.Embed(color=ctx.message.author.color)
-        em.add_field(name="Résultats de votre recherche", value=msg)
-        em.set_footer(text="Informations issues de EGO | {}".format(self.version), icon_url="http://i.imgur.com/DsBEbBw.png")
+        em = discord.Embed(color=ctx.message.author.color, title="Résultats pour {}".format(recherche), description=msg)
+        em.set_footer(text="Anciens pseudos pris en compte | {}".format(self.version),
+                      icon_url=self.logo_url)
         await self.bot.say(embed=em)
 
-    @_ego.command(aliases=["opt"], pass_context=True, no_pm=True)
-    async def options(self, ctx):
-        """Permet de modifier vos options EGO."""
-        author = ctx.message.author
-        user = author
-        ego = self.ego.log(author)
-        if not user.bot:
-            ec = self.ego.stat_color(user)
-        else:
-            ec = 0x2e6cc9
-        if self.ego.is_fantome(user) is False:
-            retour = False
-            while retour is False:
-                em = discord.Embed(color=ec, title="EGO | Vos paramètres")
-                liste = "**1** | Informations personnelles\n" \
-                        "**2** | Confidentialité\n" \
-                        "**3** | Notifications\n" \
-                        "**Q** | Quitter"
-                em.add_field(name="Menu", value=liste)
-                em.set_footer(text="Saisissez le chiffre correspondant au sous-menu désiré",
-                              icon_url="http://i.imgur.com/DsBEbBw.png")
-                menu = await self.bot.whisper(embed=em)
-                verif = False
-                while verif != True:
-                    rep = await self.bot.wait_for_message(timeout=30, author=ctx.message.author, channel=menu.channel)
-                    if rep == None:
-                        await self.bot.whisper("*Absence de réponse* | Bye :wave:")
-                        return
-                    elif rep.content == "1":
-                        verif = True
-                        fini = False
-                        while fini != True:
-                            em = discord.Embed(color=ec, title="EGO | Informations perso.")
-                            liste = "**A** | Anniversaire\n" \
-                                    "**B** | Bibliothèque de jeux\n" \
-                                    "**S** | Site personnel\n" \
-                                    "**R** | Retour au menu\n" \
-                                    "**Q** | Quitter"
-                            em.add_field(name="Options", value=liste)
-                            em.set_footer(text="Saisissez la lettre correspondant à l'option désirée",
-                                          icon_url="http://i.imgur.com/DsBEbBw.png")
-                            sub_menu = await self.bot.whisper(embed=em)
-                            verif2 = False
-                            while verif2 != True:
-                                rep2 = await self.bot.wait_for_message(timeout=30, author=ctx.message.author,
-                                                                       channel=menu.channel)
-                                if rep2 == None:
-                                    await self.bot.whisper("*Absence de réponse* | Bye :wave:")
-                                    return
-                                elif rep2.content.lower() == "a":
-                                    verif2 = True
-                                    if "ANNIV" not in ego.perso:
-                                        notif = "**Saisir votre anniversaire**\n" \
-                                                "*Il est possible de saisir la date d'anniversaire afin de proposer divers services supplémentaires*\n" \
-                                                "*comme notifier d'autres membres proches de vous que c'est votre anniversaire afin que personne ne l'oublie.*\n" \
-                                                "Utilisez le format 'dd/mm' pour saisir votre anniversaire. \nPour annuler, saisissez 'non'."
-                                    else:
-                                        if ego.perso["ANNIV"] is None:
-                                            notif = "**Saisir votre anniversaire**\n" \
-                                                    "*Il est possible de saisir la date d'anniversaire afin de proposer divers services supplémentaires*\n" \
-                                                    "*comme notifier d'autres membres proches de vous que c'est votre anniversaire afin que personne ne l'oublie.*\n" \
-                                                    "Utilisez le format 'dd/mm' pour saisir votre anniversaire. \nPour annuler, saisissez 'non'."
-                                        else:
-                                            notif = "**Modifier votre anniversaire**\n" \
-                                                    "*Il est possible de saisir la date d'anniversaire afin de proposer divers services supplémentaires*\n" \
-                                                    "*comme notifier d'autres membres proches de vous que c'est votre anniversaire afin que personne ne l'oublie.*\n" \
-                                                    "Utilisez le format 'dd/mm' pour saisir votre anniversaire. \nPour annuler, saisissez 'non'. \nPour le retirer, saisissez 'stop'."
-                                    await self.bot.whisper(notif)
-                                    verif3 = False
-                                    while verif3 != True:
-                                        rep3 = await self.bot.wait_for_message(timeout=30, author=ctx.message.author,
-                                                                               channel=menu.channel)
-                                        if rep3 == None:
-                                            await self.bot.whisper("*Absence de réponse* | Retour au menu")
-                                            verif3 = True
-                                        elif len(rep3.content.lower()) == 5:
-                                            try:
-                                                node = time.strptime(rep3.content, "%d/%m")
-                                                cont = True
-                                            except:
-                                                await self.bot.whisper("*Format invalide* | Réessayez")
-                                                cont = False
-                                            if cont != False:
-                                                verif3 = True
-                                                await self.bot.whisper(
-                                                    "*Vous fêterez votre prochain anniversaire le {}/{}.*\nEst-ce exact ? (O/N)".format(
-                                                        node.tm_mday, node.tm_mon))
-                                                att = await self.bot.wait_for_message(timeout=30,
-                                                                                      author=ctx.message.author,
-                                                                                      channel=menu.channel)
-                                                if att == None:
-                                                    await self.bot.whisper("*Absence de réponse* | Retour au menu")
-                                                elif att.content.lower() == "o" or "oui":
-                                                    await self.bot.whisper("**Enregistré !**")
-                                                    ego.perso["ANNIV"] = rep3.content.lower()
-                                                    self.ego.save()
-                                                else:
-                                                    await self.bot.whisper("*Annulation* | Retour au menu")
-                                        elif rep3.content.lower() in ["non", "annuler"]:
-                                            await self.bot.whisper("*Annulation* | Retour au menu")
-                                            verif3 = True
-                                        elif rep3.content.lower() == "stop":
-                                            await self.bot.whisper(
-                                                "*Votre anniversaire à été effacé de mes données* | Retour au menu")
-                                            ego.perso["ANNIV"] = None
-                                            self.ego.save()
-                                            verif3 = True
-                                        else:
-                                            await self.bot.whisper("*Format invalide* | Réessayez")
-                                elif rep2.content.lower() == "b":
-                                    verif2 = True
-                                    biblio = self.ego.biblio(user)
-                                    if biblio != False:
-                                        if biblio != []:
-                                            msg = "**Voici vos jeux possédés**:\n"
-                                            for g in biblio:
-                                                msg += "*{}*\n".format(g.title())
-                                            msg += "\nCes jeux sont vérifiés automatiquement par EGO. Cependant certains 'faux-jeux' (Status modifiés pour le fun) outrepassent cette sécurité\n" \
-                                                   "Il est donc possible de retirer un jeu détecté comme valide.\n" \
-                                                   "__Pour en retirer un, saisissez son nom complet__ sinon tapez 'annuler'."
-                                            await self.bot.whisper(msg)
-                                            verif3 = False
-                                            while verif3 != True:
-                                                rep3 = await self.bot.wait_for_message(timeout=60,
-                                                                                       author=ctx.message.author,
-                                                                                       channel=menu.channel)
-                                                if rep3 == None:
-                                                    await self.bot.whisper("*Absence de réponse* | Retour au menu")
-                                                    verif3 = True
-                                                elif rep3.content.lower() in [k.lower() for k in biblio]:
-                                                    ego.perso["JEUX"].remove(rep3.content.lower())
-                                                    self.ego.save()
-                                                    msg = "**Liste actualisée**:\n"
-                                                    biblio = self.ego.biblio(user)
-                                                    if biblio != []:
-                                                        for g in biblio:
-                                                            msg += "*{}*\n".format(g.title())
-                                                    else:
-                                                        msg += "Votre bibliothèque est vide."
-                                                    await self.bot.whisper(
-                                                        "{}\n\n**{} retiré.**\n*Pour continuer, saisissez un autre jeu, sinon tapez 'annuler'.*".format(
-                                                            rep3.content.title()))
-                                                elif rep3.content.lower() in ["non", "annuler"]:
-                                                    await self.bot.whisper("*Action annulée* | Retour au menu")
-                                                    verif3 = True
-                                                else:
-                                                    await self.bot.whisper(
-                                                        "*Absent de votre bibliothèque* | Réessayez (Tapez 'annuler' pour retourner au menu)")
-                                        else:
-                                            await self.bot.whisper(
-                                                "*Votre bibliothèque détectée semble vide* | Retour menu")
-                                    else:
-                                        await self.bot.whisper(
-                                            "*Vous n'avez pas de bibliothèque détectée* | Retour menu")
-                                elif rep2.content.lower() == "s":
-                                    verif2 = True
-                                    notif = "**Saisir son site internet**\n" \
-                                            "*Il est possible de saisir l'URL de son site internet afin de l'afficher sur votre carte*\n" \
-                                            "*Celui-ci sera accessible en cliquant sur votre pseudo dans &card*\n" \
-                                            "Pour l'ajouter, entrez l'URL du site. Sinon, tapez 'annuler'"
-                                    await self.bot.whisper(notif)
-                                    verif3 = False
-                                    while verif3 != True:
-                                        rep3 = await self.bot.wait_for_message(timeout=30, author=ctx.message.author,
-                                                                               channel=menu.channel)
-                                        if rep3 == None:
-                                            await self.bot.whisper("*Absence de réponse* | Retour au menu")
-                                            verif3 = True
-                                        elif "http://" in rep3.content.lower():
-                                            verif3 = True
-                                            if "SITE" not in ego.perso:
-                                                ego.perso["SITE"] = rep3.content.lower()
-                                                await self.bot.whisper("*Site ajouté !* | Retour au menu")
-                                            else:
-                                                ego.perso["SITE"] = rep3.content.lower()
-                                                await self.bot.whisper("*Site modifié !* | Retour au menu")
-                                        elif rep3.content.lower() in ["non", "annuler"]:
-                                            await self.bot.whisper("*Annulation* | Retour au menu")
-                                            verif3 = True
-                                        else:
-                                            await self.bot.whisper(
-                                                "*Format invalide* | Réessayez (Ou tapez 'annuler' pour retourner au menu)")
-                                elif rep2.content.lower() == "r":
-                                    fini = True
-                                    verif2 = True
-                                    await self.bot.whisper("*Retour au menu*")
-                                elif rep2.content.lower() == "q":
-                                    await self.bot.whisper("**Bye** :wave:")
-                                    return
-                                else:
-                                    await self.bot.whisper(
-                                        "Non reconnu. Tapez la lettre correspondant à l'option désirée.")
-                    elif rep.content == "2":
-                        verif = True
-                        if "CONFIDENCE" not in ego.perso:
-                            ego.perso["CONFIDENCE"] = {}
-                        base = ["RATIO", "JEUX", "RELATIONS", "PROFIL", "HISTO", "FANTOME"]
-                        for e in base:
-                            if e not in ego.perso["CONFIDENCE"]:
-                                if e != "FANTOME":
-                                    ego.perso["CONFIDENCE"][e] = True
-                                else:
-                                    ego.perso["CONFIDENCE"][e] = False
-                        fini = False
-                        while fini != True:
-                            em = discord.Embed(color=ec, title="EGO | Confidentialité")
-                            liste = "**M** | Ratio de message ({})\n" \
-                                    "**B** | Bibliothèque de jeux ({})\n" \
-                                    "**S** | Relations ({})\n" \
-                                    "**H** | Historique ({})\n" \
-                                    "**P** | Profil personnel ({})\n" \
-                                    "**F** | Mode fantôme ({})\n" \
-                                    "**R** | Retour au menu\n" \
-                                    "**Q** | Quitter".format(ego.perso["CONFIDENCE"]["RATIO"],
-                                                             ego.perso["CONFIDENCE"]["JEUX"],
-                                                             ego.perso["CONFIDENCE"]["RELATIONS"],
-                                                             ego.perso["CONFIDENCE"]["HISTO"],
-                                                             ego.perso["CONFIDENCE"]["PROFIL"],
-                                                             ego.perso["CONFIDENCE"]["FANTOME"])
-                            em.add_field(name="Options", value=liste)
-                            em.set_footer(text="Saisissez la lettre correspondant à l'option désirée",
-                                          icon_url="http://i.imgur.com/DsBEbBw.png")
-                            sub_menu = await self.bot.whisper(embed=em)
-                            verif2 = False
-                            while verif2 != True:
-                                rep2 = await self.bot.wait_for_message(timeout=30, author=ctx.message.author,
-                                                                       channel=menu.channel)
-                                if rep2 == None:
-                                    await self.bot.whisper("*Absence de réponse* | Bye :wave:")
-                                    return
-                                elif rep2.content.lower() == "m":
-                                    verif2 = True
-                                    if ego.perso["CONFIDENCE"]["RATIO"] is True:
-                                        await self.bot.whisper(
-                                            "*Le ratio de message ne sera plus affiché sur votre carte EGO* | Retour Menu")
-                                        ego.perso["CONFIDENCE"]["RATIO"] = False
-                                        self.ego.save()
-                                    else:
-                                        if ego.perso["CONFIDENCE"]["RATIO"] is False:
-                                            await self.bot.whisper(
-                                                "*Le ratio de message sera affiché sur votre carte EGO* | Retour Menu")
-                                            ego.perso["CONFIDENCE"]["RATIO"] = True
-                                            self.ego.save()
-                                elif rep2.content.lower() == "b":
-                                    verif2 = True
-                                    if ego.perso["CONFIDENCE"]["JEUX"] is True:
-                                        await self.bot.whisper(
-                                            "*Vos jeux ne seront plus affichés sur votre carte EGO* | Retour Menu")
-                                        ego.perso["CONFIDENCE"]["JEUX"] = False
-                                        self.ego.save()
-                                    else:
-                                        if ego.perso["CONFIDENCE"]["JEUX"] is False:
-                                            await self.bot.whisper(
-                                                "*Vos jeux seront affichés sur votre carte EGO* | Retour Menu")
-                                            ego.perso["CONFIDENCE"]["JEUX"] = True
-                                            self.ego.save()
-                                elif rep2.content.lower() == "s":
-                                    verif2 = True
-                                    if ego.perso["CONFIDENCE"]["RELATIONS"] is True:
-                                        await self.bot.whisper(
-                                            "*Vos relations ne seront plus affichés sur votre carte EGO* | Retour Menu")
-                                        ego.perso["CONFIDENCE"]["RELATIONS"] = False
-                                        self.ego.save()
-                                    else:
-                                        if ego.perso["CONFIDENCE"]["RELATIONS"] is False:
-                                            await self.bot.whisper(
-                                                "*Vos relations seront affichés sur votre carte EGO* | Retour Menu")
-                                            ego.perso["CONFIDENCE"]["RELATIONS"] = True
-                                            self.ego.save()
-                                elif rep2.content.lower() == "h":
-                                    verif2 = True
-                                    if ego.perso["CONFIDENCE"]["HISTO"] is True:
-                                        await self.bot.whisper(
-                                            "*Votre historique ne sera plus affiché sur votre carte EGO* | Retour Menu")
-                                        ego.perso["CONFIDENCE"]["HISTO"] = False
-                                        self.ego.save()
-                                    else:
-                                        if ego.perso["CONFIDENCE"]["HISTO"] is False:
-                                            await self.bot.whisper(
-                                                "*Votre historique sera affiché sur votre carte EGO* | Retour Menu")
-                                            ego.perso["CONFIDENCE"]["HISTO"] = True
-                                            self.ego.save()
-                                elif rep2.content.lower() == "p":
-                                    verif2 = True
-                                    if ego.perso["CONFIDENCE"]["PROFIL"] is True:
-                                        await self.bot.whisper(
-                                            "*Vos informations perso. ne seront plus communiqués par EGO* | Retour Menu")
-                                        ego.perso["CONFIDENCE"]["PROFIL"] = False
-                                        self.ego.save()
-                                    else:
-                                        if ego.perso["CONFIDENCE"]["PROFIL"] is False:
-                                            await self.bot.whisper(
-                                                "*Vos informations perso. seront communiqués par EGO* | Retour Menu")
-                                            ego.perso["CONFIDENCE"]["PROFIL"] = True
-                                            self.ego.save()
-                                elif rep2.content.lower() == "f":
-                                    verif2 = True
-                                    warning = "**Mode Fantôme**\n" \
-                                              "Activer ce mode effacera toute information détenue par EGO jusqu'à ce jour et mettra votre profil 'en suspens'.\n" \
-                                              "Cela signifie qu'aucune nouvelle donnée ne sera récoltée de vous jusqu'a que vous sortiez de ce mode.\n" \
-                                              "En outre, votre carte EGO n'affichera que le stricte nécéssaire fourni par les serveurs Discord (Arrivée sur le serveur etc)\n" \
-                                              "*Note: Certaines données tels que le suivi du changement de pseudo ne sont pas seulement gérés par EGO et ne pourraient être supprimées*\n\n" \
-                                              "_Êtes-vous certain d'activer ce mode ?_ (O/N)"
-                                    await self.bot.whisper(warning)
-                                    verif3 = False
-                                    while verif3 is False:
-                                        rep3 = await self.bot.wait_for_message(timeout=60, author=ctx.message.author,
-                                                                               channel=menu.channel)
-                                        if rep3 == None:
-                                            await self.bot.whisper("*Absence de réponse* | Retour au menu")
-                                            verif3 = True
-                                        elif rep3.content.lower() in ["oui", "o"]:
-                                            if self.ego.suspens(ctx.message.author, True) == True:
-                                                await self.bot.whisper(
-                                                    "**Mode fantôme activé**\nPour en sortir, allez dans vos options et confirmez la sortie du mode.\n**Bye** :wave:")
-                                            else:
-                                                await self.bot.whisper("Il y a eu une erreur lors du changement de mode. Contactez Acrown#4424...")
-                                            return
-                                        else:
-                                            await self.bot.whisper("*Annulation* | Retour au menu")
-                                            verif3 = True
-                                elif rep2.content.lower() == "r":
-                                    await self.bot.whisper("*Retour au menu*")
-                                    verif2 = True
-                                    fini = True
-                                elif rep2.content.lower() == "q":
-                                    await self.bot.whisper("**Bye** :wave:")
-                                    return
-                                else:
-                                    await self.bot.whisper("*Réponse invalide* | Réessayez")
-                    elif rep.content == "3":
-                        verif = True
-                        await self.bot.whisper("*Page en construction* | Retour au menu")
-                    elif rep.content.lower() == "q":
-                        await self.bot.whisper("**Bye** :wave:")
-                        return
-                    else:
-                        await self.bot.whisper("*Réponse invalide* | Réessayez")
-        else:
-            menu = await self.bot.whisper(
-                "**Voulez-vous sortir du mode fantôme et réautoriser le suivi par EGO ?** (O/N)")
-            verifs = False
-            while verifs is False:
-                rep = await self.bot.wait_for_message(timeout=30, author=ctx.message.author, channel=menu.channel)
-                if rep is None:
-                    await self.bot.whisper("*Absence de réponse* | Bye :wave:")
-                    return
-                elif rep.content.lower() in ["o", "oui"]:
-                    await self.bot.whisper("**Sortie du mode fantôme**\n"
-                                           "Votre profil n'est plus suspendu !")
-                    self.ego.suspens(ctx.message.author, False)
-                    return
-                else:
-                    await self.bot.whisper("Bye :wave:")
-                    return
+    def check(self, reaction, user):
+        return not user.bot
 
-    @commands.command(aliases=["c"], pass_context=True)
-    async def card(self, ctx, user: discord.Member = None):
-        """Affiche une carte de membre détaillée.
-        
-        Si le pseudo n'est pas spécifié, c'est une carte de votre compte."""
-        if user is None:
-            user = ctx.message.author
-        ego = self.ego.log(user)
-        absent = False
-        if not user.bot:
-            ec = self.ego.stat_color(user)
-        else:
-            ec = 0x2e6cc9
-        today = time.strftime("%d/%m/%Y", time.localtime())
-        em = discord.Embed(title="{}".format(str(user)), color=ec, url=ego.perso["SITE"] if "SITE" in ego.perso else None)
-        em.set_thumbnail(url=user.avatar_url)
-        em.add_field(name="Surnom", value=user.display_name)
-        em.add_field(name="ID", value=str(user.id))
-        passed = (ctx.message.timestamp - user.created_at).days
-        em.add_field(name="Age du compte", value=str(passed) + " jours")
-        passed = (ctx.message.timestamp - user.joined_at).days
-        msg = "{} jours"
-        if self.ego.is_fantome(user) is False:
-            egodate = self.ego.since(user, "jour")
-            if egodate < 1:
-                egodate = 1
-            if passed < egodate:
-                msg = "+{} jours"
-        em.add_field(name="Nb de jours", value=msg.format(passed))
-        if self.ego.aff_auto(user, "RATIO") is True:
-            if "NB_MSG" in ego.stats:
-                em.add_field(name="Ratio de messages", value="{}/jour".format(str(
-                    round(ego.stats["NB_MSG"] / egodate, 2))))
-            else:
-                absent = True
-        rolelist = [r.name for r in user.roles]
-        rolelist.remove('@everyone')
-        em.add_field(name="Rôles", value=rolelist)
-        if self.ego.aff_auto(user, "HISTO") is True:
-            liste = ego.histo[-3:]
-            liste.reverse()
-            hist = ""
-            if liste != []:
-                for i in liste:
-                    hist += "**{}** *{}*\n".format(i[2], i[3])
-            else:
-                hist = "Aucun historique"
-            em.add_field(name="Historique", value="{}".format(hist))
-        if self.ego.is_fantome(user) is True:
-            fantome = "Cette personne n'est pas suivie par le système EGO"
-        elif absent is True:
-            fantome = "Cette personne n'est pas dans les fichiers EGO"
-        else:
-            fantome = "Certaines informations proviennent du système EGO"
-        if "KARMA" in ego.stats:
-            em.add_field(name="Karma", value=ego.stats["KARMA"])
-        else:
-            ego.stats["KARMA"] = 0
-            em.add_field(name="Karma", value=ego.stats["KARMA"])
-        em.set_footer(
-            text="{} | {}".format(fantome, self.version), icon_url="http://i.imgur.com/DsBEbBw.png")
-        modtoday = today[:5]
-        add = False
-        if "ANNIV" in ego.perso:
-            if ego.perso["ANNIV"] == modtoday:
-                em.set_footer(text="Ce membre fête aujourd'hui son anniversaire | BON ANNIVERSAIRE !")
-                add = True
-        msg = await self.bot.say(embed=em)
-
-        await self.bot.add_reaction(msg, "🎮")
-        await self.bot.add_reaction(msg, "🗓")
-        if user != ctx.message.author:
-            await self.bot.add_reaction(msg, "👥")
-        if add == True:
-            await self.bot.add_reaction(msg, "🎂")
-        await asyncio.sleep(1)
-        rap = await self.bot.wait_for_reaction(["🎮","🗓","👥","🎂"], message=msg, timeout=20)
-        if rap == None:
-            pass
-        elif rap.reaction.emoji == "🎂":
-            if add is True:
-                nem = discord.Embed(title="BON ANNIVERSAIRE {} !".format(user.name), description="Bon anniv' ! Passe une excellente journée !")
-                nem.set_thumbnail(url=user.avatar_url)
-                await self.bot.edit_message(msg, embed=nem)
-                return
-        elif rap.reaction.emoji == "🎮":
-            if self.ego.aff_auto(user, "JEUX") is True:
-                if user != ctx.message.author:
-                    em = discord.Embed(title="Jeux de {}".format(str(user)), color=ec)
-                    biblio = self.ego.biblio(user)
-                    selfbib = self.ego.biblio(ctx.message.author)
-                    verif = []
-                    msg = ""
-                    if biblio != False:
-                        if biblio != []:
-                            for g in biblio:
-                                if g.lower() not in verif:
-                                    if selfbib != False:
-                                        if selfbib != []:
-                                            if g in selfbib:
-                                                msg += "***{}***\n".format(g.title())
-                                                verif.append(g.lower())
-                                            else:
-                                                msg += "*{}*\n".format(g.title())
-                                                verif.append(g.lower())
-                                        else:
-                                            msg += "*{}*\n".format(g.title())
-                                            verif.append(g.lower())
-                                    else:
-                                        msg += "*{}*\n".format(g.title())
-                                        verif.append(g.lower())
-                                else:
-                                    pass
-                        else:
-                            msg = "Bibliothèque vide."
-                    else:
-                        msg = "Bibliothèque vide."
-                    em.add_field(name="Bibliothèque", value=msg)
-                    em.set_footer(text="Les jeux en commun sont affichés en gras | {}".format(self.version), icon_url="http://i.imgur.com/DsBEbBw.png")
-                else:
-                    em = discord.Embed(title="Vos jeux", color=ec)
-                    biblio = self.ego.biblio(user)
-                    verif = []
-                    msg = ""
-                    if biblio != False:
-                        if biblio != []:
-                            for g in biblio:
-                                if g.lower() not in verif:
-                                    verif.append(g.lower())
-                                    msg += "*{}*\n".format(g.title())
-                                else:
-                                    pass
-                        else:
-                            msg = "Bibliothèque vide."
-                    else:
-                        msg = "Bibliothèque vide."
-                    em.add_field(name="Bibliothèque", value=msg)
-                    em.set_footer(text="Certains jeux possédés peuvent ne pas avoir été vérifiés | {}".format(self.version), icon_url="http://i.imgur.com/DsBEbBw.png")
-                await self.bot.say(embed=em)
-            else:
-                await self.bot.say("**L'utilisateur ne souhaite pas partager sa bibliothèque.**")
-        elif rap.reaction.emoji == "🗓":
-            if self.ego.aff_auto(user, "HISTO") is True:
-                today = time.strftime("%d/%m/%Y", time.localtime())
-                saut = 0
-                day = menu = None
-                retour = False
-                while retour is False:
-                    if saut == 0:
-                        day = today
-                    elif saut > 0:
-                        day = time.strftime("%d/%m/%Y", time.localtime(
-                            time.mktime(time.strptime(today, "%d/%m/%Y")) - (86400 * saut)))  # MACHINE A REMONTER LE TEMPS
-                    else:
-                        await self.bot.say(
-                            "**Erreur** | Impossible d'aller dans le futur, ça risquerait de détruire l'Espace-Temps...")
-                        return
-                    msg = ""
-                    found = False
-                    for h in ego.histo:
-                        if h[0] == day:
-                            found = True
-                            msg += "**{}** *{}*\n".format(h[2], h[3])
-                    if found is True:
-                        if menu == None:
-                            em = discord.Embed(title="EGO Historique | *{}*".format(day), description=msg,
-                                               color=ctx.message.author.color)
-                            menu = await self.bot.say(embed=em)
-                        else:
-                            em = discord.Embed(title="EGO Historique | *{}*".format(day), description=msg,
-                                               color=ctx.message.author.color)
-                            await self.bot.clear_reactions(menu)
-                            await self.bot.edit_message(menu, embed=em)
-                    else:
-                        if menu == None:
-                            em = discord.Embed(title="EGO Historique | *{}*".format(day),
-                                               description="Aucun historique trouvé pour ce jour",
-                                               color=ctx.message.author.color)
-                            menu = await self.bot.say(embed=em)
-                        else:
-                            em = discord.Embed(title="EGO Historique | *{}*".format(day),
-                                               description="Aucun historique trouvé pour ce jour",
-                                               color=ctx.message.author.color)
-                            await self.bot.clear_reactions(menu)
-                            await self.bot.edit_message(menu, embed=em)
-                    await self.bot.add_reaction(menu, "⏪")
-                    if saut > 0:
-                        await self.bot.add_reaction(menu, "⏩")
-                    await asyncio.sleep(1)
-                    act = await self.bot.wait_for_reaction(["⏪", "⏩"], message=menu, timeout=60)
-                    if act == None:
-                        em.set_footer(text="---- Session expiré ----")
-                        await self.bot.edit_message(menu, embed=em)
-                        return
-                    elif act.reaction.emoji == "⏪":
-                        saut += 1
-                    elif act.reaction.emoji == "⏩":
-                        saut -= 1
-                    else:
-                        pass
-            else:
-                await self.bot.say("**L'utilisateur ne souhaite pas partager son historique.**")
-        elif rap.reaction.emoji == "👥":
-            if user != ctx.message.author:
-                try:
-                    ego1 = self.ego.log(user)
-                    ego2 = self.ego.log(ctx.message.author)
-                    if ego1.stats["NB_MSG"] > ego2.stats["NB_MSG"]:
-                        cr1 = (ego2.stats["NB_MSG"] / ego1.stats["NB_MSG"]) * 100
-                    else:
-                        cr1 = (ego1.stats["NB_MSG"] / ego2.stats["NB_MSG"]) * 100
-                    if ego2.id in ego1.stats["MENTION"]:
-                        m2tot = ego1.stats["MENTION"][ego2.id]
-                    else:
-                        m2tot = 0
-                    if ego1.id in ego2.stats["MENTION"]:
-                        m1tot = ego2.stats["MENTION"][ego1.id]
-                    else:
-                        m1tot = 0
-                    tot1 = tot2 = 0
-                    for m in ego1.stats["MENTION"]:
-                        tot1 += ego1.stats["MENTION"][m]
-                    prc2d1 = (m2tot / tot1) * 100
-                    for m in ego2.stats["MENTION"]:
-                        tot2 += ego2.stats["MENTION"][m]
-                    prc1d2 = (m1tot / tot2) * 100
-                    cr2 = (prc1d2 + prc2d1) / 2
-                    commun = 0
-                    if self.ego.biblio(user):
-                        if self.ego.biblio(ctx.message.author):
-                            if self.ego.biblio(user) != []:
-                                for g in self.ego.biblio(user):
-                                    if g in self.ego.biblio(ctx.message.author):
-                                        commun += 1
-
-                                totg1 = len(self.ego.biblio(user))
-                                totg2 = len(self.ego.biblio(ctx.message.author))
-                                prc1 = (commun / totg1) * 100
-                                prc2 = (commun / totg2) * 100
-                                cr3 = (prc1 + prc2) / 2
-                                tot = (cr1 + cr2 + cr3) / 3
-                            else:
-                                tot = (cr1 + cr2) / 2
-                        else:
-                            tot = (cr1 + cr2) / 2
-                    else:
-                        tot = (cr1 + cr2) / 2
-                    await self.bot.say("**Votre compatibilité avec cette personne est de *{}%***".format(round(tot)))
-                except:
-                    await self.bot.say("**Votre compatibilité avec cette personne est incalculable (<1% ou manque de données)**")
-        else:
-            return
-
-    @commands.command(aliases=["s"], pass_context=True)
-    async def scard(self, ctx):
-        """Affiche des informations sur le serveur."""
-        server = ctx.message.server
-        online = str(len([m.status for m in server.members if str(m.status) == "online" or str(m.status) == "idle" or str(m.status) == "dnd"]))
-        total_users = str(len(server.members))
-        auj = time.strftime("%d/%m/%Y", time.localtime())
-        hier = time.strftime("%d/%m/%Y", time.localtime(time.mktime(time.strptime(auj, "%d/%m/%Y")) - 86400))
-        em = discord.Embed(title= "{}".format(server.name), color=ctx.message.author.color)
-        em.add_field(name="ID", value="{}".format(server.id))
-        em.add_field(name="Region", value="{}".format(server.region))
-        em.add_field(name="Propriétaire", value="{}".format(server.owner))
-        if "NB_JOIN" and "NB_QUIT" in self.glob:
-            if auj in self.glob["NB_JOIN"]:
-                if auj in self.glob["NB_QUIT"]:
-                    if (self.glob["NB_JOIN"][auj] - self.glob["NB_QUIT"][auj]) > (self.glob["NB_JOIN"][hier] - self.glob["NB_QUIT"][hier]):
-                        var = "+"
-                    elif (self.glob["NB_JOIN"][auj] - self.glob["NB_QUIT"][auj]) == (self.glob["NB_JOIN"][hier] - self.glob["NB_QUIT"][hier]):
-                        var = "="
-                    else:
-                        var = "-"
-                else:
-                    var = "?"
-            else:
-                var = "?"
-        else:
-            var = "?"
-        em.add_field(name="Nb membres", value="**{}**/{} (*{}*)".format(online, total_users, var))
-        passed = (ctx.message.timestamp - server.created_at).days
-        em.add_field(name="Age", value="{} jours".format(passed))
-        em.set_thumbnail(url=server.icon_url)
-        em.set_footer(text="Certaines informations proviennent du système Ego | V2.3 (&logs)", icon_url="http://i.imgur.com/DsBEbBw.png")
-        await self.bot.say(embed=em)
-
-    @commands.command(name="egologs", pass_context=True, hidden=True)
-    @checks.admin_or_permissions(kick_members=True)
-    async def debug(self, ctx):
-        """Upload les fichiers de débug EGO."""
-        channel = ctx.message.channel
-        chemin = 'data/ego/profil.json'
-        chemin2 = 'data/ego/glob.json'
-        await self.bot.say("Upload en cours...")
-        await asyncio.sleep(0.25)
+    async def ego_loop(self):
+        await self.bot.wait_until_ready()
         try:
-            await self.bot.send_file(channel, chemin)
-            await asyncio.sleep(1)
-            await self.bot.send_file(channel, chemin2)
-        except:
-            await self.bot.say("Impossible d'upload le fichier.")
+            await asyncio.sleep(15)  # Temps de mise en route
+            server = self.bot.get_server("204585334925819904")
+            while True:
+                if "INVITS" not in self.glb["SYS"]: #MAJ des Invitations actives
+                    self.glb["SYS"]["INVITS"] = {}
+                invits = self.bot.invites_from(server)
+                for i in invits:
+                    if i.code not in self.glb["SYS"]["INVITS"]:
+                        self.glb["SYS"]["INVITS"][i.code] = {"CREATED": i.created_at,
+                                                      "MAX_USES": i.max_uses,
+                                                      "USES": i.uses,
+                                                      "CHANNEL": i.channel,
+                                                      "URL": str(i)}
+                for e in self.glb["SYS"]["INVITS"]:
+                    if e.code not in [i.code for i in invits]:
+                        del self.glb["SYS"]["INVITS"][e.code]
 
-#LISTENERS
+                date = time.strftime("%d/%m/%Y", time.localtime())
+                heure = time.strftime("%H", time.localtime())
+                totalactif = totalinactif = 0
+                if date not in self.glb["DATES"]:
+                    self.glb["DATES"][date] = {}
+                if "HORO_VOCAL_ACTIF" not in self.glb["DATES"][date]:
+                    self.glb["DATES"][date]["HORO_VOCAL_ACTIF"] = {}
+                if "HORO_VOCAL_INACTIF" not in self.glb["DATES"][date]:
+                    self.glb["DATES"][date]["HORO_VOCAL_INACTIF"] = {}
+                for user in server.members:
+                    if user.voice:
+                        if not user.voice.is_afk:
+                            if not user.voice.self_deaf or not user.voice.deaf:
+                                if not user.voice.self_mute or not user.voice.mute:
+                                    totalactif += 1
+                                else:
+                                    totalinactif += 1
+                self.glb["DATES"][date]["HORO_VOCAL_ACTIF"][heure] = \
+                    self.glb["DATES"][date]["HORO_VOCAL_ACTIF"][heure] \
+                    + totalactif if heure in self.glb["DATES"][date]["HORO_VOCAL_ACTIF"] else totalactif
+                self.glb["DATES"][date]["HORO_VOCAL_INACTIF"][heure] = \
+                    self.glb["DATES"][date]["HORO_VOCAL_INACTIF"][heure] \
+                    + totalinactif if heure in self.glb["DATES"][date]["HORO_VOCAL_INACTIF"] else totalinactif
+                fileIO("data/ego/glb.json", "save", self.glb)
+                await asyncio.sleep(1800)  # ! Changer aussi le calcul de l'activité vocale si cette valeur change !
+        except asyncio.CancelledError:
+            pass
 
     async def l_msg(self, message):
+        if not message.server.id == "204585334925819904":
+            return
+        mentions = message.mentions
         author = message.author
         channel = message.channel
-        server = message.server
-        today = time.strftime("%d/%m/%Y", time.localtime())
-        if author.bot is True:
-            if "BOT_MSG" in self.glob:
-                if server:
-                    if today in self.glob["BOT_MSG"]:
-                        if channel.id in self.glob["BOT_MSG"][today]:
-                            self.glob["BOT_MSG"][today][channel.id] += 1
-                        else:
-                            self.glob["BOT_MSG"][today][channel.id] = 1
-                    else:
-                        self.glob["BOT_MSG"][today] = {} #Ngb
+        ego = self.ego.open(author)
+        date = time.strftime("%d/%m/%Y", time.localtime())
+        if date not in self.glb["DATES"]:
+            self.glb["DATES"][date] = {}
+        if not author.bot:
+            self.glb["DATES"][date]["TOTAL_MSG"] = self.glb["DATES"][date]["TOTAL_MSG"] + 1 if \
+                "TOTAL_MSG" in self.glb["DATES"][date] else 1
+            if "CHANNEL_MSG" in self.glb["DATES"][date]:
+                self.glb["DATES"][date]["CHANNEL_MSG"][channel.id] = \
+                    self.glb["DATES"][date]["CHANNEL_MSG"][channel.id] \
+                    + 1 if channel.id in self.glb["DATES"][date]["CHANNEL_MSG"] else 1
             else:
-                self.glob["BOT_MSG"] = {} #Ngb
-        if "NB_MSG" in self.glob:
-            if server:
-                today = time.strftime("%d/%m/%Y", time.localtime())
-                if today in self.glob["NB_MSG"]:
-                    if channel.id in self.glob["NB_MSG"][today]:
-                        self.glob["NB_MSG"][today][channel.id] += 1
-                    else:
-                        self.glob["NB_MSG"][today][channel.id] = 1
-                else:
-                    self.glob["NB_MSG"][today] = {} #Ngb
-            else:
-                pass
+                self.glb["DATES"][date]["CHANNEL_MSG"] = {channel.id: 1}
         else:
-            self.glob["NB_MSG"] = {} #Ngb
-        if "ACTLOGS_ECR" in self.glob:
-            if server:
-                today = time.strftime("%d/%m/%Y", time.localtime())
-                heure = time.strftime("%H", time.localtime())
-                if heure in self.glob["ACTLOGS_ECR"]:
-                    if today in self.glob["ACTLOGS_ECR"][heure]:
-                        self.glob["ACTLOGS_ECR"][heure][today] += 1
-                    else:
-                        self.glob["ACTLOGS_ECR"][heure][today] = 1
-                else:
-                    self.glob["ACTLOGS_ECR"][heure] = {} #Ngb
-            else:
-                pass
+            self.glb["DATES"][date]["BOT_TOTAL_MSG"] = \
+                self.glb["DATES"][date]["BOT_TOTAL_MSG"] + 1 if "BOT_TOTAL_MSG" in self.glb["DATES"][date] else 1
+        heure = time.strftime("%H", time.localtime())
+        if "HORO_ECRIT" in self.glb["DATES"][date]:
+            self.glb["DATES"][date]["HORO_ECRIT"][heure] = \
+                self.glb["DATES"][date]["HORO_ECRIT"][heure] + 1 if \
+                heure in self.glb["DATES"][date]["HORO_ECRIT"] else 1
         else:
-            self.glob["ACTLOGS_ECR"] = {} #Ngb
-        fileIO("data/ego/glob.json", "save", self.glob)
-
-        ego = self.ego.log(author)
-        if self.ego.is_fantome(author) is True:
-            return
-        if "ANNIV" in ego.perso:
-            modtoday = today[:5]
-            an = today[-4:]
-            if ego.perso["ANNIV"] == modtoday:
-                if "ANNIV_FETE" in ego.perso:
-                    if an not in ego.perso["ANNIV_FETE"]:
-                        await self.bot.send_message(self.bot.get_channel("204585334925819904"), "**Bon anniversaire à** {} **!**".format(author.mention))
-                        ego.perso["ANNIV_FETE"].append(an)
-                else:
-                    ego.perso["ANNIV_FETE"] = []
-
+            self.glb["DATES"][date]["HORO_ECRIT"] = {heure: 1}
         ego.stats["NB_MSG"] = ego.stats["NB_MSG"] + 1 if "NB_MSG" in ego.stats else 1
-        if message.mentions != []:
-            if "MENTION" in ego.stats:
-                for u in message.mentions:
-                    if u.id in ego.stats["MENTION"]:
-                        ego.stats["MENTION"][u.id] += 1
-                    else:
-                        ego.stats["MENTION"][u.id] = 1
-                    egb = self.ego.log(u)
-                    if "MENTION_BY" in egb.stats:
-                        if author.id in egb.stats["MENTION_BY"]:
-                            egb.stats["MENTION_BY"][author.id] += 1
-                        else:
-                            egb.stats["MENTION_BY"][author.id] = 1
-                    else:
-                        egb.stats["MENTION_BY"] = {} #Ngb
+        if "NB_MSG_CHANNEL" in ego.stats:
+            ego.stats["NB_MSG_CHANNEL"][channel.id] = ego.stats["NB_MSG_CHANNEL"][channel.id] + 1 if \
+                channel.id in ego.stats["NB_MSG_CHANNEL"][channel.id] else 1
+        else:
+            ego.stats["NB_MSG_CHANNEL"] = {channel.id: 1}
+        if mentions:
+            if "MENTIONS" in ego.stats:
+                for u in mentions:
+                    ego.stats["MENTIONS"][u.id] = \
+                        ego.stats["MENTIONS"][u.id] + 1 if u.id in ego.stats["MENTIONS"] else 1
             else:
-                ego.stats["MENTION"] = {} #Ngb
+                ego.stats["MENTIONS"] = {}
+        lmi = self.ego.find_m(message.content)
+        if lmi:
+            if "MENTIONS" in ego.stats:
+                for u in mentions:
+                    ego.stats["MENTIONS"][u] = \
+                        ego.stats["MENTIONS"][u] + 1 if u in ego.stats["MENTIONS"] else 1
+            else:
+                ego.stats["MENTIONS"] = {}
         self.ego.save()
+        fileIO("data/ego/glb.json", "save", self.glb)
+        # TODO Avec Charm (en lié) > Stats des Emojis & Stickers
 
     async def l_join(self, user):
-        serverid = user.server.id
-        if serverid != "204585334925819904":
+        server = user.server
+        ego = self.ego.open(user)
+        descr = "Est arrivé [{}]"
+        if server.id != "204585334925819904" or user.bot:
             return
-        if "NB_JOIN" in self.glob:
-            today = time.strftime("%d/%m/%Y", time.localtime())
-            if today in self.glob["NB_JOIN"]:
-                self.glob["NB_JOIN"][today] += 1
-            else:
-                self.glob["NB_JOIN"][today] = 1
-            if today not in self.glob["NB_QUIT"]:
-                self.glob["NB_QUIT"][today] = 0
-            if today not in self.glob["NB_RETURN"]:
-                self.glob["NB_RETURN"][today] = 0
-        else:
-            self.glob["NB_JOIN"] = {} #Ngb
-
-        ego = self.ego.log(user)
-        if self.ego.is_fantome(user) is True:
-            return
-        if ego.born < (time.time() - 500):
-            if "NB_RETURN" in self.glob:
-                if today in self.glob["NB_RETURN"]:
-                    self.glob["NB_RETURN"][today] += 1
-                else:
-                    self.glob["NB_RETURN"][today] = 1
-            else:
-                self.glob["NB_RETURN"] = {} #Ngb
-
-        if "ENTREES" in ego.stats:
-            ego.stats["ENTREES"] += 1
-        else:
-            ego.stats["ENTREES"] = 1
-        self.ego.event(user, "presence", ">", "Est arrivé sur le serveur")
-        fileIO("data/ego/glob.json", "save", self.glob)
+        date = time.strftime("%d/%m/%Y", time.localtime())
+        if date not in self.glb["DATES"]:
+            self.glb["DATES"][date] = {}
+        self.glb["DATES"][date]["TOTAL_JOIN"] = self.glb["DATES"][date]["TOTAL_JOIN"] + 1 if \
+            "TOTAL_JOIN" in self.glb["DATES"][date] else 1
+        if ego.creation <= (time.time() - 500):
+            descr = "Est revenu [{}]"
+            self.glb["DATES"][date]["TOTAL_RETOUR"] = self.glb["DATES"][date]["TOTAL_RETOUR"] + 1 if \
+                "TOTAL_RETOUR" in self.glb["DATES"][date] else 1
+        ego.stats["JOINS"] = ego.stats["JOINS"] + 1 if "JOINS" in ego.stats else 1
+        code = "???"
+        for i in self.bot.invites_from(server):
+            for e in self.glb["SYS"]["INVITS"]:
+                if i.code == e:
+                    if self.glb["SYS"]["INVITS"][e]["USES"] < i.uses:
+                        code = i.code
+                        if "JOIN_FROM" not in ego.stats:
+                            ego.stats["JOIN_FROM"] = []
+                        else:
+                            ego.stats["JOIN_FROM"].append([date, i.code])
+                        self.glb["SYS"]["INVITS"][e]["USES"] = i.uses
+        self.ego.new_event(user, "immigration", descr.format(code))
+        fileIO("data/ego/glb.json", "save", self.glb)
         self.ego.save()
 
     async def l_quit(self, user):
-        serverid = user.server.id
-        if serverid != "204585334925819904":
+        server = user.server
+        ego = self.ego.open(user)
+        if server.id != "204585334925819904" or user.bot:
             return
-        if "NB_QUIT" in self.glob:
-            today = time.strftime("%d/%m/%Y", time.localtime())
-            if today in self.glob["NB_QUIT"]:
-                self.glob["NB_QUIT"][today] += 1
-            else:
-                self.glob["NB_QUIT"][today] = 1
-            if today not in self.glob["NB_JOIN"]:
-                self.glob["NB_JOIN"][today] = 0
-            if today not in self.glob["NB_RETURN"]:
-                self.glob["NB_RETURN"][today] = 0
-        else:
-            self.glob["NB_QUIT"] = {} #Ngb
-        fileIO("data/ego/glob.json", "save", self.glob)
-
-        ego = self.ego.log(user)
-        if self.ego.is_fantome(user) is True:
-            return
-        if "SORTIES" in ego.stats:
-            ego.stats["SORTIES"] += 1
-        else:
-            ego.stats["SORTIES"] = 1
-        self.ego.event(user, "presence", "<", "A quitté le serveur")
+        date = time.strftime("%d/%m/%Y", time.localtime())
+        if date not in self.glb["DATES"]:
+            self.glb["DATES"][date] = {}
+        self.glb["DATES"][date]["TOTAL_QUIT"] = self.glb["DATES"][date]["TOTAL_QUIT"] + 1 if \
+            "TOTAL_QUIT" in self.glb["DATES"][date] else 1
+        ego.stats["QUITS"] = ego.stats["QUITS"] + 1 if "QUITS" in ego.stats else 1
+        ego.stats["ROLLBACK_ROLES"] = [r.name for r in user.roles]
+        self.ego.new_event(user, "immigration", "A quitté le serveur")
+        fileIO("data/ego/glb.json", "save", self.glb)
         self.ego.save()
 
     async def l_react(self, reaction, user):
-        cible = reaction.message.author
-        if reaction.emoji == "❓":
-            ego = self.ego.log(cible)
-            absent = False
-            if not cible.bot:
-                ec = self.ego.stat_color(cible)
-            else:
-                ec = 0x2e6cc9
-            today = time.strftime("%d/%m/%Y", time.localtime())
-            em = discord.Embed(title="{}".format(str(cible)), color=ec)
-            em.set_thumbnail(url=cible.avatar_url)
-            em.add_field(name="Surnom", value=cible.display_name)
-            em.add_field(name="ID", value=str(cible.id))
-            passed = (reaction.message.timestamp - cible.created_at).days
-            em.add_field(name="Age du compte", value=str(passed) + " jours")
-            passed = (reaction.message.timestamp - cible.joined_at).days
-            msg = "{} jours"
-            if self.ego.is_fantome(cible) is False:
-                egodate = self.ego.since(cible, "jour")
-                if egodate < 1:
-                    egodate = 1
-                if passed < egodate:
-                    msg = "+{} jours"
-            em.add_field(name="Nb de jours", value=msg.format(passed))
-            if self.ego.aff_auto(cible, "RATIO") is True:
-                if "NB_MSG" in ego.stats:
-                    em.add_field(name="Ratio de messages", value="{}/jour".format(str(
-                        round(ego.stats["NB_MSG"] / egodate, 2))))
-                else:
-                    absent = True
-            rolelist = [r.name for r in cible.roles]
-            rolelist.remove('@everyone')
-            em.add_field(name="Rôles", value=rolelist)
-            if self.ego.aff_auto(cible, "HISTO") is True:
-                liste = ego.histo[-5:]
-                liste.reverse()
-                hist = ""
-                if liste != []:
-                    for i in liste:
-                        hist += "**{}** *{}*\n".format(i[2], i[3])
-                else:
-                    hist = "Aucun historique"
-                em.add_field(name="Historique", value="{}".format(hist))
-            if "PSEUDOS" in ego.stats:
-                em.add_field(name="5 Anciens pseudos", value="{}".format(ego.stats["PSEUDOS"][:5]))
-            if "N_PSEUDOS" in ego.stats:
-                em.add_field(name="5 Anciens surnoms", value="{}".format(ego.stats["N_PSEUDOS"][:5]))
-            if self.ego.is_fantome(cible) is True:
-                fantome = "Cette personne n'est pas suivie par le système EGO"
-            elif absent is True:
-                fantome = "Cette personne n'est pas dans les fichiers EGO"
-            else:
-                fantome = "Certaines informations proviennent du système EGO"
-            if "KARMA" in ego.stats:
-                em.add_field(name="Karma", value=ego.stats["KARMA"])
-            else:
-                ego.stats["KARMA"] = 0
-                em.add_field(name="Karma", value=ego.stats["KARMA"])
-            em.set_footer(
-                text="{} | {}".format(fantome, self.version), icon_url="http://i.imgur.com/DsBEbBw.png")
-            await self.bot.send_message(user, embed=em)
+        server = user.server
+        ego = self.ego.open(user)
+        if server.id != "204585334925819904" or user.bot:
             return
-
-        if "REACTS" in self.glob:
-            today = time.strftime("%d/%m/%Y", time.localtime())
-            if reaction.custom_emoji is True:
-                if today in self.glob["REACTS"]:
-                    if reaction.emoji.name in self.glob["REACTS"][today]:
-                        self.glob["REACTS"][today][reaction.emoji.name] += 1
-                    else:
-                        self.glob["REACTS"][today][reaction.emoji.name] = 1
-                else:
-                    self.glob["REACTS"][today] = {}
-                    self.glob["REACTS"][today][reaction.emoji.name] = 1
-        else:
-            self.glob["REACTS"] = {} #Ngb
-        fileIO("data/ego/glob.json", "save", self.glob)
-
-    async def l_profil(self, b, a): #On cherche un changement dans le profil
-        ego = self.ego.log(a)
-        if self.ego.is_fantome(a) is True:
-            return
-        if a.name != b.name: #Pseudo ?
-            if "PSEUDOS" in ego.stats:
-                ego.stats["PSEUDOS"].append(a.name)
-            else:
-                ego.stats["PSEUDOS"] = [b.name, a.name]
-            self.ego.event(a, "pseudo", "@", "A changé son pseudo en {}".format(a.name))
-        if a.display_name != b.display_name: #Surnom ?
-            if "N_PSEUDOS" in ego.stats:
-                ego.stats["N_PSEUDOS"].append(a.display_name)
-            else:
-                ego.stats["N_PSEUDOS"] = [b.display_name, a.display_name]
-            self.ego.event(a, "n_pseudo", "@", "Désormais surnommé(e) {}".format(a.display_name))
-        if a.avatar_url != b.avatar_url: #Avatar ?
-            self.ego.event(a, "avatar", "×", "A changé son avatar")
-        if a.top_role != b.top_role: #Rôle affiché ?
-            if a.top_role.name == "Prison":
-                self.ego.event(a, "karma", "!", "A été emprisonné")
-                if "KARMA" not in ego.stats:
-                    ego.stats["KARMA"] = 0
-                ego.stats["KARMA"] -= 3
-            if b.top_role.name == "Prison":
-                self.ego.event(a, "karma", "!", "Est sorti de prison")
-            if not a.top_role.name == "@everyone":
-                if a.top_role > b.top_role:
-                    self.ego.event(a, "role", "+", "A été promu {}".format(a.top_role.name))
-                else:
-                    self.ego.event(a, "role", "-", "A été rétrogradé {}".format(a.top_role.name))
-            else:
-                self.ego.event(a, "role", "!", "Ne possède plus de rôles")
-        if a.game != None:
-            if "JEUX" in ego.perso:
-                if a.game.name != None:
-                    if a.game.name.lower() not in ego.perso["JEUX"]:
-                        ego.perso["JEUX"].append(a.game.name.lower())
-            else:
-                ego.perso["JEUX"] = [] #Ngb
+        date = time.strftime("%d/%m/%Y", time.localtime())
+        if date not in self.glb["DATES"]:
+            self.glb["DATES"][date] = {}
+        if "REACTIONS" not in self.glb["DATES"][date]:
+            self.glb["DATES"][date]["REACTIONS"] = {}
+        self.glb["DATES"][date]["REACTIONS"][reaction.emoji.name] = \
+            self.glb["DATES"][date]["REACTIONS"][reaction.emoji.name] + 1 if \
+            reaction.emoji.name in self.glb["DATES"][date]["REACTIONS"] else 1
+        if "REACTIONS" not in ego.stats:
+            ego.stats["REACTIONS"] = {}
+        ego.stats["REACTIONS"][reaction.emoji.name] = \
+            ego.stats["REACTIONS"][reaction.emoji.name] + 1 if reaction.emoji.name in ego.stats["REACTIONS"] else 1
+        fileIO("data/ego/glb.json", "save", self.glb)
         self.ego.save()
 
-        #TODO Ajouter VoiceState dans le cadre du calcul d'Activité
+    async def l_profil(self, avant, apres):  # Non-optimisable :(
+        ego = self.ego.open(apres)
+        heure = time.strftime("%H", time.localtime())
+        if avant.name != apres.name:
+            if "PSEUDOS" in ego.stats:
+                ego.stats["PSEUDOS"].append(apres.name)
+            else:
+                ego.stats["PSEUDOS"] = [avant.name, apres.name]
+            self.ego.new_event(apres, "nom", "Pseudo changé pour {}".format(apres.name))
+        if avant.display_name != apres.display_name:
+            if "D_PSEUDOS" in ego.stats:
+                ego.stats["D_PSEUDOS"].append(apres.name)
+            else:
+                ego.stats["D_PSEUDOS"] = [avant.display_name, apres.display_name]
+            self.ego.new_event(apres, "nom", "Surnom changé pour {}".format(apres.display_name))
+        if avant.avatar_url != apres.avatar_url:
+            self.ego.new_event(apres, "autre", "Changement d'avatar")
+        if avant.top_role != apres.top_role:
+            if avant.top_role.name != "Prison" and apres.top_role.name != "Prison":
+                if apres.top_role > avant.top_role:
+                    self.ego.new_event(apres, "role", "A été promu {}".format(apres.top_role.name))
+                else:
+                    self.ego.new_event(apres, "role", "A été rétrogradé {}".format(avant.top_role.name))
+            else:
+                if apres.top_role.name == "Prison":
+                    self.ego.new_event(apres, "punition", "Est entré en prison")
+                else:
+                    self.ego.new_event(apres, "punition", "Est sorti de prison")
+        if apres.game:
+            if apres.game.name:
+                if apres.game.name.lower() not in ego.jeux:
+                    ego.jeux.append(apres.game.name.lower())
+        if avant.status.offline:
+            if apres.status.online or apres.status.dnd or apres.status.idle:
+                if "CONNECT" in ego.stats:
+                    ego.stats["CONNECT"][heure] = ego.stats["CONNECT"][heure] + 1 if \
+                        heure in ego.stats["CONNECT"] else 1
+                else:
+                    ego.stats["CONNECT"][heure] = 1
+        elif avant.status.online:
+            if apres.status.offline or apres.status.invisible:
+                if "DECONNECT" in ego.stats:
+                    ego.stats["DECONNECT"][heure] = ego.stats["DECONNECT"][heure] + 1 if \
+                        heure in ego.stats["DECONNECT"] else 1
+                else:
+                    ego.stats["DECONNECT"][heure] = 1
+        else:
+            pass
+        self.ego.save()
 
     async def l_ban(self, user):
-        ego = self.ego.log(user)
-        if self.ego.is_fantome(user) is True:
-            return
-        if "BANS" in ego.stats:
-            ego.stats["BANS"] += 1
-        else:
-            ego.stats["BANS"] = 1
-        self.ego.event(user, "presence", "#", "A été banni(e)")
+        ego = self.ego.open(user)
+        ego.stats["BANS"] = ego.stats["BANS"] + 1 if "BANS" in ego.stats else 1
+        self.ego.new_event(user, "punition", "A été banni")
         self.ego.save()
+
+    async def l_voice(self, avant, apres):
+        ego = self.ego.open(apres)
+        server = apres.server
+        if server.id != "204585334925819904" or apres.bot:
+            return
+        date = time.strftime("%d/%m/%Y", time.localtime())
+        if date not in self.glb["DATES"]:
+            self.glb["DATES"][date] = {}
+        if apres.voice:
+            if apres.voice.is_afk:
+                if avant.voice.mute or avant.voice.self_mute:
+                    diff = time.time() - ego.stats["CAR_VOCAL"] if ego.stats["CAR_VOCAL"] > 0 else 0
+                    now = time.strftime("%d/%m/%Y", time.localtime())
+                    debut = time.strftime("%d/%m/%Y", time.localtime(ego.stats["CAR_VOCAL"]))
+                    if now != debut:
+                        zero = time.mktime(time.strptime(now, "%d/%m/%Y"))
+                        tempsnow = time.time() - zero
+                        tempsdebut = zero - ego.stats["CAR_VOCAL"]
+                        self.glb["DATES"][now]["TOTAL_VOCAL"] = \
+                            self.glb["DATES"][now]["TOTAL_VOCAL"] + tempsnow if "TOTAL_VOCAL" \
+                                                                                 in self.glb["DATES"][
+                                                                                     now] else tempsnow
+                        self.glb["DATES"][debut]["TOTAL_VOCAL"] = \
+                            self.glb["DATES"][debut]["TOTAL_VOCAL"] + tempsdebut if "TOTAL_VOCAL" \
+                                                                                     in self.glb["DATES"][
+                                                                                         debut] else tempsdebut
+                    else:
+                        self.glb["DATES"][date]["TOTAL_VOCAL"] = \
+                            self.glb["DATE"][date]["TOTAL_VOCAL"] + diff if "TOTAL_VOCAL" \
+                                                                             in self.glb["DATES"][date] else diff
+                    ego.stats["TOTAL_VOCAL"] = \
+                        ego.stats["TOTAL_VOCAL"] + diff if "TOTAL_VOCAL" in ego.stats else diff
+                    ego.stats["CAR_VOCAL"] = 0
+                    return
+                else:
+                    diff = time.time() - ego.stats["CAR_PAROLE"] if ego.stats["CAR_PAROLE"] > 0 else 0
+                    now = time.strftime("%d/%m/%Y", time.localtime())
+                    debut = time.strftime("%d/%m/%Y", time.localtime(ego.stats["CAR_PAROLE"]))
+                    if now != debut:
+                        zero = time.mktime(time.strptime(now, "%d/%m/%Y"))
+                        tempsnow = time.time() - zero
+                        tempsdebut = zero - ego.stats["CAR_PAROLE"]
+                        self.glb["DATES"][now]["TOTAL_PAROLE"] = \
+                            self.glb["DATES"][now]["TOTAL_PAROLE"] + tempsnow if "TOTAL_PAROLE" \
+                                                                                in self.glb["DATES"][
+                                                                                    now] else tempsnow
+                        self.glb["DATES"][debut]["TOTAL_PAROLE"] = \
+                            self.glb["DATES"][debut]["TOTAL_PAROLE"] + tempsdebut if "TOTAL_PAROLE" \
+                                                                                    in self.glb["DATES"][
+                                                                                        debut] else tempsdebut
+                    else:
+                        self.glb["DATES"][date]["TOTAL_PAROLE"] = \
+                            self.glb["DATE"][date]["TOTAL_PAROLE"] + diff if "TOTAL_PAROLE" \
+                                                                             in self.glb["DATES"][date] else diff
+                    ego.stats["TOTAL_PAROLE"] = \
+                        ego.stats["TOTAL_PAROLE"] + diff if "TOTAL_PAROLE" in ego.stats else diff
+                    ego.stats["CAR_PAROLE"] = 0
+                    return
+            if not avant.voice:
+                if apres.voice.mute or apres.voice.self_mute:
+                    ego.stats["CAR_VOCAL"] = time.time()  # CAR = Compte A Rebours
+                else:
+                    ego.stats["CAR_PAROLE"] = time.time()
+            else:
+                if avant.voice.mute or avant.voice.self_mute:
+                    if not apres.voice.mute or not apres.voice.self_mute:
+                        ego.stats["CAR_PAROLE"] = time.time()
+                        diff = time.time() - ego.stats["CAR_VOCAL"] if ego.stats["CAR_VOCAL"] > 0 else 0
+                        now = time.strftime("%d/%m/%Y", time.localtime())
+                        debut = time.strftime("%d/%m/%Y", time.localtime(ego.stats["CAR_VOCAL"]))
+                        if now != debut:
+                            zero = time.mktime(time.strptime(now, "%d/%m/%Y"))
+                            tempsnow = time.time() - zero
+                            tempsdebut = zero - ego.stats["CAR_VOCAL"]
+                            self.glb["DATES"][now]["TOTAL_VOCAL"] = \
+                                self.glb["DATES"][now]["TOTAL_VOCAL"] + tempsnow if "TOTAL_VOCAL" \
+                                                                                    in self.glb["DATES"][
+                                                                                        now] else tempsnow
+                            self.glb["DATES"][debut]["TOTAL_VOCAL"] = \
+                                self.glb["DATES"][debut]["TOTAL_VOCAL"] + tempsdebut if "TOTAL_VOCAL" \
+                                                                                        in self.glb["DATES"][
+                                                                                            debut] else tempsdebut
+                        else:
+                            self.glb["DATES"][date]["TOTAL_VOCAL"] = \
+                                self.glb["DATE"][date]["TOTAL_VOCAL"] + diff if "TOTAL_VOCAL" \
+                                                                                in self.glb["DATES"][date] else diff
+                        ego.stats["TOTAL_VOCAL"] = \
+                            ego.stats["TOTAL_VOCAL"] + diff if "TOTAL_VOCAL" in ego.stats else diff
+                        ego.stats["CAR_VOCAL"] = 0
+                else:
+                    if apres.voice.mute or apres.voice.self_mute:
+                        if "CAR_PAROLE" in ego.stats:
+                            ego.stats["CAR_VOCAL"] = time.time()
+                            diff = time.time() - ego.stats["CAR_PAROLE"] if ego.stats["CAR_PAROLE"] > 0 else 0
+                            now = time.strftime("%d/%m/%Y", time.localtime())
+                            debut = time.strftime("%d/%m/%Y", time.localtime(ego.stats["CAR_PAROLE"]))
+                            if now != debut:
+                                zero = time.mktime(time.strptime(now, "%d/%m/%Y"))
+                                tempsnow = time.time() - zero
+                                tempsdebut = zero - ego.stats["CAR_PAROLE"]
+                                self.glb["DATES"][now]["TOTAL_PAROLE"] = \
+                                    self.glb["DATES"][now]["TOTAL_PAROLE"] + tempsnow if "TOTAL_PAROLE" \
+                                                                                     in self.glb["DATES"][
+                                                                                            now] else tempsnow
+                                self.glb["DATES"][debut]["TOTAL_PAROLE"] = \
+                                    self.glb["DATES"][debut]["TOTAL_PAROLE"] + tempsdebut if "TOTAL_PAROLE" \
+                                                                                     in self.glb["DATES"][
+                                                                                                debut] else tempsdebut
+                            else:
+                                self.glb["DATES"][date]["TOTAL_PAROLE"] = \
+                                    self.glb["DATES"][date]["TOTAL_PAROLE"] + \
+                                    diff if "TOTAL_PAROLE" in self.glb["DATES"][date] else diff
+                            ego.stats["TOTAL_PAROLE"] = \
+                                ego.stats["TOTAL_PAROLE"] + diff if "TOTAL_PAROLE" in ego.stats else diff
+                            ego.stats["CAR_PAROLE"] = 0
+        elif avant.voice:
+            if avant.voice.self_mute or avant.voice.mute:
+                if "CAR_VOCAL" in ego.stats:
+                    diff = time.time() - ego.stats["CAR_VOCAL"] if ego.stats["CAR_VOCAL"] > 0 else 0
+                    now = time.strftime("%d/%m/%Y", time.localtime())
+                    debut = time.strftime("%d/%m/%Y", time.localtime(ego.stats["CAR_VOCAL"]))
+                    if now != debut:
+                        zero = time.mktime(time.strptime(now, "%d/%m/%Y"))
+                        tempsnow = time.time() - zero
+                        tempsdebut = zero - ego.stats["CAR_VOCAL"]
+                        self.glb["DATES"][now]["TOTAL_VOCAL"] = \
+                            self.glb["DATES"][now]["TOTAL_VOCAL"] + tempsnow if "TOTAL_VOCAL" \
+                                                                                in self.glb["DATES"][
+                                                                                    now] else tempsnow
+                        self.glb["DATES"][debut]["TOTAL_VOCAL"] = \
+                            self.glb["DATES"][debut]["TOTAL_VOCAL"] + tempsdebut if "TOTAL_VOCAL" \
+                                                                                    in self.glb["DATES"][
+                                                                                        debut] else tempsdebut
+                    else:
+                        self.glb["DATES"][date]["TOTAL_VOCAL"] = \
+                            self.glb["DATE"][date]["TOTAL_VOCAL"] + diff if "TOTAL_VOCAL" \
+                                                                            in self.glb["DATES"][date] else diff
+                    ego.stats["TOTAL_VOCAL"] = \
+                        ego.stats["TOTAL_VOCAL"] + diff if "TOTAL_VOCAL" in ego.stats else diff
+                    ego.stats["CAR_VOCAL"] = 0
+            else:
+                if "CAR_PAROLE" in ego.stats:
+                    diff = time.time() - ego.stats["CAR_PAROLE"] if ego.stats["CAR_PAROLE"] > 0 else 0
+                    now = time.strftime("%d/%m/%Y", time.localtime())
+                    debut = time.strftime("%d/%m/%Y", time.localtime(ego.stats["CAR_PAROLE"]))
+                    if now != debut:
+                        zero = time.mktime(time.strptime(now, "%d/%m/%Y"))
+                        tempsnow = time.time() - zero
+                        tempsdebut = zero - ego.stats["CAR_PAROLE"]
+                        self.glb["DATES"][now]["TOTAL_PAROLE"] = \
+                            self.glb["DATES"][now]["TOTAL_PAROLE"] + tempsnow if "TOTAL_PAROLE" \
+                                                                                 in self.glb["DATES"][
+                                                                                     now] else tempsnow
+                        self.glb["DATES"][debut]["TOTAL_PAROLE"] = \
+                            self.glb["DATES"][debut]["TOTAL_PAROLE"] + tempsdebut if "TOTAL_PAROLE" \
+                                                                                     in self.glb["DATES"][
+                                                                                         debut] else tempsdebut
+                    else:
+                        self.glb["DATES"][date]["TOTAL_PAROLE"] = \
+                            self.glb["DATES"][date]["TOTAL_PAROLE"] + diff if "TOTAL_PAROLE" \
+                                                                              in self.glb["DATES"][date] else diff
+                    ego.stats["TOTAL_PAROLE"] = \
+                        ego.stats["TOTAL_PAROLE"] + diff if "TOTAL_PAROLE" in ego.stats else diff
+                    ego.stats["CAR_PAROLE"] = 0
+        else:
+            return
+        fileIO("data/ego/glb.json", "save", self.glb)
+        self.ego.save()
+
+    def __unload(self):
+        fileIO("data/ego/glb.json", "save", self.glb)
+        if "glb.json" in os.listdir("data/ego/backup/"):
+            if os.path.getsize("data/ego/backup/glb.json") < os.path.getsize("data/ego/glb.json"):
+                fileIO("data/ego/backup/glb.json", "save", self.glb)
+            else:
+                print("ATTENTION: EGO n'a pas réalisé de backup car le fichier source est moins "
+                      "volumineux que le dernier fichier backup. Un problème à pu se produire dans les données...")
+        self.ego.save(backup=True)
+        return True
 
 def check_folders():
     if not os.path.exists("data/ego"):
         print("Creation du dossier EGO...")
         os.makedirs("data/ego")
+    if not os.path.exists("data/ego/backup"):
+        print("Creation du dossier backup d'Ego...")
+        os.makedirs("data/ego/backup")
+
 
 def check_files():
-    if not os.path.isfile("data/ego/profil.json"):
-        print("Creation du fichier de comptes EGO...")
-        fileIO("data/ego/profil.json", "save", {})
-    if not os.path.isfile("data/ego/glob.json"):
-        print("Creation du fichier global EGO...")
-        fileIO("data/ego/glob.json", "save", {})
+    if not os.path.isfile("data/ego/data.json"):
+        print("Création et import de Ego/data")
+        fileIO("data/ego/data.json", "save", {})
+    if not os.path.isfile("data/ego/glb.json"):
+        print("Création et import de Ego/glb")
+        fileIO("data/ego/glb.json", "save", {"DATES": {}, "SYS": {}})
+        # DATES pour les stats (datées), SYS pour le reste
+
 
 def setup(bot):
     check_folders()
     check_files()
     n = Ego(bot)
-    #Listeners (Suivi de l'écrit)
-    bot.add_listener(n.l_msg, "on_message") #A chaque message
+    bot.add_listener(n.l_msg, "on_message")
     bot.add_listener(n.l_react, "on_reaction_add")
-    bot.add_listener(n.l_join, "on_member_join") #A chaque membre qui rejoint
-    bot.add_listener(n.l_quit, "on_member_remove") #A chaque membre qui part
-    bot.add_listener(n.l_profil, "on_member_update") #Lorsqu'un membre modifie son profil (avatar, pseudo...)
-    bot.add_listener(n.l_ban, "on_member_ban") #Lorsqu'un membre est banni
+    bot.add_listener(n.l_join, "on_member_join")
+    bot.add_listener(n.l_quit, "on_member_remove")
+    bot.add_listener(n.l_profil, "on_member_update")
+    bot.add_listener(n.l_ban, "on_member_ban")
+    bot.add_listener(n.l_voice, "on_voice_state_update")
     bot.add_cog(n)
