@@ -7,6 +7,7 @@ from __main__ import send_cmd_help
 from discord.ext import commands
 import time
 import operator
+import random
 from .utils.dataIO import fileIO, dataIO
 
 
@@ -15,19 +16,27 @@ class EgoAPI:
     def __init__(self, bot, path):
         self.bot = bot
         self.data = dataIO.load_json(path)
-        self.old = dataIO.load_json("data/ego/profil.json")
+        if "profil.json" is os.listdir("data/ego"):
+            self.old = dataIO.load_json("data/ego/profil.json")
+        else:
+            self.old = {}
 
     def save(self, backup=False):
         if backup:
             if "data.json" in os.listdir("data/ego/backup/"):
-                if os.path.getsize("data/ego/backup/data.json") < os.path.getsize("data/ego/data.json"):
+                if os.path.getsize("data/ego/backup/data.json") <= os.path.getsize("data/ego/data.json"):
                     fileIO("data/ego/backup/data.json", "save", self.data)
                 else:
-                    print("ATTENTION: EGO n'a pas réalisé de backup car le fichier source est moins "
+                    print("ATTENTION: EGO n'a pas réalisé de backup DATA (Perso) car le fichier source est moins "
                           "volumineux que le dernier fichier backup. Un problème à pu se produire dans les données...")
             else:
                 fileIO("data/ego/backup/data.json", "save", self.data)
         fileIO("data/ego/data.json", "save", self.data)
+        return True
+
+    def reset(self):
+        self.data = {}
+        self.save()
         return True
 
     def open(self, user):
@@ -35,7 +44,7 @@ class EgoAPI:
             if user.id in self.old:
                 self.data[user.id] = {"STATS": {},
                                       "SERVICES": {},
-                                      "HISTORY": self.old[user.id]["HISTO"],
+                                      "HISTORY": [],
                                       "JEUX": self.old[user.id]["STATS"]["JEUX"] if "JEUX" in
                                                                                     self.old[user.id]["STATS"] else [],
                                       "CREATION": self.old[user.id]["BORN"]}
@@ -83,15 +92,15 @@ class EgoAPI:
         sj = sh / 24  # en jours
         sa = sj / 364.25  # en années
         if format == "année":
-            return int(sa) if sa > 0 else 0.1
+            return round(sa) if round(sa) > 0 else 0.1
         elif format == "jour":
-            return int(sj) if sj > 0 else 1
+            return round(sj) if round(sj) > 0 else 1
         elif format == "heure":
-            return int(sh) if sh > 0 else 1
+            return round(sh) if round(sh) > 0 else 1
         elif format == "minute":
-            return int(sm) if sm > 0 else 1
+            return round(sm) if round(sm) > 0 else 1
         else:
-            return int(s) if s > 0 else 1
+            return round(s) if round(s) > 0 else 1
 
     def stat_color(self, user):
         s = user.status
@@ -123,27 +132,30 @@ class EgoAPI:
     def biblio(self, user):
         pot = self.open(user).jeux
         liste = self.jeux_verif()
-        if pot.jeux:
+        if pot:
             poss = []
-            for g in pot.jeux:
+            for g in pot:
                 if g.lower() in liste:
                     poss.append(g)
             return poss if poss else False
         return False
 
     def affinite(self, auteur, user):
-        liste = [[self.data[user.id]["MENTIONS"][r], r] for r in self.data[user.id]["MENTIONS"]]
-        liste = sorted(liste, key=operator.itemgetter(0), reverse=True)
-        if auteur.id == liste[0][1]:
-            return "Meilleur ami(e)"
-        elif auteur.id in [i[1] for i in liste[:3]]:
-            return "Très forte"
-        elif auteur.id in [i[1] for i in liste[:5]]:
-            return "Forte"
-        elif auteur.id in [i[1] for i in liste[:20]]:
-            return "Moyenne"
+        if "MENTIONS" in self.open(auteur).stats and "MENTIONS" in self.open(user).stats:
+            liste = [[self.data[user.id]["STATS"]["MENTIONS"][r], r] for r in self.data[user.id]["STATS"]["MENTIONS"]]
+            liste = sorted(liste, key=operator.itemgetter(0), reverse=True)
+            if auteur.id in [i[1] for i in liste[:1]]:
+                return "Meilleur ami(e)"
+            elif auteur.id in [i[1] for i in liste[:3]]:
+                return "Très forte"
+            elif auteur.id in [i[1] for i in liste[:5]]:
+                return "Forte"
+            elif auteur.id in [i[1] for i in liste[:20]]:
+                return "Moyenne"
+            else:
+                return "Faible"
         else:
-            return "Faible"
+            return False
 
     def leven(self, s1, s2):
         if len(s1) < len(s2):
@@ -163,25 +175,6 @@ class EgoAPI:
                 current_row.append(min(insertions, deletions, substitutions))
             previous_row = current_row
         return previous_row[-1]
-
-    def find_m(self, content): # Retrouve les mentions indirectes
-        listm = []
-        for e in content:
-            for p in self.bot.get_all_members():
-                ego = self.open(p)
-                if self.leven(p.name.lower(), e.lower()) <= 1:
-                    if p.id not in listm:
-                        listm.append(p.id)
-                elif self.leven(p.display_name.lower(), e.lower()) <= 1:
-                    if p.id not in listm:
-                        listm.append(p.id)
-                elif "SURNOM" in ego.services:
-                    if e.lower() == ego.services["SURNOM"].lower():
-                        if p.id not in listm:
-                            listm.append(p.id)
-                else:
-                    pass
-        return listm
 
     def find_pseudo(self, term: str):
         possible = []
@@ -205,7 +198,6 @@ class Ego:
         self.ego = EgoAPI(bot, "data/ego/data.json")
         self.glb = dataIO.load_json("data/ego/glb.json")
         self.version = "EGO V3 (&majs)"
-        self.logo_url = "http://i.imgur.com/nmJH3Zf.png"
         self.cycle_task = bot.loop.create_task(self.ego_loop())
 
     @commands.command(name="majs", pass_context=True)
@@ -243,10 +235,10 @@ class Ego:
                            "+ Rappels personnalisés\n"
                            "+ Personnalisation (Bio, Anniversaire, Surnom)\n"
                            "+ Projet Oracle (Voir Github en cliquant plus haut)")
-        em.set_footer(text="MAJ publiée le 22/08 | Début de la récolte de stats V3: 22/08/2017", icon_url=self.logo_url)
+        em.set_footer(text="MAJ publiée le 22/08 | Début de la récolte de stats V3: 22/08/2017", icon_url=self.logo_url())
         await self.bot.say(embed=em)
 
-    @commands.command(name="global", pass_context=True, no_pm=True)
+    @commands.command(name="global", aliases=["g", "stats"], pass_context=True, no_pm=True)
     async def _global(self, ctx):
         """Affiche des informations et des statistiques sur le serveur."""
         server = ctx.message.server
@@ -261,7 +253,7 @@ class Ego:
                 date = time.strftime("%d/%m/%Y",
                                     time.localtime(time.mktime(time.strptime(today, "%d/%m/%Y")) - (86400 * rewind)))
             else:
-                rewind += 1
+                rewind = 0
                 date = time.strftime("%d/%m/%Y",
                                      time.localtime(time.mktime(time.strptime(today, "%d/%m/%Y")) - (86400 * rewind)))
                 futur = True
@@ -270,9 +262,9 @@ class Ego:
                 em.set_thumbnail(url=server.icon_url)
                 if futur:
                     em.set_footer(text="Impossible d'aller dans le futur pour le moment ¯\_(ツ)_/¯",
-                                  icon_url=self.logo_url)
+                                  icon_url=self.logo_url())
                     await self.bot.edit_message(menu, embed=em)
-                    await asyncio.sleep(1)
+                    await asyncio.sleep(2.5)
                     futur = False
                 salons = ""
                 if "CHANNEL_MSG" in self.glb["DATES"][date]:
@@ -282,8 +274,8 @@ class Ego:
                     msgs = "{}\n" \
                           "**Total:** {}\n" \
                           "**Sans bot:** {}".format(salons, self.glb["DATES"][date]["TOTAL_MSG"],
-                                                     self.glb["DATES"][date]["TOTAL_MSG"] -
-                                                     self.glb["DATES"][date]["BOT_TOTAL_MSG"])
+                                                    (self.glb["DATES"][date]["TOTAL_MSG"] -
+                                                     self.glb["DATES"][date]["BOT_TOTAL_MSG"]) if "BOT_TOTAL_MSG" in self.glb["DATES"][date] else 0)
                     em.add_field(name="Messages", value=msgs)
                 if "HORO_ECRIT" not in self.glb["DATES"][date]:
                     self.glb["DATES"][date]["HORO_ECRIT"] = {}
@@ -321,18 +313,18 @@ class Ego:
                     ego = self.ego.open(p)
                     if "CAR_VOCAL" in ego.stats:
                         if ego.stats["CAR_VOCAL"] > 0:
-                            ttv += ego.stats["CAR_VOCAL"]
+                            ttv += time.time() - ego.stats["CAR_VOCAL"]
                     if "CAR_PAROLE" in ego.stats:
                         if ego.stats["CAR_PAROLE"] > 0:
-                            ttp += ego.stats["CAR_PAROLE"]
-                ttv /= 1440  # heures
-                ttp /= 1440  # heures
+                            ttp += time.time() - ego.stats["CAR_PAROLE"]
+                ttv = ttv / 1440  # heures
+                ttp = ttp / 1440  # heures
                 acts = "**__Écrit__**\n" \
                       "{}\n" \
                       "**__Vocal__**\n" \
                       "{}\n" \
-                      "**TTV:** {}\n" \
-                      "**TTP:** {}\n".format(act_ecr, act_voc, round(ttv, 2), round(ttp, 2))
+                      "**TTV:** {}h\n" \
+                      "**TTP:** {}h\n".format(act_ecr, act_voc, round(ttv, 2), round(ttp, 2))
                 em.add_field(name="Activité", value=acts)
                 min_ = self.glb["DATES"][date]["TOTAL_JOIN"] if "TOTAL_JOIN" in self.glb["DATES"][date] else 0
                 mre_ = self.glb["DATES"][date]["TOTAL_RETOUR"] if "TOTAL_RETOUR" in self.glb["DATES"][date] else 0
@@ -343,7 +335,7 @@ class Ego:
                         "**Solde:** {}".format(min_, mre_, mem_, (min_ - mem_))
                 em.add_field(name="Flux migratoire", value=migra)
                 em.set_footer(text="Utilisez les réactions ci-dessous pour naviguer | {}".format(self.version),
-                              icon_url=self.logo_url)
+                              icon_url=self.logo_url())
             else:
                 em = discord.Embed(title="EGO Data | **{}**".format(date if date != today else "Aujourd'hui"),
                                    description= "Aucune donnée pour ce jour.")
@@ -367,7 +359,7 @@ class Ego:
             act = await self.bot.wait_for_reaction(["⬅", "⏬", "➡", "🔄", "ℹ"], message=menu, timeout=60,
                                                    check=self.check)
             if act is None:
-                em.set_footer(text="Session expirée | {}".format(self.version), icon_url=self.logo_url)
+                em.set_footer(text="Session expirée | {}".format(self.version), icon_url=self.logo_url())
                 await self.bot.edit_message(menu, embed=em)
                 try:
                     await self.bot.clear_reactions(menu)
@@ -378,12 +370,12 @@ class Ego:
                 rewind += 1
             elif act.reaction.emoji == "⏬":
                 em.set_footer(text="Entrez la date désirée ci-dessous (dd/mm/aaaa) | {}".format(self.version),
-                              icon_url=self.logo_url)
+                              icon_url=self.logo_url())
                 await self.bot.edit_message(menu, embed=em)
                 rep = await self.bot.wait_for_message(author=act.user, channel=menu.channel, timeout=30)
                 if rep is None:
                     em.set_footer(text="Timeout | Retour",
-                                  icon_url=self.logo_url)
+                                  icon_url=self.logo_url())
                     await self.bot.edit_message(menu, embed=em)
                     await asyncio.sleep(0.5)
                 elif len(rep.content) == 10:
@@ -395,7 +387,7 @@ class Ego:
                         pass
                 else:
                     em.set_footer(text="Invalide | Retour".format(self.version),
-                                  icon_url=self.logo_url)
+                                  icon_url=self.logo_url())
                     await self.bot.edit_message(menu, embed=em)
                     await asyncio.sleep(0.5)
             elif act.reaction.emoji == "➡" and rewind > 0:
@@ -415,15 +407,16 @@ class Ego:
                 em.add_field(name="Age", value="{} jours".format(passed))
                 em.set_thumbnail(url=server.icon_url)
                 em.set_footer(text="Utilisez la réaction ci-dessous pour retourner au menu | {}".format(
-                    self.version), icon_url=self.logo_url)
+                    self.version), icon_url=self.logo_url())
                 try:
                     await self.bot.clear_reactions(menu)
                 except:
                     pass
                 await self.bot.edit_message(menu, embed=em)
+                await self.bot.add_reaction(menu, "⏹")
                 retour = await self.bot.wait_for_reaction(["⏹"], message=menu, timeout=60, check=self.check)
                 if retour is None:
-                    em.set_footer(text="Session expirée | {}".format(self.version), icon_url=self.logo_url)
+                    em.set_footer(text="Session expirée | {}".format(self.version), icon_url=self.logo_url())
                     await self.bot.edit_message(menu, embed=em)
                     return
                 elif retour.reaction.emoji == "⏹":
@@ -431,9 +424,29 @@ class Ego:
                 else:
                     pass
             else:
-                em.set_footer(text="Réaction invalide | {}".format(self.version), icon_url=self.logo_url)
+                em.set_footer(text="Réaction invalide | {}".format(self.version), icon_url=self.logo_url())
                 await self.bot.edit_message(menu, embed=em)
                 return
+
+    @commands.command(name="egologs", pass_context=True, hidden=True)
+    @checks.admin_or_permissions(kick_members=True)
+    async def debug(self, ctx, reset:bool =False):
+        """Upload les fichiers de débug EGO."""
+        channel = ctx.message.channel
+        chemin = 'data/ego/data.json'
+        chemin2 = 'data/ego/glb.json'
+        if reset:
+            self.ego.reset()
+            self.glb = {"DATES": {}, "SYS": {}}
+            await self.bot.say("Reset effectué avec succès")
+            return
+        await self.bot.say("Upload en cours...")
+        try:
+            await self.bot.send_file(channel, chemin)
+            await asyncio.sleep(0.25)
+            await self.bot.send_file(channel, chemin2)
+        except:
+            await self.bot.say("Impossible d'upload le fichier.")
 
     @commands.command(aliases=["carte", "c"], pass_context=True)
     async def card(self, ctx, user: discord.Member = None):
@@ -453,14 +466,15 @@ class Ego:
             passed = (ctx.message.timestamp - user.created_at).days
             em.add_field(name="Création", value=str(passed) + " jours")
             passed = (ctx.message.timestamp - user.joined_at).days
-            rpas = passed if passed >= self.ego.since(user, "jour") else "+" + passed
-            em.add_field(name="Ancienneté", value=rpas + " jours")
+            rpas = passed if passed >= self.ego.since(user, "jour") else "+" + str(passed)
+            em.add_field(name="Ancienneté", value=str(rpas) + " jours")
             ecr = round(ego.stats["NB_MSG"] / self.ego.since(user, "jour")) if "NB_MSG" in ego.stats else 0
             if "TOTAL_PAROLE" in ego.stats:
                 if "TOTAL_VOCAL" in ego.stats:
-                    hvoc = round(ego.stats["TOTAL_PAROLE"] + ego.stats["TOTAL_VOCAL"] + ego.stats["CAR_PAROLE"]
-                                 + ego.stats["CAR_VOCAL"]) * 3600
-                    voc = hvoc / self.ego.since(user, "jour")
+                    vocalnow = time.time() - ego.stats["CAR_VOCAL"] if ego.stats["CAR_VOCAL"] > 0 else 0
+                    parolenow = time.time() - ego.stats["CAR_PAROLE"] if ego.stats["CAR_PAROLE"] > 0 else 0
+                    hvoc = round(ego.stats["TOTAL_PAROLE"] + ego.stats["TOTAL_VOCAL"] + vocalnow + parolenow) / 3600
+                    voc = round(hvoc / self.ego.since(user, "jour"), 2)
                 else:
                     voc = 0
             else:
@@ -470,8 +484,10 @@ class Ego:
             em.add_field(name="Activité", value=act)
             rolelist = " ,".join([r.name for r in user.roles if r.name != "@everyone"])
             em.add_field(name="Rôles", value=rolelist)
-            em.add_field(name="Auparavant", value="**Pseudos:** {}\n**Surnoms:** {}".format(" ,".join(
-                ego.stats["PSEUDOS"][:3]), " ,".join(ego.stats["D_PSEUDOS"][:3])))
+            if "PSEUDOS" or "D_PSEUDOS" in ego.stats:
+                em.add_field(name="Auparavant", value="**Pseudos:** {}\n**Surnoms:** {}".format(" ,".join(
+                    ego.stats["PSEUDOS"][:3]) if "PSEUDOS" in ego.stats else "???", " ,".join(
+                    ego.stats["D_PSEUDOS"][:3]) if "D_PSEUDOS" in ego.stats else "???"))
             liste = []
             for e in ego.history:
                 if e[1] == date:
@@ -488,9 +504,10 @@ class Ego:
                 msg = "*Aucune action*"
             em.add_field(name="Aujourd'hui", value=msg)
             if ctx.message.author != user:
-                em.add_field(name="Affinité", value=self.ego.affinite(ctx.message.author, user))
+                if self.ego.affinite(ctx.message.author, user):
+                    em.add_field(name="Affinité", value=self.ego.affinite(ctx.message.author, user))
             em.set_footer(text="Utilisez les réactions ci-dessous pour naviguer | {}".format(self.version),
-                          icon_url=self.logo_url)
+                          icon_url=self.logo_url())
             if menu is None:
                 menu = await self.bot.say(embed=em)
             else:
@@ -505,7 +522,7 @@ class Ego:
             await self.bot.add_reaction(menu, "🔄")  # Refresh
             rap = await self.bot.wait_for_reaction(["🕹", "🔄", "⚙"], message=menu, timeout=60, check=self.check)
             if rap is None:
-                em.set_footer(text="Session expirée | {}".format(self.version), icon_url=self.logo_url)
+                em.set_footer(text="Session expirée | {}".format(self.version), icon_url=self.logo_url())
                 await self.bot.edit_message(menu, embed=em)
                 try:
                     await self.bot.clear_reactions(menu)
@@ -542,7 +559,7 @@ class Ego:
                         color=color, description=aff)
                     resul = "Les jeux en commun sont soulignés" if userbib else "Bibliothèque vide " \
                                                                                        "ou non detectée"
-                    em.set_footer(text="{} | {}".format(resul, self.version), icon_url=self.logo_url)
+                    em.set_footer(text="{} | {}".format(resul, self.version), icon_url=self.logo_url())
                 else:
                     selfbib = self.ego.biblio(ctx.message.author)
                     if selfbib:
@@ -555,15 +572,16 @@ class Ego:
                         color=color, description=aff)
                     resul = "Utilisez la réaction ci-dessous pour revenir à votre profil" if \
                         selfbib else "Bibliothèque vide ou non detectée"
-                    em.set_footer(text="{} | {}".format(resul, self.version), icon_url=self.logo_url)
+                    em.set_footer(text="{} | {}".format(resul, self.version), icon_url=self.logo_url())
                 try:
                     await self.bot.clear_reactions(menu)
                 except:
                     pass
                 await self.bot.edit_message(menu, embed=em)
+                await self.bot.add_reaction(menu, "⏹")
                 retour = await self.bot.wait_for_reaction(["⏹"], message=menu, timeout=60, check=self.check)
                 if retour is None:
-                    em.set_footer(text="Session expirée | {}".format(self.version), icon_url=self.logo_url)
+                    em.set_footer(text="Session expirée | {}".format(self.version), icon_url=self.logo_url())
                     await self.bot.edit_message(menu, embed=em)
                     return
                 elif retour.reaction.emoji == "⏹":
@@ -596,8 +614,19 @@ class Ego:
                 msg += "*{}* ({})\n".format(p[0], p[1])
         em = discord.Embed(color=ctx.message.author.color, title="Résultats pour {}".format(recherche), description=msg)
         em.set_footer(text="Anciens pseudos pris en compte | {}".format(self.version),
-                      icon_url=self.logo_url)
+                      icon_url=self.logo_url())
         await self.bot.say(embed=em)
+
+    @commands.command(pass_context=True, no_pm=True)
+    @checks.admin_or_permissions(kick_members=True)
+    async def invits(self, ctx):
+        """Affiche les invitations reconnues par Ego."""
+        server = ctx.message.server
+        if "INVITS" in self.glb["SYS"]:
+            for i in self.glb["SYS"]["INVITS"]:
+                await self.bot.say("**Code:** {}\n**Utilisations:** {}\n**Création:** {}\n**Lien:** {}".format(
+                    i, self.glb["SYS"]["INVITS"][i]["USES"], self.glb["SYS"]["INVITS"][i]["CREATED"], self.glb[
+                        "SYS"]["INVITS"][i]["URL"]))
 
     def check(self, reaction, user):
         return not user.bot
@@ -606,21 +635,21 @@ class Ego:
         await self.bot.wait_until_ready()
         try:
             await asyncio.sleep(15)  # Temps de mise en route
-            server = self.bot.get_server("328632789836496897")
+            server = self.bot.get_server("204585334925819904")
             while True:
                 if "INVITS" not in self.glb["SYS"]: #MAJ des Invitations actives
                     self.glb["SYS"]["INVITS"] = {}
-                invits = self.bot.invites_from(server)
-                for i in invits:
+                for i in await self.bot.invites_from(server):
                     if i.code not in self.glb["SYS"]["INVITS"]:
-                        self.glb["SYS"]["INVITS"][i.code] = {"CREATED": i.created_at,
+                        self.glb["SYS"]["INVITS"][i.code] = {"CREATED":
+                                                                 i.created_at.now().strftime("%Y-%m-%d %H:%M:%S"),
                                                       "MAX_USES": i.max_uses,
                                                       "USES": i.uses,
-                                                      "CHANNEL": i.channel,
+                                                      "CHANNEL": i.channel.name,
                                                       "URL": str(i)}
                 for e in self.glb["SYS"]["INVITS"]:
-                    if e.code not in [i.code for i in invits]:
-                        del self.glb["SYS"]["INVITS"][e.code]
+                    if e not in [i.code for i in await self.bot.invites_from(server)]:
+                        del self.glb["SYS"]["INVITS"][e]
 
                 date = time.strftime("%d/%m/%Y", time.localtime())
                 heure = time.strftime("%H", time.localtime())
@@ -650,12 +679,19 @@ class Ego:
         except asyncio.CancelledError:
             pass
 
+    def logo_url(self):
+        liste = ["http://i.imgur.com/EZbwn1E.png", "http://i.imgur.com/Obh5pDs.png",
+                 "http://i.imgur.com/5DgBNbc.png", "http://i.imgur.com/NCMd7xS.png",
+                 "http://i.imgur.com/M8MCTlN.png", "http://i.imgur.com/brT1LJM.png"]
+        return random.choice(liste)
+
     async def l_msg(self, message):
-        if not message.server.id == "328632789836496897":
+        if not message.server.id == "204585334925819904":
             return
         mentions = message.mentions
         author = message.author
         channel = message.channel
+        server = message.server
         ego = self.ego.open(author)
         date = time.strftime("%d/%m/%Y", time.localtime())
         if date not in self.glb["DATES"]:
@@ -685,21 +721,14 @@ class Ego:
                 channel.id in ego.stats["NB_MSG_CHANNEL"] else 1
         else:
             ego.stats["NB_MSG_CHANNEL"] = {channel.id: 1}
-        if mentions:
-            if "MENTIONS" in ego.stats:
+        if "MENTIONS" in ego.stats:
+            if mentions:
                 for u in mentions:
                     ego.stats["MENTIONS"][u.id] = \
                         ego.stats["MENTIONS"][u.id] + 1 if u.id in ego.stats["MENTIONS"] else 1
-            else:
-                ego.stats["MENTIONS"] = {}
-        lmi = self.ego.find_m(message.content)
-        if lmi:
-            if "MENTIONS" in ego.stats:
-                for u in mentions:
-                    ego.stats["MENTIONS"][u] = \
-                        ego.stats["MENTIONS"][u] + 1 if u in ego.stats["MENTIONS"] else 1
-            else:
-                ego.stats["MENTIONS"] = {}
+        else:
+            ego.stats["MENTIONS"] = {}
+
         self.ego.save()
         fileIO("data/ego/glb.json", "save", self.glb)
         # TODO Avec Charm (en lié) > Stats des Emojis & Stickers
@@ -708,7 +737,7 @@ class Ego:
         server = user.server
         ego = self.ego.open(user)
         descr = "Est arrivé [{}]"
-        if server.id != "328632789836496897" or user.bot:
+        if server.id != "204585334925819904" or user.bot:
             return
         date = time.strftime("%d/%m/%Y", time.localtime())
         if date not in self.glb["DATES"]:
@@ -721,7 +750,7 @@ class Ego:
                 "TOTAL_RETOUR" in self.glb["DATES"][date] else 1
         ego.stats["JOINS"] = ego.stats["JOINS"] + 1 if "JOINS" in ego.stats else 1
         code = "???"
-        for i in self.bot.invites_from(server):
+        for i in await self.bot.invites_from(server):
             for e in self.glb["SYS"]["INVITS"]:
                 if i.code == e:
                     if self.glb["SYS"]["INVITS"][e]["USES"] < i.uses:
@@ -738,7 +767,7 @@ class Ego:
     async def l_quit(self, user):
         server = user.server
         ego = self.ego.open(user)
-        if server.id != "328632789836496897" or user.bot:
+        if server.id != "204585334925819904" or user.bot:
             return
         date = time.strftime("%d/%m/%Y", time.localtime())
         if date not in self.glb["DATES"]:
@@ -754,20 +783,24 @@ class Ego:
     async def l_react(self, reaction, user):
         server = user.server
         ego = self.ego.open(user)
-        if server.id != "328632789836496897" or user.bot:
+        if server.id != "204585334925819904" or user.bot:
             return
         date = time.strftime("%d/%m/%Y", time.localtime())
         if date not in self.glb["DATES"]:
             self.glb["DATES"][date] = {}
         if "REACTIONS" not in self.glb["DATES"][date]:
             self.glb["DATES"][date]["REACTIONS"] = {}
-        self.glb["DATES"][date]["REACTIONS"][reaction.emoji.name] = \
-            self.glb["DATES"][date]["REACTIONS"][reaction.emoji.name] + 1 if \
-            reaction.emoji.name in self.glb["DATES"][date]["REACTIONS"] else 1
+        if type(reaction.emoji) is str:
+            name = reaction.emoji
+        else:
+            name = reaction.emoji.name
+        self.glb["DATES"][date]["REACTIONS"][name] = \
+            self.glb["DATES"][date]["REACTIONS"][name] + 1 if \
+            name in self.glb["DATES"][date]["REACTIONS"] else 1
         if "REACTIONS" not in ego.stats:
             ego.stats["REACTIONS"] = {}
-        ego.stats["REACTIONS"][reaction.emoji.name] = \
-            ego.stats["REACTIONS"][reaction.emoji.name] + 1 if reaction.emoji.name in ego.stats["REACTIONS"] else 1
+        ego.stats["REACTIONS"][name] = \
+            ego.stats["REACTIONS"][name] + 1 if name in ego.stats["REACTIONS"] else 1
         fileIO("data/ego/glb.json", "save", self.glb)
         self.ego.save()
 
@@ -776,13 +809,15 @@ class Ego:
         heure = time.strftime("%H", time.localtime())
         if avant.name != apres.name:
             if "PSEUDOS" in ego.stats:
-                ego.stats["PSEUDOS"].append(apres.name)
+                if apres.name not in ego.stats["PSEUDOS"]:
+                    ego.stats["PSEUDOS"].append(apres.name)
             else:
                 ego.stats["PSEUDOS"] = [avant.name, apres.name]
             self.ego.new_event(apres, "nom", "Pseudo changé pour {}".format(apres.name))
         if avant.display_name != apres.display_name:
             if "D_PSEUDOS" in ego.stats:
-                ego.stats["D_PSEUDOS"].append(apres.name)
+                if apres.display_name not in ego.stats["D_PSEUDOS"]:
+                    ego.stats["D_PSEUDOS"].append(apres.display_name)
             else:
                 ego.stats["D_PSEUDOS"] = [avant.display_name, apres.display_name]
             self.ego.new_event(apres, "nom", "Surnom changé pour {}".format(apres.display_name))
@@ -827,148 +862,20 @@ class Ego:
         self.ego.new_event(user, "punition", "A été banni")
         self.ego.save()
 
-    async def l_voice(self, avant, apres):
-        ego = self.ego.open(apres)
-        server = apres.server
-        if server.id != "328632789836496897" or apres.bot:
-            return
+    def counter(self, user, typ: str, action:str = None):
+        ego = self.ego.open(user)
         date = time.strftime("%d/%m/%Y", time.localtime())
         if date not in self.glb["DATES"]:
             self.glb["DATES"][date] = {}
-        if apres.voice:
-            if apres.voice.is_afk:
-                if avant.voice.mute or avant.voice.self_mute:
-                    diff = time.time() - ego.stats["CAR_VOCAL"] if ego.stats["CAR_VOCAL"] > 0 else 0
-                    now = time.strftime("%d/%m/%Y", time.localtime())
-                    debut = time.strftime("%d/%m/%Y", time.localtime(ego.stats["CAR_VOCAL"]))
-                    if now != debut:
-                        zero = time.mktime(time.strptime(now, "%d/%m/%Y"))
-                        tempsnow = time.time() - zero
-                        tempsdebut = zero - ego.stats["CAR_VOCAL"]
-                        self.glb["DATES"][now]["TOTAL_VOCAL"] = \
-                            self.glb["DATES"][now]["TOTAL_VOCAL"] + tempsnow if "TOTAL_VOCAL" \
-                                                                                 in self.glb["DATES"][
-                                                                                     now] else tempsnow
-                        self.glb["DATES"][debut]["TOTAL_VOCAL"] = \
-                            self.glb["DATES"][debut]["TOTAL_VOCAL"] + tempsdebut if "TOTAL_VOCAL" \
-                                                                                     in self.glb["DATES"][
-                                                                                         debut] else tempsdebut
-                    else:
-                        self.glb["DATES"][date]["TOTAL_VOCAL"] = \
-                            self.glb["DATE"][date]["TOTAL_VOCAL"] + diff if "TOTAL_VOCAL" \
-                                                                             in self.glb["DATES"][date] else diff
-                    ego.stats["TOTAL_VOCAL"] = \
-                        ego.stats["TOTAL_VOCAL"] + diff if "TOTAL_VOCAL" in ego.stats else diff
-                    ego.stats["CAR_VOCAL"] = 0
-                    return
-                else:
-                    diff = time.time() - ego.stats["CAR_PAROLE"] if ego.stats["CAR_PAROLE"] > 0 else 0
-                    now = time.strftime("%d/%m/%Y", time.localtime())
-                    debut = time.strftime("%d/%m/%Y", time.localtime(ego.stats["CAR_PAROLE"]))
-                    if now != debut:
-                        zero = time.mktime(time.strptime(now, "%d/%m/%Y"))
-                        tempsnow = time.time() - zero
-                        tempsdebut = zero - ego.stats["CAR_PAROLE"]
-                        self.glb["DATES"][now]["TOTAL_PAROLE"] = \
-                            self.glb["DATES"][now]["TOTAL_PAROLE"] + tempsnow if "TOTAL_PAROLE" \
-                                                                                in self.glb["DATES"][
-                                                                                    now] else tempsnow
-                        self.glb["DATES"][debut]["TOTAL_PAROLE"] = \
-                            self.glb["DATES"][debut]["TOTAL_PAROLE"] + tempsdebut if "TOTAL_PAROLE" \
-                                                                                    in self.glb["DATES"][
-                                                                                        debut] else tempsdebut
-                    else:
-                        self.glb["DATES"][date]["TOTAL_PAROLE"] = \
-                            self.glb["DATE"][date]["TOTAL_PAROLE"] + diff if "TOTAL_PAROLE" \
-                                                                             in self.glb["DATES"][date] else diff
-                    ego.stats["TOTAL_PAROLE"] = \
-                        ego.stats["TOTAL_PAROLE"] + diff if "TOTAL_PAROLE" in ego.stats else diff
-                    ego.stats["CAR_PAROLE"] = 0
-                    return
-            if not avant.voice:
-                if apres.voice.mute or apres.voice.self_mute:
-                    ego.stats["CAR_VOCAL"] = time.time()  # CAR = Compte A Rebours
-                else:
-                    ego.stats["CAR_PAROLE"] = time.time()
-            else:
-                if avant.voice.mute or avant.voice.self_mute:
-                    if not apres.voice.mute or not apres.voice.self_mute:
-                        ego.stats["CAR_PAROLE"] = time.time()
-                        diff = time.time() - ego.stats["CAR_VOCAL"] if ego.stats["CAR_VOCAL"] > 0 else 0
-                        now = time.strftime("%d/%m/%Y", time.localtime())
-                        debut = time.strftime("%d/%m/%Y", time.localtime(ego.stats["CAR_VOCAL"]))
-                        if now != debut:
-                            zero = time.mktime(time.strptime(now, "%d/%m/%Y"))
-                            tempsnow = time.time() - zero
-                            tempsdebut = zero - ego.stats["CAR_VOCAL"]
-                            self.glb["DATES"][now]["TOTAL_VOCAL"] = \
-                                self.glb["DATES"][now]["TOTAL_VOCAL"] + tempsnow if "TOTAL_VOCAL" \
-                                                                                    in self.glb["DATES"][
-                                                                                        now] else tempsnow
-                            self.glb["DATES"][debut]["TOTAL_VOCAL"] = \
-                                self.glb["DATES"][debut]["TOTAL_VOCAL"] + tempsdebut if "TOTAL_VOCAL" \
-                                                                                        in self.glb["DATES"][
-                                                                                            debut] else tempsdebut
-                        else:
-                            self.glb["DATES"][date]["TOTAL_VOCAL"] = \
-                                self.glb["DATE"][date]["TOTAL_VOCAL"] + diff if "TOTAL_VOCAL" \
-                                                                                in self.glb["DATES"][date] else diff
-                        ego.stats["TOTAL_VOCAL"] = \
-                            ego.stats["TOTAL_VOCAL"] + diff if "TOTAL_VOCAL" in ego.stats else diff
-                        ego.stats["CAR_VOCAL"] = 0
-                else:
-                    if apres.voice.mute or apres.voice.self_mute:
-                        if "CAR_PAROLE" in ego.stats:
-                            ego.stats["CAR_VOCAL"] = time.time()
-                            diff = time.time() - ego.stats["CAR_PAROLE"] if ego.stats["CAR_PAROLE"] > 0 else 0
-                            now = time.strftime("%d/%m/%Y", time.localtime())
-                            debut = time.strftime("%d/%m/%Y", time.localtime(ego.stats["CAR_PAROLE"]))
-                            if now != debut:
-                                zero = time.mktime(time.strptime(now, "%d/%m/%Y"))
-                                tempsnow = time.time() - zero
-                                tempsdebut = zero - ego.stats["CAR_PAROLE"]
-                                self.glb["DATES"][now]["TOTAL_PAROLE"] = \
-                                    self.glb["DATES"][now]["TOTAL_PAROLE"] + tempsnow if "TOTAL_PAROLE" \
-                                                                                     in self.glb["DATES"][
-                                                                                            now] else tempsnow
-                                self.glb["DATES"][debut]["TOTAL_PAROLE"] = \
-                                    self.glb["DATES"][debut]["TOTAL_PAROLE"] + tempsdebut if "TOTAL_PAROLE" \
-                                                                                     in self.glb["DATES"][
-                                                                                                debut] else tempsdebut
-                            else:
-                                self.glb["DATES"][date]["TOTAL_PAROLE"] = \
-                                    self.glb["DATES"][date]["TOTAL_PAROLE"] + \
-                                    diff if "TOTAL_PAROLE" in self.glb["DATES"][date] else diff
-                            ego.stats["TOTAL_PAROLE"] = \
-                                ego.stats["TOTAL_PAROLE"] + diff if "TOTAL_PAROLE" in ego.stats else diff
-                            ego.stats["CAR_PAROLE"] = 0
-        elif avant.voice:
-            if avant.voice.self_mute or avant.voice.mute:
-                if "CAR_VOCAL" in ego.stats:
-                    diff = time.time() - ego.stats["CAR_VOCAL"] if ego.stats["CAR_VOCAL"] > 0 else 0
-                    now = time.strftime("%d/%m/%Y", time.localtime())
-                    debut = time.strftime("%d/%m/%Y", time.localtime(ego.stats["CAR_VOCAL"]))
-                    if now != debut:
-                        zero = time.mktime(time.strptime(now, "%d/%m/%Y"))
-                        tempsnow = time.time() - zero
-                        tempsdebut = zero - ego.stats["CAR_VOCAL"]
-                        self.glb["DATES"][now]["TOTAL_VOCAL"] = \
-                            self.glb["DATES"][now]["TOTAL_VOCAL"] + tempsnow if "TOTAL_VOCAL" \
-                                                                                in self.glb["DATES"][
-                                                                                    now] else tempsnow
-                        self.glb["DATES"][debut]["TOTAL_VOCAL"] = \
-                            self.glb["DATES"][debut]["TOTAL_VOCAL"] + tempsdebut if "TOTAL_VOCAL" \
-                                                                                    in self.glb["DATES"][
-                                                                                        debut] else tempsdebut
-                    else:
-                        self.glb["DATES"][date]["TOTAL_VOCAL"] = \
-                            self.glb["DATE"][date]["TOTAL_VOCAL"] + diff if "TOTAL_VOCAL" \
-                                                                            in self.glb["DATES"][date] else diff
-                    ego.stats["TOTAL_VOCAL"] = \
-                        ego.stats["TOTAL_VOCAL"] + diff if "TOTAL_VOCAL" in ego.stats else diff
-                    ego.stats["CAR_VOCAL"] = 0
-            else:
-                if "CAR_PAROLE" in ego.stats:
+        if "CAR_VOCAL" not in ego.stats:
+            ego.stats["CAR_VOCAL"] = 0
+            ego.stats["TOTAL_VOCAL"] = 0
+        if "CAR_PAROLE" not in ego.stats:
+            ego.stats["CAR_PAROLE"] = 0
+            ego.stats["TOTAL_PAROLE"] = 0
+        if typ == "VOCAL":
+            if action == "START":
+                if ego.stats["CAR_PAROLE"] != 0:
                     diff = time.time() - ego.stats["CAR_PAROLE"] if ego.stats["CAR_PAROLE"] > 0 else 0
                     now = time.strftime("%d/%m/%Y", time.localtime())
                     debut = time.strftime("%d/%m/%Y", time.localtime(ego.stats["CAR_PAROLE"]))
@@ -987,10 +894,183 @@ class Ego:
                     else:
                         self.glb["DATES"][date]["TOTAL_PAROLE"] = \
                             self.glb["DATES"][date]["TOTAL_PAROLE"] + diff if "TOTAL_PAROLE" \
-                                                                              in self.glb["DATES"][date] else diff
+                                                                             in self.glb["DATES"][date] else diff
                     ego.stats["TOTAL_PAROLE"] = \
                         ego.stats["TOTAL_PAROLE"] + diff if "TOTAL_PAROLE" in ego.stats else diff
                     ego.stats["CAR_PAROLE"] = 0
+                ego.stats["CAR_VOCAL"] = time.time()
+                self.ego.save()
+                return True
+            elif action == "STOP":
+                diff = time.time() - ego.stats["CAR_VOCAL"] if ego.stats["CAR_VOCAL"] > 0 else 0
+                now = time.strftime("%d/%m/%Y", time.localtime())
+                debut = time.strftime("%d/%m/%Y", time.localtime(ego.stats["CAR_VOCAL"]))
+                if now != debut:
+                    zero = time.mktime(time.strptime(now, "%d/%m/%Y"))
+                    tempsnow = time.time() - zero
+                    tempsdebut = zero - ego.stats["CAR_VOCAL"]
+                    self.glb["DATES"][now]["TOTAL_VOCAL"] = \
+                        self.glb["DATES"][now]["TOTAL_VOCAL"] + tempsnow if "TOTAL_VOCAL" \
+                                                                            in self.glb["DATES"][
+                                                                                now] else tempsnow
+                    self.glb["DATES"][debut]["TOTAL_VOCAL"] = \
+                        self.glb["DATES"][debut]["TOTAL_VOCAL"] + tempsdebut if "TOTAL_VOCAL" \
+                                                                                in self.glb["DATES"][
+                                                                                    debut] else tempsdebut
+                else:
+                    self.glb["DATES"][date]["TOTAL_VOCAL"] = \
+                        self.glb["DATES"][date]["TOTAL_VOCAL"] + diff if "TOTAL_VOCAL" \
+                                                                        in self.glb["DATES"][date] else diff
+                ego.stats["TOTAL_VOCAL"] = \
+                    ego.stats["TOTAL_VOCAL"] + diff if "TOTAL_VOCAL" in ego.stats else diff
+                ego.stats["CAR_VOCAL"] = 0
+                self.ego.save()
+                return True
+            else:
+                return None
+        elif typ == "PAROLE":
+            if action == "STOP":
+                diff = time.time() - ego.stats["CAR_PAROLE"] if ego.stats["CAR_PAROLE"] > 0 else 0
+                now = time.strftime("%d/%m/%Y", time.localtime())
+                debut = time.strftime("%d/%m/%Y", time.localtime(ego.stats["CAR_PAROLE"]))
+                if now != debut:
+                    zero = time.mktime(time.strptime(now, "%d/%m/%Y"))
+                    tempsnow = time.time() - zero
+                    tempsdebut = zero - ego.stats["CAR_PAROLE"]
+                    self.glb["DATES"][now]["TOTAL_PAROLE"] = \
+                        self.glb["DATES"][now]["TOTAL_PAROLE"] + tempsnow if "TOTAL_PAROLE" \
+                                                                            in self.glb["DATES"][
+                                                                                now] else tempsnow
+                    self.glb["DATES"][debut]["TOTAL_PAROLE"] = \
+                        self.glb["DATES"][debut]["TOTAL_PAROLE"] + tempsdebut if "TOTAL_PAROLE" \
+                                                                                in self.glb["DATES"][
+                                                                                    debut] else tempsdebut
+                else:
+                    self.glb["DATES"][date]["TOTAL_PAROLE"] = \
+                        self.glb["DATES"][date]["TOTAL_PAROLE"] + diff if "TOTAL_PAROLE" \
+                                                                        in self.glb["DATES"][date] else diff
+                ego.stats["TOTAL_PAROLE"] = \
+                    ego.stats["TOTAL_PAROLE"] + diff if "TOTAL_PAROLE" in ego.stats else diff
+                ego.stats["CAR_PAROLE"] = 0
+                self.ego.save()
+                return True
+            elif action == "START":
+                if ego.stats["CAR_VOCAL"] != 0:
+                    diff = time.time() - ego.stats["CAR_VOCAL"] if ego.stats["CAR_VOCAL"] > 0 else 0
+                    now = time.strftime("%d/%m/%Y", time.localtime())
+                    debut = time.strftime("%d/%m/%Y", time.localtime(ego.stats["CAR_VOCAL"]))
+                    if now != debut:
+                        zero = time.mktime(time.strptime(now, "%d/%m/%Y"))
+                        tempsnow = time.time() - zero
+                        tempsdebut = zero - ego.stats["CAR_VOCAL"]
+                        self.glb["DATES"][now]["TOTAL_VOCAL"] = \
+                            self.glb["DATES"][now]["TOTAL_VOCAL"] + tempsnow if "TOTAL_VOCAL" \
+                                                                                in self.glb["DATES"][
+                                                                                    now] else tempsnow
+                        self.glb["DATES"][debut]["TOTAL_VOCAL"] = \
+                            self.glb["DATES"][debut]["TOTAL_VOCAL"] + tempsdebut if "TOTAL_VOCAL" \
+                                                                                    in self.glb["DATES"][
+                                                                                        debut] else tempsdebut
+                    else:
+                        self.glb["DATES"][date]["TOTAL_VOCAL"] = \
+                            self.glb["DATES"][date]["TOTAL_VOCAL"] + diff if "TOTAL_VOCAL" \
+                                                                            in self.glb["DATES"][date] else diff
+                    ego.stats["TOTAL_VOCAL"] = \
+                        ego.stats["TOTAL_VOCAL"] + diff if "TOTAL_VOCAL" in ego.stats else diff
+                    ego.stats["CAR_VOCAL"] = 0
+                ego.stats["CAR_PAROLE"] = time.time()
+                self.ego.save()
+                return True
+            else:
+                return None
+        elif typ == "RESET":
+            if ego.stats["CAR_VOCAL"] != 0:
+                diff = time.time() - ego.stats["CAR_VOCAL"] if ego.stats["CAR_VOCAL"] > 0 else 0
+                now = time.strftime("%d/%m/%Y", time.localtime())
+                debut = time.strftime("%d/%m/%Y", time.localtime(ego.stats["CAR_VOCAL"]))
+                if now != debut:
+                    zero = time.mktime(time.strptime(now, "%d/%m/%Y"))
+                    tempsnow = time.time() - zero
+                    tempsdebut = zero - ego.stats["CAR_VOCAL"]
+                    self.glb["DATES"][now]["TOTAL_VOCAL"] = \
+                        self.glb["DATES"][now]["TOTAL_VOCAL"] + tempsnow if "TOTAL_VOCAL" \
+                                                                            in self.glb["DATES"][
+                                                                                now] else tempsnow
+                    self.glb["DATES"][debut]["TOTAL_VOCAL"] = \
+                        self.glb["DATES"][debut]["TOTAL_VOCAL"] + tempsdebut if "TOTAL_VOCAL" \
+                                                                                in self.glb["DATES"][
+                                                                                    debut] else tempsdebut
+                else:
+                    self.glb["DATES"][date]["TOTAL_VOCAL"] = \
+                        self.glb["DATES"][date]["TOTAL_VOCAL"] + diff if "TOTAL_VOCAL" \
+                                                                        in self.glb["DATES"][date] else diff
+                ego.stats["TOTAL_VOCAL"] = \
+                    ego.stats["TOTAL_VOCAL"] + diff if "TOTAL_VOCAL" in ego.stats else diff
+                ego.stats["CAR_VOCAL"] = 0
+            if ego.stats["CAR_PAROLE"] != 0:
+                diff = time.time() - ego.stats["CAR_PAROLE"] if ego.stats["CAR_PAROLE"] > 0 else 0
+                now = time.strftime("%d/%m/%Y", time.localtime())
+                debut = time.strftime("%d/%m/%Y", time.localtime(ego.stats["CAR_PAROLE"]))
+                if now != debut:
+                    zero = time.mktime(time.strptime(now, "%d/%m/%Y"))
+                    tempsnow = time.time() - zero
+                    tempsdebut = zero - ego.stats["CAR_PAROLE"]
+                    self.glb["DATES"][now]["TOTAL_PAROLE"] = \
+                        self.glb["DATES"][now]["TOTAL_PAROLE"] + tempsnow if "TOTAL_PAROLE" \
+                                                                             in self.glb["DATES"][
+                                                                                 now] else tempsnow
+                    self.glb["DATES"][debut]["TOTAL_PAROLE"] = \
+                        self.glb["DATES"][debut]["TOTAL_PAROLE"] + tempsdebut if "TOTAL_PAROLE" \
+                                                                                 in self.glb["DATES"][
+                                                                                     debut] else tempsdebut
+                else:
+                    self.glb["DATES"][date]["TOTAL_PAROLE"] = \
+                        self.glb["DATES"][date]["TOTAL_PAROLE"] + diff if "TOTAL_PAROLE" \
+                                                                         in self.glb["DATES"][date] else diff
+                ego.stats["TOTAL_PAROLE"] = \
+                    ego.stats["TOTAL_PAROLE"] + diff if "TOTAL_PAROLE" in ego.stats else diff
+                ego.stats["CAR_PAROLE"] = 0
+                self.ego.save()
+            self.ego.save()
+            return True
+        else:
+            return None
+
+    async def l_voice(self, avant, apres):
+        ego = self.ego.open(apres)
+        server = apres.server
+        if server.id != "204585334925819904" or apres.bot:
+            return
+        date = time.strftime("%d/%m/%Y", time.localtime())
+        if date not in self.glb["DATES"]:
+            self.glb["DATES"][date] = {}
+        if avant.voice.is_afk and not apres.voice.is_afk: # Si il sort de l'AFK
+            if apres.voice.mute or apres.voice.self_mute:
+                self.counter(apres, "VOCAL", "START")
+            else:
+                self.counter(apres, "PAROLE", "START")
+        elif apres.voice.voice_channel and avant.voice.voice_channel is None: # Connexion au vocal
+            if not apres.voice.is_afk:
+                if apres.voice.mute or apres.voice.self_mute: # Mute maintenant
+                    self.counter(apres, "VOCAL", "START")
+                else:
+                    self.counter(apres, "PAROLE", "START")
+            else:
+                self.counter(apres, "RESET")
+        elif apres.voice.voice_channel and avant.voice.voice_channel: # Modification en vocal (Changement)
+            if not apres.voice.is_afk:
+                if avant.voice.self_mute or avant.voice.mute:
+                    if apres.voice.mute or apres.voice.self_mute:
+                        pass
+                    else:
+                        self.counter(apres, "PAROLE", "START")
+                else:
+                    if apres.voice.self_mute or apres.voice.mute:
+                        self.counter(apres, "VOCAL", "START")
+            else:
+                self.counter(apres, "RESET")
+        elif apres.voice.voice_channel is None and avant.voice.voice_channel:
+            self.counter(apres, "RESET")
         else:
             return
         fileIO("data/ego/glb.json", "save", self.glb)
@@ -999,11 +1079,13 @@ class Ego:
     def __unload(self):
         fileIO("data/ego/glb.json", "save", self.glb)
         if "glb.json" in os.listdir("data/ego/backup/"):
-            if os.path.getsize("data/ego/backup/glb.json") < os.path.getsize("data/ego/glb.json"):
+            if os.path.getsize("data/ego/backup/glb.json") <= os.path.getsize("data/ego/glb.json"):
                 fileIO("data/ego/backup/glb.json", "save", self.glb)
             else:
-                print("ATTENTION: EGO n'a pas réalisé de backup car le fichier source est moins "
+                print("ATTENTION: EGO n'a pas réalisé de backup GLOBAL car le fichier source est moins "
                       "volumineux que le dernier fichier backup. Un problème à pu se produire dans les données...")
+        else:
+            fileIO("data/ego/backup/glb.json", "save", self.glb)
         self.ego.save(backup=True)
         return True
 
