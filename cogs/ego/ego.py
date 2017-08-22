@@ -58,7 +58,7 @@ class EgoAPI:
         b = self.data[user.id]["SERVICES"]
         c = self.data[user.id]["HISTORY"]
         d = self.data[user.id]["JEUX"]
-        e = self.data[user.id]["BORN"]
+        e = self.data[user.id]["CREATION"]
         return Profil(a, b, c, d, e)
 
     def new_event(self, user, type_event: str, descr: str):
