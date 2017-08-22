@@ -328,9 +328,9 @@ class Ego:
                 ttv /= 1440  # heures
                 ttp /= 1440  # heures
                 acts = "**__Écrit__**\n" \
-                      "{}\n\n" \
+                      "{}\n" \
                       "**__Vocal__**\n" \
-                      "{}\n\n" \
+                      "{}\n" \
                       "**TTV:** {}\n" \
                       "**TTP:** {}\n".format(act_ecr, act_voc, round(ttv, 2), round(ttp, 2))
                 em.add_field(name="Activité", value=acts)
@@ -606,7 +606,7 @@ class Ego:
         await self.bot.wait_until_ready()
         try:
             await asyncio.sleep(15)  # Temps de mise en route
-            server = self.bot.get_server("204585334925819904")
+            server = self.bot.get_server("328632789836496897")
             while True:
                 if "INVITS" not in self.glb["SYS"]: #MAJ des Invitations actives
                     self.glb["SYS"]["INVITS"] = {}
@@ -651,7 +651,7 @@ class Ego:
             pass
 
     async def l_msg(self, message):
-        if not message.server.id == "204585334925819904":
+        if not message.server.id == "328632789836496897":
             return
         mentions = message.mentions
         author = message.author
@@ -682,7 +682,7 @@ class Ego:
         ego.stats["NB_MSG"] = ego.stats["NB_MSG"] + 1 if "NB_MSG" in ego.stats else 1
         if "NB_MSG_CHANNEL" in ego.stats:
             ego.stats["NB_MSG_CHANNEL"][channel.id] = ego.stats["NB_MSG_CHANNEL"][channel.id] + 1 if \
-                channel.id in ego.stats["NB_MSG_CHANNEL"][channel.id] else 1
+                channel.id in ego.stats["NB_MSG_CHANNEL"] else 1
         else:
             ego.stats["NB_MSG_CHANNEL"] = {channel.id: 1}
         if mentions:
@@ -708,7 +708,7 @@ class Ego:
         server = user.server
         ego = self.ego.open(user)
         descr = "Est arrivé [{}]"
-        if server.id != "204585334925819904" or user.bot:
+        if server.id != "328632789836496897" or user.bot:
             return
         date = time.strftime("%d/%m/%Y", time.localtime())
         if date not in self.glb["DATES"]:
@@ -738,7 +738,7 @@ class Ego:
     async def l_quit(self, user):
         server = user.server
         ego = self.ego.open(user)
-        if server.id != "204585334925819904" or user.bot:
+        if server.id != "328632789836496897" or user.bot:
             return
         date = time.strftime("%d/%m/%Y", time.localtime())
         if date not in self.glb["DATES"]:
@@ -754,7 +754,7 @@ class Ego:
     async def l_react(self, reaction, user):
         server = user.server
         ego = self.ego.open(user)
-        if server.id != "204585334925819904" or user.bot:
+        if server.id != "328632789836496897" or user.bot:
             return
         date = time.strftime("%d/%m/%Y", time.localtime())
         if date not in self.glb["DATES"]:
@@ -809,7 +809,7 @@ class Ego:
                     ego.stats["CONNECT"][heure] = ego.stats["CONNECT"][heure] + 1 if \
                         heure in ego.stats["CONNECT"] else 1
                 else:
-                    ego.stats["CONNECT"][heure] = 1
+                    ego.stats["CONNECT"] = {heure : 1}
         elif avant.status.online:
             if apres.status.offline or apres.status.invisible:
                 if "DECONNECT" in ego.stats:
@@ -830,7 +830,7 @@ class Ego:
     async def l_voice(self, avant, apres):
         ego = self.ego.open(apres)
         server = apres.server
-        if server.id != "204585334925819904" or apres.bot:
+        if server.id != "328632789836496897" or apres.bot:
             return
         date = time.strftime("%d/%m/%Y", time.localtime())
         if date not in self.glb["DATES"]:
