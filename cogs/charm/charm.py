@@ -532,6 +532,17 @@ class Charm:
             await self.bot.say("L'ID est déjà présent")
         fileIO("data/charm/sys.json", "save", self.sys)
 
+    @commands.command(pass_context=True)
+    async def test(self, ctx):
+        """Teste afin de savoir son état de contamination"""
+        author = ctx.message.author
+        await self.bot.say("**Test en cours**")
+        sc = random.randint(5, 60)
+        if author.id in self.sys["AFFECTE"]:
+            await self.bot.whisper("Vous êtes positif.\n*Vous avez été contaminé et vous êtes porteur du virus*")
+        else:
+            await self.bot.whisper("Vous êtes négatif.\n*Vous n'avez pas été exposé au virus*")
+
     async def charm_msg(self, message):
         author = message.author
         channel = message.channel
