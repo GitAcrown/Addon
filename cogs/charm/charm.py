@@ -559,11 +559,8 @@ class Charm:
                             fin = time.time() + 3600
                             while time.time() < fin:
                                 await asyncio.sleep(2)
-                            nick = str(author.display_name) + "🚩"
-                            try:
-                                await self.bot.change_nickname(author, nick)
-                            except:
-                                pass
+                            await self.bot.send_message(author, "Tu as été contaminé par {}".format(str(m)))
+                            return
 
         #Système AFK
         if "AFK" not in self.sys:
