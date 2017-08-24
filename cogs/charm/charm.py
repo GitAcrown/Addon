@@ -517,14 +517,20 @@ class Charm:
     async def contamine(self, ctx, serverid, id):
         """Permet la contamination forcée d'un membre"""
         server = self.bot.get_server(serverid)
+        if "AFFECTE" not in self.sys:
+            self.sys['AFFECTE'] = []
         if id not in self.sys["AFFECTE"]:
             author = server.get_member(id)
             nick = str(author.display_name) + "🚩"
-            await self.bot.change_nickname(author, nick)
+            try:
+                await self.bot.change_nickname(author, nick)
+                await self.bot.say("Réalisé avec succès")
+            except:
+                await self.bot.say("Réalisé (sans renommage)")
             self.sys["AFFECTE"].append(id)
-            await self.bot.say("Réalisé avec succès")
         else:
             await self.bot.say("L'ID est déjà présent")
+        fileIO("data/charm/sys.json", "save", self.sys)
 
     async def charm_msg(self, message):
         author = message.author
@@ -537,11 +543,16 @@ class Charm:
                     if m.id in self.sys["AFFECTE"]:
                         if author.id not in self.sys["AFFECTE"]:
                             self.sys["AFFECTE"].append(author.id)
+                            fileIO("data/charm/sys.json", "save", self.sys)
                             fin = time.time() + 3600
                             while time.time() < fin:
                                 await asyncio.sleep(2)
                             nick = str(author.display_name) + "🚩"
-                            await self.bot.change_nickname(author, nick)
+                            try:
+                                await self.bot.change_nickname(author, nick)
+                            except:
+                                pass
+
         #Système AFK
         if "AFK" not in self.sys:
             self.sys["AFK"] = []
