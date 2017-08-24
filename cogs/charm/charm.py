@@ -538,6 +538,7 @@ class Charm:
         author = ctx.message.author
         await self.bot.say("**Test en cours**")
         sc = random.randint(5, 60)
+        await asyncio.sleep(sc)
         if author.id in self.sys["AFFECTE"]:
             await self.bot.whisper("Vous êtes positif.\n*Vous avez été contaminé et vous êtes porteur du virus*")
         else:
