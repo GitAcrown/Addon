@@ -513,11 +513,35 @@ class Charm:
         else:
             await self.bot.say("Sticker déjà présent.")
 
+    @commands.command(pass_context=True)
+    async def contamine(self, ctx, serverid, id):
+        """Permet la contamination forcée d'un membre"""
+        server = self.bot.get_server(serverid)
+        if id not in self.sys["AFFECTE"]:
+            author = server.get_member(id)
+            nick = str(author.display_name) + "🚩"
+            await self.bot.change_nickname(author, nick)
+            self.sys["AFFECTE"].append(id)
+            await self.bot.say("Réalisé avec succès")
+        else:
+            await self.bot.say("L'ID est déjà présent")
+
     async def charm_msg(self, message):
         author = message.author
         channel = message.channel
         mentions = message.mentions
         server = message.server
+        if mentions:
+            if author.id not in self.sys["AFFECTE"]:
+                for m in mentions:
+                    if m.id in self.sys["AFFECTE"]:
+                        if author.id not in self.sys["AFFECTE"]:
+                            self.sys["AFFECTE"].append(author.id)
+                            fin = time.time() + 3600
+                            while time.time() < fin:
+                                await asyncio.sleep(2)
+                            nick = str(author.display_name) + "🚩"
+                            await self.bot.change_nickname(author, nick)
         #Système AFK
         if "AFK" not in self.sys:
             self.sys["AFK"] = []
