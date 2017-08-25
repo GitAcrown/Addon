@@ -210,8 +210,8 @@ class Ego:
                            "+ L'historique est désormais journalier et horodaté\n"
                            "+ Possibilité de refresh les informations\n"
                            "+ Le code de l'invitation s'affiche dans l'historique\n"
-                           "+ Nouvel affichage en menu"
-                           "+ Anciens pseudos et surnoms"
+                           "+ Nouvel affichage en menu\n"
+                           "+ Anciens pseudos et surnoms\n"
                            "*+ Personnalisation (Anniv, Bio, Surnom, Site)*")
         em.add_field(name="&global",
                      value="*(Fusion de stats et scard)*\n"
@@ -236,7 +236,7 @@ class Ego:
                            "+ Créer et gérer des évenements\n"
                            "+ Rappels personnalisés\n"
                            "+ Projet Oracle (Voir Github en cliquant plus haut)")
-        em.set_footer(text="MAJ publiée le 25/08 | Début de la récolte de stats V3: 22/08/2017", icon_url=self.logo_url())
+        em.set_footer(text="MAJ publiée le 25/08 | Les changements récent sont en italique", icon_url=self.logo_url())
         await self.bot.say(embed=em)
 
     @commands.command(name="global", aliases=["g", "stats"], pass_context=True, no_pm=True)
