@@ -1,4 +1,5 @@
 import asyncio
+import asyncio
 import operator
 import os
 import random
@@ -513,55 +514,11 @@ class Charm:
         else:
             await self.bot.say("Sticker déjà présent.")
 
-    @commands.command(pass_context=True)
-    async def contamine(self, ctx, serverid, id):
-        """Permet la contamination forcée d'un membre"""
-        server = self.bot.get_server(serverid)
-        if "AFFECTE" not in self.sys:
-            self.sys['AFFECTE'] = []
-        if id not in self.sys["AFFECTE"]:
-            author = server.get_member(id)
-            nick = str(author.display_name) + "🚩"
-            try:
-                await self.bot.change_nickname(author, nick)
-                await self.bot.say("Réalisé avec succès")
-            except:
-                await self.bot.say("Réalisé (sans renommage)")
-            self.sys["AFFECTE"].append(id)
-        else:
-            await self.bot.say("L'ID est déjà présent")
-        fileIO("data/charm/sys.json", "save", self.sys)
-
-    @commands.command(pass_context=True)
-    async def test(self, ctx):
-        """Teste afin de savoir son état de contamination"""
-        author = ctx.message.author
-        await self.bot.say("**Test en cours**")
-        sc = random.randint(5, 60)
-        await asyncio.sleep(sc)
-        if author.id in self.sys["AFFECTE"]:
-            await self.bot.whisper("Vous êtes positif.\n*Vous avez été contaminé et vous êtes porteur du virus*")
-        else:
-            await self.bot.whisper("Vous êtes négatif.\n*Vous n'avez pas été exposé au virus*")
-
     async def charm_msg(self, message):
         author = message.author
         channel = message.channel
         mentions = message.mentions
         server = message.server
-        if mentions:
-            if author.id not in self.sys["AFFECTE"]:
-                for m in mentions:
-                    if m.id in self.sys["AFFECTE"]:
-                        if author.id not in self.sys["AFFECTE"]:
-                            self.sys["AFFECTE"].append(author.id)
-                            fileIO("data/charm/sys.json", "save", self.sys)
-                            fin = time.time() + 3600
-                            while time.time() < fin:
-                                await asyncio.sleep(2)
-                            await self.bot.send_message(author, "Tu as été contaminé par {}".format(str(m)))
-                            return
-
         #Système AFK
         if "AFK" not in self.sys:
             self.sys["AFK"] = []
