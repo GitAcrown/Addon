@@ -829,6 +829,7 @@ class Ego:
             while True:
                 if "INVITS" not in self.glb["SYS"]: #MAJ des Invitations actives
                     self.glb["SYS"]["INVITS"] = {}
+                tot = []
                 for i in await self.bot.invites_from(server):
                     if i.code not in self.glb["SYS"]["INVITS"]:
                         self.glb["SYS"]["INVITS"][i.code] = {"CREATED":
@@ -837,8 +838,9 @@ class Ego:
                                                       "USES": i.uses,
                                                       "CHANNEL": i.channel.name,
                                                       "URL": str(i)}
+                        tot.append(i.code)
                 for e in self.glb["SYS"]["INVITS"]:
-                    if e not in [i.code for i in await self.bot.invites_from(server)]:
+                    if e not in tot:
                         del self.glb["SYS"]["INVITS"][e]
 
                 date = time.strftime("%d/%m/%Y", time.localtime())
