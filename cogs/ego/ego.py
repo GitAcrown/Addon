@@ -197,13 +197,13 @@ class Ego:
         self.bot = bot
         self.ego = EgoAPI(bot, "data/ego/data.json")
         self.glb = dataIO.load_json("data/ego/glb.json")
-        self.version = "EGO V3 (&majs)"
+        self.version = "EGO V3.05 (&majs)"
         self.cycle_task = bot.loop.create_task(self.ego_loop())
 
     @commands.command(name="majs", pass_context=True)
     async def changelog(self):
         """Informations sur les MAJ de Ego et des modules auxilliaires."""
-        em = discord.Embed(title="EGO V3.0 | Voir Github",color=0x5184a5, url="https://github.com/GitAcrown/Addon/issues/3")
+        em = discord.Embed(title="EGO V3.05 | Voir Github",color=0x5184a5, url="https://github.com/GitAcrown/Addon/issues/3")
         em.add_field(name="&card",
                      value="+ Activité écrite et vocale par membre\n"
                            "+ Affinité avec le membre\n"
@@ -211,7 +211,8 @@ class Ego:
                            "+ Possibilité de refresh les informations\n"
                            "+ Le code de l'invitation s'affiche dans l'historique\n"
                            "+ Nouvel affichage en menu"
-                           "+ Anciens pseudos et surnoms")
+                           "+ Anciens pseudos et surnoms"
+                           "*+ Personnalisation (Anniv, Bio, Surnom, Site)*")
         em.add_field(name="&global",
                      value="*(Fusion de stats et scard)*\n"
                            "+ Temps de vocal et parole total (TTV & TTP)\n"
@@ -226,16 +227,16 @@ class Ego:
                            "+ Détection connexion/déconnexion\n"
                            "+ Système de Rollback en cas de données corrompues\n"
                            "- Les commandes ne sont plus considérées comme des messages\n"
-                           "- Le rôle prison n'est plus considéré comme un rôle supérieur aux rôles honorifiques")
+                           "- Le rôle prison n'est plus considéré comme un rôle supérieur aux rôles honorifiques\n"
+                           "*- Les membres sans rôles ne sont plus ignorés pour la commande &card*")
         em.add_field(name="Bientôt",
                      value="+ Recherche de jeux\n"
                            "+ Compilation de 'Tops' (Top actifs, e-pop, temps de parole...)\n"
                            "+ Créer et gérer des groupes de jeu\n"
                            "+ Créer et gérer des évenements\n"
                            "+ Rappels personnalisés\n"
-                           "+ Personnalisation (Bio, Anniversaire, Surnom)\n"
                            "+ Projet Oracle (Voir Github en cliquant plus haut)")
-        em.set_footer(text="MAJ publiée le 22/08 | Début de la récolte de stats V3: 22/08/2017", icon_url=self.logo_url())
+        em.set_footer(text="MAJ publiée le 25/08 | Début de la récolte de stats V3: 22/08/2017", icon_url=self.logo_url())
         await self.bot.say(embed=em)
 
     @commands.command(name="global", aliases=["g", "stats"], pass_context=True, no_pm=True)
