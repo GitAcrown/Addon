@@ -455,153 +455,335 @@ class Ego:
         """Affiche les informations détaillées d'un membre."""
         if user is None: user = ctx.message.author
         menu = None
-        try:
-            while True:
-                ego = self.ego.open(user)
-                color = self.ego.stat_color(user)
-                date = time.strftime("%d/%m/%Y", time.localtime())
-                em = discord.Embed(title="{}".format(str(user) if user != ctx.message.author else "Votre profil"),
-                                   color=color)
-                em.set_thumbnail(url=user.avatar_url)
-                if user.display_name.lower() != user.name.lower():
-                    em.add_field(name="Pseudo", value=user.display_name)
-                em.add_field(name="ID", value=user.id)
-                passed = (ctx.message.timestamp - user.created_at).days
-                em.add_field(name="Création", value=str(passed) + " jours")
-                passed = (ctx.message.timestamp - user.joined_at).days
-                rpas = passed if passed >= self.ego.since(user, "jour") else "+" + str(passed)
-                em.add_field(name="Ancienneté", value=str(rpas) + " jours")
-                ecr = round(ego.stats["NB_MSG"] / self.ego.since(user, "jour")) if "NB_MSG" in ego.stats else 0
-                if "TOTAL_PAROLE" in ego.stats:
-                    if "TOTAL_VOCAL" in ego.stats:
-                        vocalnow = time.time() - ego.stats["CAR_VOCAL"] if ego.stats["CAR_VOCAL"] > 0 else 0
-                        parolenow = time.time() - ego.stats["CAR_PAROLE"] if ego.stats["CAR_PAROLE"] > 0 else 0
-                        hvoc = round(ego.stats["TOTAL_PAROLE"] + ego.stats["TOTAL_VOCAL"] + vocalnow + parolenow) / 3600
-                        voc = round(hvoc / self.ego.since(user, "jour"), 2)
-                    else:
-                        voc = 0
+        while True:
+            ego = self.ego.open(user)
+            color = self.ego.stat_color(user)
+            date = time.strftime("%d/%m/%Y", time.localtime())
+            em = discord.Embed(title="{}".format(str(user) if user != ctx.message.author else "Votre profil"),
+                               color=color, url=ego.services["SITE"] if "SITE" in ego.services else None,
+                               description=ego.services["BIO"] if "BIO" in ego.services else None)
+            em.set_thumbnail(url=user.avatar_url)
+            if user.display_name.lower() != user.name.lower() or "SURNOM" in ego.services:
+                em.add_field(name="Surnom", value="{}".format(user.display_name if "SURNOM" not in ego.services else ego.services["SURNOM"]))
+            em.add_field(name="ID", value=user.id)
+            passed = (ctx.message.timestamp - user.created_at).days
+            em.add_field(name="Création", value=str(passed) + " jours")
+            passed = (ctx.message.timestamp - user.joined_at).days
+            rpas = passed if passed >= self.ego.since(user, "jour") else "+" + str(passed)
+            em.add_field(name="Ancienneté", value=str(rpas) + " jours")
+            ecr = round(ego.stats["NB_MSG"] / self.ego.since(user, "jour")) if "NB_MSG" in ego.stats else 0
+            if "TOTAL_PAROLE" in ego.stats:
+                if "TOTAL_VOCAL" in ego.stats:
+                    vocalnow = time.time() - ego.stats["CAR_VOCAL"] if ego.stats["CAR_VOCAL"] > 0 else 0
+                    parolenow = time.time() - ego.stats["CAR_PAROLE"] if ego.stats["CAR_PAROLE"] > 0 else 0
+                    hvoc = round(ego.stats["TOTAL_PAROLE"] + ego.stats["TOTAL_VOCAL"] + vocalnow + parolenow) / 3600
+                    voc = round(hvoc / self.ego.since(user, "jour"), 2)
                 else:
                     voc = 0
-                act = "**Écrit:** {}msg/j\n" \
-                      "**Vocal:** {}h/j".format(ecr, voc)
-                em.add_field(name="Activité", value=act)
-                rolelist = " ,".join([r.name for r in user.roles if r.name != "@everyone"])
-                em.add_field(name="Rôles", value=rolelist)
-                if "PSEUDOS" or "D_PSEUDOS" in ego.stats:
-                    em.add_field(name="Auparavant", value="**Pseudos:** {}\n**Surnoms:** {}".format(" ,".join(
-                        ego.stats["PSEUDOS"][:3]) if "PSEUDOS" in ego.stats else "???", " ,".join(
-                        ego.stats["D_PSEUDOS"][:3]) if "D_PSEUDOS" in ego.stats else "???"))
-                liste = []
-                for e in ego.history:
-                    if e[1] == date:
-                        mel = "{} {}".format(e[0], e[1])
-                        sec = time.mktime(time.strptime(mel, "%H:%M %d/%m/%Y"))
-                        liste.append([sec, e[0], e[1], e[2], e[3]])
-                if liste:
-                    msg = ""
-                    order = sorted(liste, key=operator.itemgetter(0), reverse=True)
-                    top = order[:3]
-                    for t in top:
-                        msg += "**{}** *{}*\n".format(t[1], t[4])
-                else:
-                    msg = "*Aucune action*"
-                em.add_field(name="Aujourd'hui", value=msg)
+            else:
+                voc = 0
+            act = "**Écrit:** {}msg/j\n" \
+                  "**Vocal:** {}h/j".format(ecr, voc)
+            em.add_field(name="Activité", value=act)
+            rolelist = " ,".join([r.name for r in user.roles if r.name != "@everyone"])
+            em.add_field(name="Rôles", value=rolelist if rolelist else "Aucun rôle")
+            if "PSEUDOS" or "D_PSEUDOS" in ego.stats:
+                em.add_field(name="Auparavant", value="**Pseudos:** {}\n**Surnoms:** {}".format(" ,".join(
+                    ego.stats["PSEUDOS"][:3]) if "PSEUDOS" in ego.stats else "???", " ,".join(
+                    ego.stats["D_PSEUDOS"][:3]) if "D_PSEUDOS" in ego.stats else "???"))
+            liste = []
+            for e in ego.history:
+                if e[1] == date:
+                    mel = "{} {}".format(e[0], e[1])
+                    sec = time.mktime(time.strptime(mel, "%H:%M %d/%m/%Y"))
+                    liste.append([sec, e[0], e[1], e[2], e[3]])
+            if liste:
+                msg = ""
+                order = sorted(liste, key=operator.itemgetter(0), reverse=True)
+                top = order[:3]
+                for t in top:
+                    msg += "**{}** *{}*\n".format(t[1], t[4])
+            else:
+                msg = "*Aucune action*"
+            em.add_field(name="Aujourd'hui", value=msg)
+            if ctx.message.author != user:
+                if self.ego.affinite(ctx.message.author, user):
+                    em.add_field(name="Affinité", value=self.ego.affinite(ctx.message.author, user))
+            em.set_footer(text="Utilisez les réactions ci-dessous pour naviguer | {}".format(self.version),
+                          icon_url=self.logo_url())
+            if menu is None:
+                menu = await self.bot.say(embed=em)
+            else:
+                try:
+                    await self.bot.clear_reactions(menu)
+                except:
+                    pass
+                menu = await self.bot.edit_message(menu, embed=em)
+            if user == ctx.message.author:
+                await self.bot.add_reaction(menu, "⚙")
+            await self.bot.add_reaction(menu, "🕹")  # Jeux
+            await self.bot.add_reaction(menu, "🔄")  # Refresh
+            rap = await self.bot.wait_for_reaction(["🕹", "🔄", "⚙"], message=menu, timeout=60, check=self.check)
+            if rap is None:
+                em.set_footer(text="Session expirée | {}".format(self.version), icon_url=self.logo_url())
+                await self.bot.edit_message(menu, embed=em)
+                try:
+                    await self.bot.clear_reactions(menu)
+                except:
+                    pass
+                return
+            elif rap.reaction.emoji == "⚙" and user == ctx.message.author:
+                retour = False
+                while retour is False:
+                    ttl = "**Rubriques:**\n" \
+                          "*A* - Surnom\n" \
+                          "*B* - Anniversaire\n" \
+                          "*C* - Bio\n" \
+                          "*D* - Site personnel\n" \
+                          "\n" \
+                          "*Q* - Quitter"
+                    em = discord.Embed(title="Ajouter des informations", description=ttl)
+                    em.set_footer(text="Entrez la lettre correspondant à la rubrique désirée | {}".format(self.version),
+                                  icon_url=self.logo_url())
+                    mp = await self.bot.whisper(embed=em)
+                    verif = False
+                    while verif is False:
+                        rep = await self.bot.wait_for_message(channel=mp.channel, author=ctx.message.author,
+                                                              timeout=300)
+                        if not rep:
+                            em.set_footer(text="Timeout atteint | {}".format(self.version), icon_url=self.logo_url())
+                            mp = await self.bot.edit_message(mp, embed=em)
+                            verif = True
+                            self.ego.save()
+                            return
+                        elif rep.content.lower() == "a":
+                            verif = True
+                            em.set_footer(text="Entrez le surnom qu'on vous donne le plus ('Annuler' pour quitter, 'Aucun' pour l'enlever) | {}".format(self.version),
+                                          icon_url=self.logo_url())
+                            mp = await self.bot.edit_message(mp, embed=em)
+                            surnom = await self.bot.wait_for_message(channel=mp.channel, author=ctx.message.author,
+                                                                     timeout=120)
+                            if surnom is None:
+                                em.set_footer(text="Timeout atteint | {}".format(self.version),
+                                              icon_url=self.logo_url())
+                                mp = await self.bot.edit_message(mp, embed=em)
+                                return
+                            elif surnom.content.lower() != "annuler":
+                                if surnom.content.lower() != "aucun":
+                                    ego.services["SURNOM"] = surnom.content
+                                    em.set_footer(text="Surnom modifié avec succès ! | {}".format(self.version),
+                                                  icon_url=self.logo_url())
+                                    mp = await self.bot.edit_message(mp, embed=em)
+                                    await asyncio.sleep(2)
+                                else:
+                                    del ego.services["SURNOM"]
+                                    em.set_footer(text="Surnom retiré avec succès ! | {}".format(self.version),
+                                                  icon_url=self.logo_url())
+                                    mp = await self.bot.edit_message(mp, embed=em)
+                                    await asyncio.sleep(2)
+                            else:
+                                em.set_footer(text="Session terminée | {}".format(self.version),
+                                              icon_url=self.logo_url())
+                                mp = await self.bot.edit_message(mp, embed=em)
+                                return
+
+                        elif rep.content.lower() == "b":
+                            verif = True
+                            em.set_footer(
+                                text="Entrez votre date d'anniversaire au format jj/mm ('Annuler' pour quitter, 'Aucune' pour retirer) | {}".format(
+                                    self.version),
+                                icon_url=self.logo_url())
+                            mp = await self.bot.edit_message(mp, embed=em)
+                            v = False
+                            while v is False:
+                                r = await self.bot.wait_for_message(channel=mp.channel, author=ctx.message.author,
+                                                                        timeout=120)
+                                if not r:
+                                    em.set_footer(text="Timeout atteint | {}".format(self.version),
+                                                  icon_url=self.logo_url())
+                                    mp = await self.bot.edit_message(mp, embed=em)
+                                    return
+                                elif r.content.lower() == "annuler":
+                                    em.set_footer(text="Session terminée | {}".format(self.version),
+                                                  icon_url=self.logo_url())
+                                    mp = await self.bot.edit_message(mp, embed=em)
+                                    v = True
+                                    verif = True
+                                elif r.content.lower() == "aucune":
+                                    v = True
+                                    del ego.services["ANNIV"]
+                                    em.set_footer(text="Anniversaire retiré avec succès ! | {}".format(self.version),
+                                                  icon_url=self.logo_url())
+                                    mp = await self.bot.edit_message(mp, embed=em)
+                                    await asyncio.sleep(2)
+                                    verif = True
+                                elif len(r.content) == 5:
+                                    v = True
+                                    ego.services["ANNIV"] = r.content
+                                    em.set_footer(text="Anniversaire modifié avec succès ! | {}".format(self.version),
+                                                  icon_url=self.logo_url())
+                                    mp = await self.bot.edit_message(mp, embed=em)
+                                    await asyncio.sleep(2)
+                                    verif = True
+                                else:
+                                    em.set_footer(
+                                        text="Invalide, réessayez | {}".format(self.version),
+                                        icon_url=self.logo_url())
+                                    mp = await self.bot.edit_message(mp, embed=em)
+                                    await asyncio.sleep(1)
+
+                        elif rep.content.lower() == "c":
+                            verif = True
+                            em.set_footer(
+                                text="Entrez une courte biographie [120 max.] ('Annuler' pour quitter, 'Aucune' pour l'enlever) | {}".format(
+                                    self.version),
+                                icon_url=self.logo_url())
+                            mp = await self.bot.edit_message(mp, embed=em)
+                            v = False
+                            while v is False:
+                                bio = await self.bot.wait_for_message(channel=mp.channel, author=ctx.message.author,
+                                                                         timeout=120)
+                                if bio is None:
+                                    em.set_footer(text="Timeout atteint | {}".format(self.version),
+                                                  icon_url=self.logo_url())
+                                    mp = await self.bot.edit_message(mp, embed=em)
+                                    return
+                                elif len(bio.content) > 4 and len(bio.content) <= 120:
+                                    if bio.content.lower() != "annuler":
+                                        if bio.content.lower() != "aucune":
+                                            v = True
+                                            ego.services["BIO"] = bio.content
+                                            em.set_footer(text="Bio modifiée avec succès ! | {}".format(self.version),
+                                                          icon_url=self.logo_url())
+                                            mp = await self.bot.edit_message(mp, embed=em)
+                                            await asyncio.sleep(2)
+                                            verif = True
+                                        else:
+                                            v = True
+                                            del ego.services["BIO"]
+                                            em.set_footer(text="Bio retirée avec succès ! | {}".format(self.version),
+                                                          icon_url=self.logo_url())
+                                            mp = await self.bot.edit_message(mp, embed=em)
+                                            await asyncio.sleep(2)
+                                            verif = True
+                                    else:
+                                        em.set_footer(text="Retour au menu | {}".format(self.version),
+                                                      icon_url=self.logo_url())
+                                        mp = await self.bot.edit_message(mp, embed=em)
+                                        await asyncio.sleep(1)
+                                        v = True
+                                else:
+                                    em.set_footer(text="Invalide (Entre 4 et 120 caractères) Réessayez | {}".format(self.version),
+                                                  icon_url=self.logo_url())
+                                    mp = await self.bot.edit_message(mp, embed=em)
+                                    await asyncio.sleep(1)
+
+                        elif rep.content.lower() == "d":
+                            verif = True
+                            em.set_footer(
+                                text="Entrez l'URL de votre site internet ('Annuler' pour quitter, 'Aucun' pour retirer) | {}".format(
+                                    self.version),
+                                icon_url=self.logo_url())
+                            mp = await self.bot.edit_message(mp, embed=em)
+                            v = False
+                            while v is False:
+                                site = await self.bot.wait_for_message(channel=mp.channel, author=ctx.message.author,
+                                                                       timeout=120)
+                                if site is None:
+                                    em.set_footer(text="Timeout atteint | {}".format(self.version),
+                                                  icon_url=self.logo_url())
+                                    mp = await self.bot.edit_message(mp, embed=em)
+                                    return
+                                elif site.content.lower().startswith("http"):
+                                    ego.services["SITE"] = site.content
+                                    em.set_footer(text="Site modifié avec succès ! | {}".format(self.version),
+                                                  icon_url=self.logo_url())
+                                    mp = await self.bot.edit_message(mp, embed=em)
+                                    await asyncio.sleep(2)
+                                    v = True
+                                elif site.content.lower() == "aucun":
+                                    del ego.services["SITE"]
+                                    em.set_footer(text="Site retiré avec succès ! | {}".format(self.version),
+                                                  icon_url=self.logo_url())
+                                    mp = await self.bot.edit_message(mp, embed=em)
+                                    await asyncio.sleep(2)
+                                    v = True
+                                elif site.content.lower() == "annuler":
+                                    em.set_footer(text="Retour au menu | {}".format(self.version),
+                                                  icon_url=self.logo_url())
+                                    mp = await self.bot.edit_message(mp, embed=em)
+                                    await asyncio.sleep(1)
+                                    v = True
+                                else:
+                                    em.set_footer(text="Invalide, réessayez | {}".format(self.version),
+                                                  icon_url=self.logo_url())
+                                    mp = await self.bot.edit_message(mp, embed=em)
+                                    await asyncio.sleep(2)
+
+                        elif rep.content.lower() == "q":
+                            verif = True
+                            em.set_footer(text="Session terminée | Profil mis à jour | {}".format(self.version),
+                                          icon_url=self.logo_url())
+                            mp = await self.bot.edit_message(mp, embed=em)
+                            retour = True
+                            self.ego.save()
+                        else:
+                            pass
+                continue
+            elif rap.reaction.emoji == "🕹":
+                aff = ""
                 if ctx.message.author != user:
-                    if self.ego.affinite(ctx.message.author, user):
-                        em.add_field(name="Affinité", value=self.ego.affinite(ctx.message.author, user))
-                em.set_footer(text="Utilisez les réactions ci-dessous pour naviguer | {}".format(self.version),
-                              icon_url=self.logo_url())
-                if menu is None:
-                    menu = await self.bot.say(embed=em)
+                    selfbib = self.ego.biblio(ctx.message.author)
+                    userbib = self.ego.biblio(user)
+                    if userbib:
+                        for g in userbib:
+                            if g.lower() in selfbib:
+                                aff += "__*{}*__\n".format(g.title())
+                            else:
+                                aff += "*{}*\n".format(g.title())
+                    else:
+                        aff = "???"
+                    em = discord.Embed(
+                        title="Jeux de {}".format(user.name) if user != ctx.message.author else "Vos jeux",
+                        color=color, description=aff)
+                    resul = "Les jeux en commun sont soulignés" if userbib else "Bibliothèque vide " \
+                                                                                       "ou non detectée"
+                    em.set_footer(text="{} | {}".format(resul, self.version), icon_url=self.logo_url())
                 else:
-                    try:
-                        await self.bot.clear_reactions(menu)
-                    except:
-                        pass
-                    menu = await self.bot.edit_message(menu, embed=em)
-                await self.bot.add_reaction(menu, "🕹")  # Jeux
-                if user == ctx.message.author:
-                    await self.bot.add_reaction(menu, "⚙")
-                await self.bot.add_reaction(menu, "🔄")  # Refresh
-                rap = await self.bot.wait_for_reaction(["🕹", "🔄", "⚙"], message=menu, timeout=60, check=self.check)
-                if rap is None:
+                    selfbib = self.ego.biblio(ctx.message.author)
+                    if selfbib:
+                        for g in selfbib:
+                            aff += "*{}*\n".format(g.title())
+                    else:
+                        aff = "???"
+                    em = discord.Embed(
+                        title="Jeux de {}".format(user.name) if user != ctx.message.author else "Vos jeux",
+                        color=color, description=aff)
+                    resul = "Utilisez la réaction ci-dessous pour revenir à votre profil" if \
+                        selfbib else "Bibliothèque vide ou non detectée"
+                    em.set_footer(text="{} | {}".format(resul, self.version), icon_url=self.logo_url())
+                try:
+                    await self.bot.clear_reactions(menu)
+                except:
+                    pass
+                await self.bot.edit_message(menu, embed=em)
+                await self.bot.add_reaction(menu, "⏹")
+                retour = await self.bot.wait_for_reaction(["⏹"], message=menu, timeout=60, check=self.check)
+                if retour is None:
                     em.set_footer(text="Session expirée | {}".format(self.version), icon_url=self.logo_url())
                     await self.bot.edit_message(menu, embed=em)
-                    try:
-                        await self.bot.clear_reactions(menu)
-                    except:
-                        pass
                     return
-                elif rap.reaction.emoji == "⚙" and user == ctx.message.author:
-                    await self.bot.whisper("**Fonctionnalité en cours de développement !**\n"
-                                           "Bientôt: \n"
-                                           "+ Ajout d'une petite bio à votre carte\n"
-                                           "+ Ajout de la date de votre anniversaire\n"
-                                           "+ Ajout d'un surnom\n"
-                                           "+ Ajout d'un site web personnel")
-                    try:
-                        await self.bot.clear_reactions(menu)
-                    except:
-                        pass
-                    return
-                elif rap.reaction.emoji == "🕹":
-                    aff = ""
-                    if ctx.message.author != user:
-                        selfbib = self.ego.biblio(ctx.message.author)
-                        userbib = self.ego.biblio(user)
-                        if userbib:
-                            for g in userbib:
-                                if g.lower() in selfbib:
-                                    aff += "__*{}*__\n".format(g.title())
-                                else:
-                                    aff += "*{}*\n".format(g.title())
-                        else:
-                            aff = "???"
-                        em = discord.Embed(
-                            title="Jeux de {}".format(user.name) if user != ctx.message.author else "Vos jeux",
-                            color=color, description=aff)
-                        resul = "Les jeux en commun sont soulignés" if userbib else "Bibliothèque vide " \
-                                                                                           "ou non detectée"
-                        em.set_footer(text="{} | {}".format(resul, self.version), icon_url=self.logo_url())
-                    else:
-                        selfbib = self.ego.biblio(ctx.message.author)
-                        if selfbib:
-                            for g in selfbib:
-                                aff += "*{}*\n".format(g.title())
-                        else:
-                            aff = "???"
-                        em = discord.Embed(
-                            title="Jeux de {}".format(user.name) if user != ctx.message.author else "Vos jeux",
-                            color=color, description=aff)
-                        resul = "Utilisez la réaction ci-dessous pour revenir à votre profil" if \
-                            selfbib else "Bibliothèque vide ou non detectée"
-                        em.set_footer(text="{} | {}".format(resul, self.version), icon_url=self.logo_url())
-                    try:
-                        await self.bot.clear_reactions(menu)
-                    except:
-                        pass
-                    await self.bot.edit_message(menu, embed=em)
-                    await self.bot.add_reaction(menu, "⏹")
-                    retour = await self.bot.wait_for_reaction(["⏹"], message=menu, timeout=60, check=self.check)
-                    if retour is None:
-                        em.set_footer(text="Session expirée | {}".format(self.version), icon_url=self.logo_url())
-                        await self.bot.edit_message(menu, embed=em)
-                        return
-                    elif retour.reaction.emoji == "⏹":
-                        continue
-                    else:
-                        pass
-                    # TODO Pouvoir constituer un groupe de jeu
-                elif rap.reaction.emoji == "🔄":
+                elif retour.reaction.emoji == "⏹":
                     continue
                 else:
-                    em.set_footer(text="Réaction invalide | {}".format(self.version), icon_url=self.logo_url)
-                    await self.bot.edit_message(menu, embed=em)
-                    return
-        except Exception as e:
-            await self.bot.say("L'utilisateur n'est pas connu de mes systèmes.")
-            print("ExceptionEGO: {}".format(e))
-            return
+                    pass
+                # TODO Pouvoir constituer un groupe de jeu
+            elif rap.reaction.emoji == "🔄":
+                continue
+            else:
+                em.set_footer(text="Réaction invalide | {}".format(self.version), icon_url=self.logo_url)
+                await self.bot.edit_message(menu, embed=em)
+                return
 
     @commands.command(pass_context=True, no_pm=True)
     async def find(self, ctx, *recherche):
@@ -693,8 +875,9 @@ class Ego:
         return random.choice(liste)
 
     async def l_msg(self, message):
-        if not message.server.id == "204585334925819904":
-            return
+        if message.server:
+            if not message.server.id == "204585334925819904":
+                return
         mentions = message.mentions
         author = message.author
         channel = message.channel
@@ -788,6 +971,8 @@ class Ego:
         self.ego.save()
 
     async def l_react(self, reaction, user):
+        if not user.server:
+            return
         server = user.server
         ego = self.ego.open(user)
         if server.id != "204585334925819904" or user.bot:
