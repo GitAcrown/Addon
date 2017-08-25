@@ -143,10 +143,10 @@ class Mirage:
             msg = ""
             met.reverse()
             for e in met:
-                msg += "**{}*{}*** {}\n".format(e[0], e[1], e[2] if len(e[2]) < 30 else e[2][:29] + "...")
+                msg += "**{}{}** {}\n".format(e[0], e[1], e[2] if len(e[2]) < 40 else e[2][:39] + "...")
         else:
-            msg = "Aucune action"
-        em.add_field(name="Actions", value=msg)
+            msg = "Aucun historique"
+        em.add_field(name="Historique", value=msg)
         stamp = time.strftime("Le %d/%m/%Y à %H:%M", time.localtime())
         em.set_footer(text=stamp)
         await self.bot.say(embed=em)
@@ -185,8 +185,8 @@ class Mirage:
             return
         author = ctx.message.author
         raison = " ".join(raison)
-        if self.api._sub(author, somme, "Don à {}".format(user.name)):
-            self.api._add(user, somme, raison)
+        if self.api._sub(author, somme, "Don à {} ({})".format(user.name, raison)):
+            self.api._add(user, somme, "[{}] {}".format(author.name, raison))
             await self.bot.say("**Transfert réalisé avec succès.**")
         else:
             await self.bot.say("**Erreur** | Vous n'avez pas assez de fonds pour ce transfert.")
