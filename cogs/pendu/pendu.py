@@ -131,7 +131,9 @@ class Pendu:
         if self.data["PENDU_ON"] is True:
             if message.channel == chan:
                 author = message.author
-                if message.content.startswith("&") or message.content.startswith("!") or message.content.startswith(";;") or message.content.startswith("\\"):
+                if message.content.startswith("&") or message.content.startswith("!") or \
+                        message.content.startswith(";;") or message.content.startswith("\\") \
+                        or message.content.startswith(":") or len(message.content.split(" ")) > 1:
                     return
                 if message.content.lower() == "stop":
                     if author.server_permissions.manage_messages:
