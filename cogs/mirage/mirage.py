@@ -202,7 +202,8 @@ class Mirage:
         else:
             msg = "Aucun historique"
         em.add_field(name="Historique", value=msg)
-        em.add_field(name="Succès", value=suc)
+        if suc != "":
+            em.add_field(name="Succès", value=suc)
         stamp = time.strftime("Le %d/%m/%Y à %H:%M", time.localtime())
         em.set_footer(text=stamp)
         await self.bot.say(embed=em)
