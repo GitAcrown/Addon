@@ -184,6 +184,7 @@ class Mirage:
         em.set_author(name="BitKhey | {}".format("Votre compte" if user == ctx.message.author else user.name),
                       icon_url=user.avatar_url)  # Cimer Lord pour le nom de la monnaie
         em.add_field(name="Solde", value="**{}** BK".format(acc.solde))
+        em.add_field(name="Carte", value=self.api.limit(user)[0])
         liste = []
         for s in acc.success:
             if acc.success[s]["UNLOCK"] is True:
