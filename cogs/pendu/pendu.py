@@ -79,6 +79,8 @@ class Pendu:
                     else:
                         bit._set(user, 0, "Prix de la défaite (Pendu)")
                         await self.bot.send_message(user, "Votre compte bancaire est désormais **vide**.")
+                    bit.success(user, "Triplé", "Avoir réussi 3 parties de pendu consécutives", 0, 3)
+                    bit.success(user, "Seulement 10 ?", "Avoir réussi 10 parties de pendu d'affilé", 0, 10)
                 self.data["PENDU_ON"] = False
                 fileIO("data/pendu/data.json", "save", self.data)
                 return
@@ -92,6 +94,14 @@ class Pendu:
                     else:
                         await self.bot.send_message(user, "Vous n'avez pas de compte bancaire en 2017 !?\n"
                                                           "Je n'ai pas pu vous donner votre argent...")
+                    suc = bit.success(user, "Triplé", "Avoir réussi 3 parties de pendu consécutives", 1, 3)
+                    if suc:
+                        await self.bot.say("{} **Succès débloqué** | **{}** - *{}*".format(user.mention, suc[0],
+                                                                                           suc[1]))
+                    suc = bit.success(user, "Seulement 10 ?", "Avoir réussi 10 parties de pendu d'affilé", 1, 10)
+                    if suc:
+                        await self.bot.say("{} **Succès débloqué** | **{}** - *{}*".format(user.mention, suc[0],
+                                                                                           suc[1]))
                 self.data["PENDU_ON"] = False
                 fileIO("data/pendu/data.json", "save", self.data)
             else:
@@ -102,7 +112,7 @@ class Pendu:
                 fileIO("data/pendu/data.json", "save", self.data)
                 return
         else:
-            await self.bot.say("Une partie est déjà en cours.")
+            await self.bot.say("Une partie est déjà en cours, je le sais...")
 
     def indexplus(self, mot, l):
         nb = mot.count(l)
@@ -115,13 +125,6 @@ class Pendu:
             else:
                 n += 1
         return tr
-    
-    @commands.command(pass_context=True, hidden=True)
-    async def resetpendu(self, ctx):
-        """Permet de reset le pendu en cas de blocage"""
-        self.data["PENDU_ON"] = False
-        fileIO("data/pendu/data.json", "save", self.data)
-        await self.bot.say("Reset effectué avec succès.")
 
     async def l_msg(self, message):
         chan = self.bot.get_channel(self.data["PENDU_CHAN"])
