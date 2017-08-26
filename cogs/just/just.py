@@ -124,16 +124,14 @@ class Just:
                     await self.bot.send_message(user, "**Tu as été mis(e) en prison pendant {}**\nSortie prévue à: `{}`\n"
                                                       "Un salon textuel écrit est disponible sur le serveur afin de contester cette punition ou afin d'obtenir plus d'informations.".format(temps, estim))
                     self.save()
-                    while time.time() < self.reg[user.id]["FIN_PEINE"] or self.reg[user.id]["FIN_PEINE"] != None:
-                        await asyncio.sleep(1)
+                    while time.time() < self.reg[user.id]["FIN_PEINE"]:
+                        await asyncio.sleep(0.5)
                     if user in server.members:
                         if role in [r.name for r in user.roles]:
                             self.reg[user.id]["DEB_PEINE"] = self.reg[user.id]["FIN_PEINE"] = 0
                             self.new_event("out", user.id, "auto")
                             await self.bot.remove_roles(user, apply)
                             await self.bot.say("{} **est libre**".format(user.mention))
-                            await asyncio.sleep(1)
-                            self.reg[user.id]["DEB_PEINE"] = self.reg[user.id]["FIN_PEINE"] = None
                             self.save()
                         else:
                             return
@@ -144,8 +142,6 @@ class Just:
                     self.new_event("out", user.id, ctx.message.author.id)
                     await self.bot.remove_roles(user, apply)
                     await self.bot.say("{} **a été libéré par *{}***".format(user.mention, ctx.message.author.name))
-                    await asyncio.sleep(1)
-                    self.reg[user.id]["DEB_PEINE"] = self.reg[user.id]["FIN_PEINE"] = None
                     self.save()
             else:
                 await self.bot.say("Le temps minimum est de 1m")
