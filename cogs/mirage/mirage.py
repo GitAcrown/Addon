@@ -50,8 +50,11 @@ class MirageAPI:
                                   "SOLDE": 20,
                                   "HISTORY": [],
                                   "TYPE": "Silver",
-                                  "SUCCESS": [],
+                                  "SUCCESS": {},
                                   "PLUS": {}}
+            self.save()
+        if self.bank[user.id]["SUCCESS"] == []:
+            self.bank[user.id]["SUCCESS"] = {}
             self.save()
         Bank = namedtuple('Bank', ['id', 'clef', "solde", "history", "type", "success", "plus"])
         id = user.id
@@ -122,11 +125,54 @@ class MirageAPI:
         else:
             return False
 
+    def success(self, user, nom: str, descr: str, plus: int, need: int):
+        """Permet de créer/ajouter un succès à quelqu'un
+        Nom : Nom du succès
+        Descr : Description du succès
+        Plus : Score ajouté afin de le gagner (0 pour reset)
+        Need : Score nécéssaire pour débloquer le succès"""
+        acc = self.open(user)
+        if nom not in self.bank[user.id]["SUCCESS"]:
+            self.bank[user.id]["SUCCESS"][nom] = {"NEED": need,
+                                                  "VAL": 0,
+                                                  "DESCR": descr,
+                                                  "UNLOCK": False,
+                                                  "DATE_UNLOCK": None}
+        if self.bank[user.id]["SUCCESS"][nom]["UNLOCK"] is False:
+            if plus > 0:
+                self.bank[user.id]["SUCCESS"][nom]["VAL"] += plus
+            else:
+                self.bank[user.id]["SUCCESS"][nom]["VAL"] = 0
+                self.save()
+                return None
+            if self.bank[user.id]["SUCCESS"][nom]["VAL"] >= self.bank[user.id]["SUCCESS"][nom]["NEED"]:
+                self.bank[user.id]["SUCCESS"][nom]["UNLOCK"] = True
+                self.bank[user.id]["SUCCESS"][nom]["DATE_UNLOCK"] = time.time()
+                self.save()
+                return [nom, descr]
+            else:
+                self.save()
+                return False
+        else:
+            return False
+
 class Mirage:
     """Mirage | Système monétaire et Gestionnaire de succès"""
     def __init__(self, bot):
         self.bot = bot
         self.api = MirageAPI(bot, "data/mirage/bank.json")
+
+    @commands.command(pass_context=True, hidden=True)
+    async def stest(self, ctx):
+        """Ajoute un succès test à soit-même"""
+        user = ctx.message.author
+        acc = self.api.open(user)
+        suc = self.api.success(user, "Test réussi !", "Avoir lancé la commande test 3 fois", 1, 3)
+        if suc:
+            await self.bot.say("{} **Succès débloqué** | **{}** - *{}*".format(user.mention, suc[0],
+                                                                               suc[1]))
+        else:
+            await self.bot.say("...")
 
     @commands.command(pass_context=True)
     async def compte(self, ctx, user: discord.Member = None):
@@ -138,7 +184,16 @@ class Mirage:
         em.set_author(name="BitKhey | {}".format("Votre compte" if user == ctx.message.author else user.name),
                       icon_url=user.avatar_url)  # Cimer Lord pour le nom de la monnaie
         em.add_field(name="Solde", value="**{}** BK".format(acc.solde))
-        met = acc.history[-3:]
+        liste = []
+        for s in acc.success:
+            if acc.success[s]["UNLOCK"] is True:
+                liste.append([s, acc.success[s]["DESCR"], acc.success[s]["DATE_UNLOCK"]])
+        sh = sorted(liste, key=operator.itemgetter(2), reverse=True)
+        sh = sh[:3]
+        suc = ""
+        for s in sh:
+            suc += "**{}** *{}*\n".format(s[0], s[1])
+        met = acc.history[-5:]
         if met != []:
             msg = ""
             met.reverse()
@@ -147,6 +202,7 @@ class Mirage:
         else:
             msg = "Aucun historique"
         em.add_field(name="Historique", value=msg)
+        em.add_field(name="Succès", value=suc)
         stamp = time.strftime("Le %d/%m/%Y à %H:%M", time.localtime())
         em.set_footer(text=stamp)
         await self.bot.say(embed=em)
@@ -155,7 +211,7 @@ class Mirage:
     async def leaderboard(self, ctx, top:int = 10):
         """Affiche un top X des personnes les plus riches et affiche votre place."""
         if top <= 0:
-            await self.bot.say("**Erreur** | Le top doit être positif et supérieur à 0.")
+            await self.bot.say("**Erreur** | Le top doit être supérieur à 0.")
             return
         author = ctx.message.author
         server = ctx.message.server
@@ -168,7 +224,7 @@ class Mirage:
             user = server.get_member(p[1])
             msg += "{} | *{}*\n".format(n, user.name)
             n += 1
-        if len(msg) > 1960:
+        if len(msg) > 1980:
             await self.bot.say("**Erreur** | Top trop elevé.")
             return
         em.add_field(name="Top {}".format(top), value=msg)
@@ -178,10 +234,10 @@ class Mirage:
     @commands.command(pass_context=True, no_pm=True)
     async def don(self, ctx, user: discord.Member, somme: int, *raison: str):
         """Permet de donner une certaine somme à un membre.
-
+        La valeur doit être entière et positive.
         La raison est obligatoire."""
         if somme < 1:
-            await self.bot.say("**Erreur** | La somme transférée doit être positive et supérieure à 0")
+            await self.bot.say("**Erreur** | La somme transférée doit être entière et supérieure à 0")
             return
         author = ctx.message.author
         raison = " ".join(raison)
@@ -191,7 +247,7 @@ class Mirage:
         else:
             await self.bot.say("**Erreur** | Vous n'avez pas assez de fonds pour ce transfert.")
 
-    @commands.command(aliases=["be"] ,pass_context=True, no_pm=True)
+    @commands.command(aliases=["be"], pass_context=True, no_pm=True)
     @checks.mod_or_permissions(manage_messages=True)
     async def bitedit(self, ctx, user: discord.Member, mode: str, somme: int, raison=None):
         """Permet d'éditer le solde d'une personne.
