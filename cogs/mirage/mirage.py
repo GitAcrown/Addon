@@ -202,7 +202,7 @@ class Mirage:
                 msg += "**{}{}** {}\n".format(e[0], e[1], e[2] if len(e[2]) < 40 else e[2][:39] + "...")
         else:
             msg = "Aucun historique"
-        em.add_field(name="Historique", value=msg)
+        em.add_field(name="Historique", value=msg, inline=False)
         if suc != "":
             em.add_field(name="Succès", value=suc)
         stamp = time.strftime("Le %d/%m/%Y à %H:%M", time.localtime())
