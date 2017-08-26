@@ -16,20 +16,6 @@ class Just:
         self.bot = bot
         self.sys = dataIO.load_json("data/just/sys.json")
         self.reg = dataIO.load_json("data/just/reg.json")
-        self.cycle_task = bot.loop.create_task(self.reduce())
-
-    async def reduce(self):
-        await self.bot.wait_until_ready()
-        try:
-            await asyncio.sleep(20)  # Temps de mise en route
-            while True:
-                for p in self.reg:
-                    if self.reg[p]["BANG"] >= 1:
-                        self.reg[p]["BANG"] -= 1
-                self.save()
-                await asyncio.sleep(20)  # Toutes les 24h
-        except asyncio.CancelledError:
-            pass
 
     def save(self):
         fileIO("data/just/sys.json", "save", self.sys)
@@ -142,10 +128,12 @@ class Just:
                         await asyncio.sleep(1)
                     if user in server.members:
                         if role in [r.name for r in user.roles]:
-                            self.reg[user.id]["DEB_PEINE"] = self.reg[user.id]["FIN_PEINE"] = None
+                            self.reg[user.id]["DEB_PEINE"] = self.reg[user.id]["FIN_PEINE"] = 0
                             self.new_event("out", user.id, "auto")
                             await self.bot.remove_roles(user, apply)
                             await self.bot.say("{} **est libre**".format(user.mention))
+                            await asyncio.sleep(1)
+                            self.reg[user.id]["DEB_PEINE"] = self.reg[user.id]["FIN_PEINE"] = None
                             self.save()
                         else:
                             return
@@ -156,8 +144,7 @@ class Just:
                     self.new_event("out", user.id, ctx.message.author.id)
                     await self.bot.remove_roles(user, apply)
                     await self.bot.say("{} **a été libéré par *{}***".format(user.mention, ctx.message.author.name))
-                    self.save()
-                    await asyncio.sleep(2)
+                    await asyncio.sleep(1)
                     self.reg[user.id]["DEB_PEINE"] = self.reg[user.id]["FIN_PEINE"] = None
                     self.save()
             else:
