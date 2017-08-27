@@ -201,6 +201,13 @@ class Pendu:
                             await self.bot.send_message(chan, "**{}**\n*Vies restantes: {}*".format("".join(self.data["ENCODE"]),
                                                                                                     self.data["VIES"]))
 
+    @commands.command(pass_context=True, hidden=True)
+    async def resetpendu(self, ctx):
+        """Permet de reset le pendu en cas de blocage"""
+        self.data["PENDU_ON"] = False
+        fileIO("data/pendu/data.json", "save", self.data)
+        await self.bot.say("Reset effectué avec succès.")
+
 def check_folders():
     if not os.path.exists("data/pendu/"):
         print("Creation du dossier Jeu du pendu...")
