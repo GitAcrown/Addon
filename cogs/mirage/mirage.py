@@ -66,6 +66,14 @@ class MirageAPI:
         plus = self.bank[user.id]["PLUS"]
         return Bank(id, clef, solde, hist, acc, succ, plus)
 
+    def getuser(self, uid):
+        liste = self.bot.get_all_members()
+        for m in liste:
+            if m.id == uid:
+                return m
+        else:
+            return False
+
     def limit(self, user):
         """Renvoie une liste concernant le type de compte contenant:
         [0] Nom
