@@ -92,7 +92,7 @@ class Russianroulette:
                     await self.bot.say("Trop de joueurs jouent déjà.")
             else:
                 min_bet = self.rrgame["Config"]["Min Bet"]
-                await self.bot.say("L'offre doit être supérieure à **{} BK** " + str(min_bet))
+                await self.bot.say("L'offre doit être supérieure à **{} BK** ".format(min_bet))
         else:
             await self.bot.say("Il y a déjà un jeu en cours.")
 
