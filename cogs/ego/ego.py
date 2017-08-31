@@ -233,7 +233,7 @@ class Ego:
     async def tops(self, ctx):
         """Permet de voir les différents Tops créés par EGO"""
         server = ctx.message.server
-        rlist = [[0, "Actifs (Vocal)"], [1, "Actifs (Ecrit)"], [2, "Joueurs"], [3, "Paillassons"]]
+        rlist = [[0, "Actifs (Vocal)"], [1, "Actifs (Ecrit)"], [2, "Joueurs"], [3, "Diversité des échanges"]]
         num = random.choice(rlist)[0]
         max = 3
         all = [self.ego.open(user) for user in server.members]
