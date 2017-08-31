@@ -1146,7 +1146,7 @@ class Ego:
                     ego.stats["DECONNECT"][heure] = ego.stats["DECONNECT"][heure] + 1 if \
                         heure in ego.stats["DECONNECT"] else 1
                 else:
-                    ego.stats["DECONNECT"][heure] = 1
+                    ego.stats["DECONNECT"] = {heure : 1}
         else:
             pass
         self.ego.save()
