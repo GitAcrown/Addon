@@ -62,13 +62,14 @@ class EgoAPI:
                                       "CREATION": time.time()}
             self.save()
             self.new_event(user, "autre", "Inscrit sur EGO V3")
-        Profil = namedtuple('Profil', ["stats", "services", "history", "jeux", "creation"])
+        Profil = namedtuple('Profil', ["stats", "services", "history", "jeux", "creation", "id"])
         a = self.data[user.id]["STATS"]
         b = self.data[user.id]["SERVICES"]
         c = self.data[user.id]["HISTORY"]
         d = self.data[user.id]["JEUX"]
         e = self.data[user.id]["CREATION"]
-        return Profil(a, b, c, d, e)
+        f = user.id
+        return Profil(a, b, c, d, e, f)
 
     def new_event(self, user, type_event: str, descr: str):
         types = ["punition", "nom", "role", "autre", "immigration"]
@@ -101,6 +102,13 @@ class EgoAPI:
             return round(sm) if round(sm) > 0 else 1
         else:
             return round(s) if round(s) > 0 else 1
+
+    def get_all(self, server):
+        liste = []
+        for u in self.data:
+            user = server.get_member(u)
+            liste.append(self.open(user))
+        return liste
 
     def stat_color(self, user):
         s = user.status
@@ -197,47 +205,122 @@ class Ego:
         self.bot = bot
         self.ego = EgoAPI(bot, "data/ego/data.json")
         self.glb = dataIO.load_json("data/ego/glb.json")
-        self.version = "EGO V3.05 (&majs)"
+        self.version = "EGO V3.1 (&majs)"
         self.cycle_task = bot.loop.create_task(self.ego_loop())
 
     @commands.command(name="majs", pass_context=True)
     async def changelog(self):
         """Informations sur les MAJ de Ego et des modules auxilliaires."""
-        em = discord.Embed(title="EGO V3.05 | Voir Github",color=0x5184a5, url="https://github.com/GitAcrown/Addon/issues/3")
+        em = discord.Embed(title="EGO V3.1 | Voir Github", color=0x5184a5, url="https://github.com/GitAcrown/Addon/issues/3")
         em.add_field(name="&card",
-                     value="+ Activité écrite et vocale par membre\n"
-                           "+ Affinité avec le membre\n"
-                           "+ L'historique est désormais journalier et horodaté\n"
-                           "+ Possibilité de refresh les informations\n"
-                           "+ Le code de l'invitation s'affiche dans l'historique\n"
-                           "+ Nouvel affichage en menu\n"
-                           "+ Anciens pseudos et surnoms\n"
-                           "*+ Personnalisation (Anniv, Bio, Surnom, Site)*")
-        em.add_field(name="&global",
-                     value="*(Fusion de stats et scard)*\n"
-                           "+ Temps de vocal et parole total (TTV & TTP)\n"
-                           "+ Possibilité de refresh les informations\n"
-                           "+ Nouvel affichage en menu")
-        em.add_field(name="Système",
-                     value="+ Meilleure détection des pseudos non-mentionnés\n"
-                           "+ Capacité à surveiller les invitations\n"
-                           "+ Plus grande précision dans le comptage de personnes en vocal\n"
-                           "+ Comptage du temps de parole/vocal à la seconde près pour chaque membre\n"
-                           "+ Classement des messages par channel\n"
-                           "+ Détection connexion/déconnexion\n"
-                           "+ Système de Rollback en cas de données corrompues\n"
-                           "- Les commandes ne sont plus considérées comme des messages\n"
-                           "- Le rôle prison n'est plus considéré comme un rôle supérieur aux rôles honorifiques\n"
-                           "*- Les membres sans rôles ne sont plus ignorés pour la commande &card*")
+                     value="+ Heures moyenne de connexion et déconnexion\n"
+                           "- Réglage du bug d'affichage des rôles")
+        em.add_field(name="&tops",
+                     value="+ Activité (Ecrit et Vocal)\n"
+                           "+ Joueurs (Les plus gros joueurs)\n"
+                           "+ Paillassons")
         em.add_field(name="Bientôt",
                      value="+ Recherche de jeux\n"
-                           "+ Compilation de 'Tops' (Top actifs, e-pop, temps de parole...)\n"
+                           "+ Ajout Top E-Pop, Cancres...\n"
                            "+ Créer et gérer des groupes de jeu\n"
                            "+ Créer et gérer des évenements\n"
                            "+ Rappels personnalisés\n"
                            "+ Projet Oracle (Voir Github en cliquant plus haut)")
-        em.set_footer(text="MAJ publiée le 25/08 | Les changements récent sont en italique", icon_url=self.logo_url())
+        em.set_footer(text="MAJ publiée le 31/08", icon_url=self.logo_url())
         await self.bot.say(embed=em)
+
+    @commands.command(pass_context=True, no_pm=True)
+    async def tops(self, ctx):
+        """Permet de voir les différents Tops créés par EGO"""
+        server = ctx.message.server
+        rlist = [[0, "Actifs (Vocal)"], [1, "Actifs (Ecrit)"], [2, "Joueurs"], [3, "Paillassons"]]
+        num = random.choice(rlist)[0]
+        max = 3
+        all = [self.ego.open(user) for user in server.members]
+        menu = None
+        while True:
+            msg = ""
+            if num < 0:
+                num = max
+            elif num > max:
+                num = 0
+            else:
+                pass
+            if num is 0:
+                b = []
+                for ego in all:
+                    if "TOTAL_PAROLE" in ego.stats:
+                        if "TOTAL_VOCAL" in ego.stats:
+                            user = server.get_member(ego.id)
+                            vocalnow = time.time() - ego.stats["CAR_VOCAL"] if ego.stats["CAR_VOCAL"] > 0 else 0
+                            parolenow = time.time() - ego.stats["CAR_PAROLE"] if ego.stats["CAR_PAROLE"] > 0 else 0
+                            hvoc = round(
+                                ego.stats["TOTAL_PAROLE"] + ego.stats["TOTAL_VOCAL"] + vocalnow + parolenow) / 3600
+                            voc = round(hvoc / self.ego.since(user, "jour"), 2)
+                        else:
+                            voc = 0
+                    else:
+                        voc = 0
+                    b.append([voc, ego.id])
+                sort = sorted(b, key=operator.itemgetter(0), reverse=True)[:30]
+                for n in sort:
+                    msg += "{}) **{}** - *{}*\n".format(sort.index(n) + 1, server.get_member(n[1]).name, n[0])
+            elif num is 1:
+                b = []
+                for ego in all:
+                    user = server.get_member(ego.id)
+                    ecr = round(ego.stats["NB_MSG"] / self.ego.since(user, "jour"), 2) if "NB_MSG" in ego.stats else 0
+                    b.append([ecr, user.name])
+                sort = sorted(b, key=operator.itemgetter(0), reverse=True)[:30]
+                for n in sort:
+                    msg += "{}) **{}** - *{}*\n".format(sort.index(n) + 1, n[1], n[0])
+            elif num is 2:
+                b = []
+                for ego in all:
+                    user = server.get_member(ego.id)
+                    bib = len(self.ego.biblio(user)) if self.ego.biblio(user) else 0
+                    b.append([bib, user.name])
+                sort = sorted(b, key=operator.itemgetter(0), reverse=True)[:30]
+                for n in sort:
+                    msg += "{}) **{}**\n".format(sort.index(n) + 1, n[1])
+            elif num is 3:
+                b = []
+                for ego in all:
+                    user = server.get_member(ego.id)
+                    pil = len(ego.stats["MENTIONS"]) if "MENTIONS" in ego.stats else 0
+                    b.append([pil, user.name])
+                sort = sorted(b, key=operator.itemgetter(0), reverse=True)[:30]
+                for n in sort:
+                    msg += "{}) **{}**\n".format(sort.index(n) + 1, n[1])
+            em = discord.Embed(title=rlist[num][1], description=msg, color=0x212427)
+            em.set_footer(text= "Utilisez les réactions ci-dessous pour naviguer | {}".format(self.version),
+                          icon_url=self.logo_url())
+            if menu is None:
+                menu = await self.bot.say(embed=em)
+            else:
+                try:
+                    await self.bot.clear_reactions(menu)
+                except:
+                    pass
+                menu = await self.bot.edit_message(menu, embed=em)
+            await self.bot.add_reaction(menu, "⬅")
+            await self.bot.add_reaction(menu, "➡")
+            act = await self.bot.wait_for_reaction(["⬅", "➡"], message=menu, timeout=90,
+                                                   check=self.check)
+            if act is None:
+                em.set_footer(text="Session expirée | {}".format(self.version), icon_url=self.logo_url())
+                await self.bot.edit_message(menu, embed=em)
+                try:
+                    await self.bot.clear_reactions(menu)
+                except:
+                    pass
+                return
+            elif act.reaction.emoji == "⬅":
+                num -= 1
+            elif act.reaction.emoji == "➡":
+                num += 1
+            else:
+                pass
 
     @commands.command(name="global", aliases=["g", "stats"], pass_context=True, no_pm=True)
     async def _global(self, ctx):
@@ -483,10 +566,27 @@ class Ego:
                     voc = 0
             else:
                 voc = 0
+            if "CONNECT" and "DECONNECT" in ego.stats:
+                moyco = 0
+                totco = 0
+                for i in ego.stats["CONNECT"]:
+                    moyco += int(i) * ego.stats["CONNECT"][i]
+                    totco += ego.stats["CONNECT"][i]
+                moyco /= totco
+                moydeco = 0
+                totco = 0
+                for i in ego.stats["DECONNECT"]:
+                    moyco += int(i) * ego.stats["DECONNECT"][i]
+                    totco += ego.stats["DECONNECT"][i]
+                moydeco /= totco
+                moy = "{}-{}h".format(moyco, moydeco)
+            else:
+                moy = "???"
             act = "**Écrit:** {}msg/j\n" \
-                  "**Vocal:** {}h/j".format(ecr, voc)
+                  "**Vocal:** {}h/j\n" \
+                  "**Horaires: ** {}".format(ecr, voc, moy)
             em.add_field(name="Activité", value=act)
-            rolelist = " ,".join([r.name for r in user.roles if r.name != "@everyone"])
+            rolelist = ", ".join([r.name for r in user.roles if r.name != "@everyone"])
             em.add_field(name="Rôles", value=rolelist if rolelist else "Aucun rôle")
             if "PSEUDOS" or "D_PSEUDOS" in ego.stats:
                 em.add_field(name="Auparavant", value="**Pseudos:** {}\n**Surnoms:** {}".format(" ,".join(
