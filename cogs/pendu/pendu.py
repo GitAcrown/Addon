@@ -314,23 +314,23 @@ class Pendu:
                                                 points -= points / len(mot)
                                             joueurs[user.id]["TROUVE"].append(content)
                                             lettres_as.append(content)
-                                            em.set_footer(text="{} | {} lettre(s) trouvée(s) !".format(self.good.upper(), len(places)))
+                                            em.set_footer(text="{} | {} lettre(s) trouvée(s) !".format(self.good().upper(), len(places)))
                                             await self.bot.edit_message(menu, embed=em)
                                             await asyncio.sleep(0.5)
                                         else:
-                                            em.set_footer(text="{} | Vous avez déjà proposé cette lettre !".format(self.neutre.upper()))
+                                            em.set_footer(text="{} | Vous avez déjà proposé cette lettre !".format(self.neutre().upper()))
                                             await self.bot.edit_message(menu, embed=em)
                                             await asyncio.sleep(0.5)
                                     else:
                                         em.set_footer(
-                                            text="{} | Vous avez déjà trouvé cette lettre !".format(self.neutre.upper()))
+                                            text="{} | Vous avez déjà trouvé cette lettre !".format(self.neutre().upper()))
                                         await self.bot.edit_message(menu, embed=em)
                                         await asyncio.sleep(0.5)
                                 else:
                                     vies -= 1
                                     joueurs[user.id]["SOMMEMOINS"] += points / len(mot)
                                     em.set_footer(
-                                        text="{} | C'est pas ça...".format(self.bad.upper()))
+                                        text="{} | C'est pas ça...".format(self.bad().upper()))
                                     lettres_as.append(content)
                                     await self.bot.edit_message(menu, embed=em)
                                     await asyncio.sleep(0.5)
@@ -348,9 +348,9 @@ class Pendu:
                                         if self.leven("".join(mot), content) == 1:
                                             fdp = "Presque... mais c'est pas ça"
                                     em.set_footer(
-                                        text="{} | {}".format(self.bad, fdp))
+                                        text="{} | {}".format(self.bad(), fdp))
                                     await self.bot.edit_message(menu, embed=em)
-                                    await asyncio.sleep(1)
+                                    await asyncio.sleep(0.5)
                     if vies == 0:
                         msg = "{}\nLe mot était **{}**".format(self.dessinpendu(12 - vies), soluce.upper())
                         prt = ""
