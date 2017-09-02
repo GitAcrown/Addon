@@ -243,7 +243,7 @@ class Pendu:
         Niveau (1-3): Niveau de difficulé (1- Facile, 2- Normale, 3- Difficile)
         1) 12 vies + Aide + Aucun minimum de longueur
         2) 6 vies + Aide + Mots généralement 33% plus long
-        3) 3 vies (sans aide) + Mots 33% plus long que 2)"""
+        3) 4 vies (sans aide) + Mots 33% plus long que 2)"""
         server = ctx.message.server
         bit = self.bot.get_cog('Mirage').api
         if self.data["PENDU_ON"] is False:
@@ -272,6 +272,7 @@ class Pendu:
                         aide = False
                     lettres_as = []
                     vies = int(12 / niveau)
+                    totvies = vies
                     encode = l[2]
                     mot = l[1]
                     points = len(l[1]) * niveau
@@ -392,7 +393,8 @@ class Pendu:
                         ord = sorted(unord, key=operator.itemgetter(0), reverse=True)
                         for l in ord:
                             prt += "**{}** (*+{}* BK)\n".format(l[1], l[0])
-                        em = discord.Embed(title="PENDU | VICTOIRE", description=msg, color=0x58598D)
+                        em = discord.Embed(title="PENDU | VICTOIRE" if vies != totvies else "PENDU | VICTOIRE PARFAITE",
+                                           description=msg, color=0x58598D)
                         em.add_field(name="Gagnants", value=prt)
                         polit = self.bye()
                         em.set_footer(text="{}".format(
@@ -418,6 +420,15 @@ class Pendu:
                                     await self.bot.say(
                                         "{} **Succès débloqué** | **{}** - *{}*".format(user.mention, suc[0],
                                                                                         suc[1]))
+                                if vies == totvies:
+                                    if niveau == 3:
+                                        suc = bit.success(user, "Perfect",
+                                                          "Avoir fait une victoire parfaite en Difficile (Pendu)",
+                                                          1, 1)
+                                        if suc:
+                                            await self.bot.say(
+                                                "{} **Succès débloqué** | **{}** - *{}*".format(user.mention, suc[0],
+                                                                                                suc[1]))
                         self.data["PENDU_ON"] = False
                         fileIO("data/pendu/data.json", "save", self.data)
                         return
