@@ -16,9 +16,15 @@ class Pendu:
     def __init__(self, bot):
         self.bot = bot
         self.data = dataIO.load_json("data/pendu/data.json")
-        self.good = random.choice(["Oui !", "Exact !", "C'est ça !", "Bien joué !", "Absolument !"])
-        self.neutre = random.choice(["Désolé !", "Oups...", "Euh ouais ?", "???"])
-        self.bad = random.choice(["Loupé !", "Non !", "Dommage !", "C'est pas ça !", "Absolument...pas"])
+
+    def good(self):
+        return random.choice(["Oui !", "Exact !", "C'est ça !", "Bien joué !", "Absolument !"])
+
+    def neutre(self):
+        return random.choice(["Désolé !", "Oups...", "Euh ouais ?", "???"])
+
+    def bad(self):
+        return random.choice(["Loupé !", "Non !", "Dommage !", "C'est pas ça !", "Absolument...pas"])
 
     def bye(self):
         heure = int(time.strftime("%H", time.localtime()))
