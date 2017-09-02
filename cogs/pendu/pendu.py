@@ -250,7 +250,7 @@ class Pendu:
                     if l is False:
                         await self.bot.say("Le fichier /data/pendu/**{}.txt** est absent !".format(liste))
                         return
-                    if server.id != "328632789836496897":
+                    if server.id != "204585334925819904":
                         await self.bot.say("**Vous êtes sur le Serveur Alpha**\n*Vous n'êtes donc pas éligible aux "
                                            "gains/pertes et aux succès*")
                         gain = False
