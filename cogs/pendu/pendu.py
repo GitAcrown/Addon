@@ -390,7 +390,7 @@ class Pendu:
                         em.add_field(name="Gagnants", value=prt)
                         polit = self.bye()
                         em.set_footer(text="{}".format(
-                            polit if gain else "{} | Pertes non-appliquées (Serveur Alpha)".format(polit)))
+                            polit if gain else "{} | Gains non-appliquées (Serveur Alpha)".format(polit)))
                         menu = await self.bot.say(embed=em)
                         if gain:
                             for j in joueurs:
