@@ -351,7 +351,7 @@ class Pendu:
                         unord = []
                         for p in joueurs:
                             u = server.get_member(p)
-                            unord.append([joueurs[p]["SOMMEMOINS"], u.name])
+                            unord.append([int(joueurs[p]["SOMMEMOINS"]), u.name])
                         ord = sorted(unord, key=operator.itemgetter(0), reverse=True)
                         for l in ord:
                             prt += "**{}** (*-{}* BK)\n".format(l[1], l[0])
@@ -382,7 +382,7 @@ class Pendu:
                         unord = []
                         for p in joueurs:
                             u = server.get_member(p)
-                            unord.append([joueurs[p]["SOMMEPLUS"], u.name])
+                            unord.append([int(joueurs[p]["SOMMEPLUS"]), u.name])
                         ord = sorted(unord, key=operator.itemgetter(0), reverse=True)
                         for l in ord:
                             prt += "**{}** (*+{}* BK)\n".format(l[1], l[0])
