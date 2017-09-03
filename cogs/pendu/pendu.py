@@ -246,7 +246,7 @@ class Pendu:
         3) 4 vies (sans aide) + Mots 33% plus long que 2)"""
         server = ctx.message.server
         bit = self.bot.get_cog('Mirage').api
-        if self.data["PENDU_ON"] is False:
+        if self.data["PENDU_ON"] is False and self.data["PENDU_SERV"] is None:
             if self.list_exist(liste):
                 if 0 < niveau < 4:
                     gain = True
@@ -278,6 +278,8 @@ class Pendu:
                     points = len(l[1]) * niveau
                     soluce = l[0]
                     self.data["PENDU_ON"] = True
+                    self.data["PENDU_SERV"] = server.name
+                    self.data["PENDU_CHAN"] = ctx.message.channel.name
                     fileIO("data/pendu/data.json", "save", self.data)
                     while vies > 0 and "".join(encode) != soluce and \
                                     self.data["PENDU_ON"] is True:
@@ -292,10 +294,17 @@ class Pendu:
                             em.set_footer(text="Partie arrêtée pour cause d'inactivité")
                             await self.bot.edit_message(menu, embed=em)
                             self.data["PENDU_ON"] = False
+                            self.data["PENDU_CHAN"] = None
+                            self.data["PENDU_SERV"] = None
                             fileIO("data/pendu/data.json", "save", self.data)
                             return
                         if rep.author != self.bot.user:
                             user = rep.author
+                            content = content.replace("é", "e")
+                            content = content.replace("è", "e")
+                            content = content.replace("ê", "e")
+                            content = content.replace("û", "u")
+                            content = content.replace("î", "i")
                             content = rep.content.upper()
                             if user.id not in joueurs:
                                 joueurs[user.id] = {"TROUVE": [],
@@ -303,6 +312,10 @@ class Pendu:
                                                     "SOMMEMOINS": 0}
                             if content.lower() == "stop":
                                 await self.bot.say("Arrêt d'urgence... (Vos comptes ne sont pas affectés)")
+                                self.data["PENDU_ON"] = False
+                                self.data["PENDU_CHAN"] = None
+                                self.data["PENDU_SERV"] = None
+                                fileIO("data/pendu/data.json", "save", self.data)
                                 return
                             if len(content) < 2:
                                 if content in mot:
@@ -380,6 +393,8 @@ class Pendu:
                                 bit.success(user, "Triplé", "Avoir réussi 3 parties de pendu consécutives", 0, 3)
                                 bit.success(user, "Seulement 10 ?", "Avoir réussi 10 parties de pendu d'affilé", 0, 10)
                         self.data["PENDU_ON"] = False
+                        self.data["PENDU_CHAN"] = None
+                        self.data["PENDU_SERV"] = None
                         fileIO("data/pendu/data.json", "save", self.data)
                         return
                     elif "".join(encode) == soluce:
@@ -430,6 +445,8 @@ class Pendu:
                                                 "{} **Succès débloqué** | **{}** - *{}*".format(user.mention, suc[0],
                                                                                                 suc[1]))
                         self.data["PENDU_ON"] = False
+                        self.data["PENDU_CHAN"] = None
+                        self.data["PENDU_SERV"] = None
                         fileIO("data/pendu/data.json", "save", self.data)
                         return
                     else:
@@ -446,12 +463,14 @@ class Pendu:
                         txtlist += "- {}\n".format(i.replace(".txt", ""))
                 await self.bot.say("Cette liste n'existe pas !\n\n{}".format(txtlist))
         else:
-            await self.bot.say("Une partie est en cours sur **{}**".format(server.name))
+            await self.bot.say("Une partie est déjà en cours sur **{}**".format(self.data["PENDU_SERV"]))
 
     @commands.command(pass_context=True, hidden=True)
     async def resetpendu(self, ctx):
         """Permet de reset le pendu en cas de blocage"""
         self.data["PENDU_ON"] = False
+        self.data["PENDU_SERV"] = None
+        self.data["PENDU_CHAN"] = None
         fileIO("data/pendu/data.json", "save", self.data)
         await self.bot.say("Reset effectué avec succès.")
 
@@ -461,7 +480,7 @@ def check_folders():
         os.makedirs("data/pendu")
 
 def check_files():
-    default = {"PENDU_ON" : False}
+    default = {"PENDU_ON" : False, "PENDU_SERV": None}
     if not os.path.isfile("data/pendu/data.json"):
         print("Création du fichier Jeu du pendu")
         fileIO("data/pendu/data.json", "save", default)
