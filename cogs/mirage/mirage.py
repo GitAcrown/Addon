@@ -239,7 +239,8 @@ class Mirage:
                 except:
                     pass
                 menu = await self.bot.edit_message(menu, embed=em)
-            await self.bot.add_reaction(menu, "🏆")
+            if len(liste) > 3:
+                await self.bot.add_reaction(menu, "🏆")
             act = await self.bot.wait_for_reaction("🏆", message=menu, timeout=60,
                                                    check=self.check)
             if act is None:
@@ -250,7 +251,7 @@ class Mirage:
                 except:
                     pass
                 return
-            elif act.reaction.emoji == "🏆":
+            elif act.reaction.emoji == "🏆" and len(liste) > 3:
                 liste = []
                 for s in acc.success:
                     if acc.success[s]["UNLOCK"] is True:
