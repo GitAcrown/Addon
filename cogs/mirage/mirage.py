@@ -273,6 +273,10 @@ class Mirage:
                 if retour is None:
                     em.set_footer(text="Session expirée")
                     await self.bot.edit_message(menu, embed=em)
+                    try:
+                        await self.bot.clear_reactions(menu)
+                    except:
+                        pass
                     return
                 elif retour.reaction.emoji == "⏹":
                     continue
