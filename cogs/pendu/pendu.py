@@ -235,6 +235,18 @@ class Pendu:
                 n += 1
         return tr
 
+    def normal(self, txt):
+        ch1 = "àâçéèêëîïôùûüÿ"
+        ch2 = "aaceeeeiiouuuy"
+        s = ""
+        for c in txt:
+            i = ch1.find(c)
+            if i >= 0:
+                s += ch2[i]
+            else:
+                s += c
+        return s
+
     @commands.command(pass_context=True, no_pm=True)
     async def pendu(self, ctx, liste: str = "general", niveau: int = 1):
         """Démarre une partie de pendu
@@ -300,12 +312,8 @@ class Pendu:
                             return
                         if rep.author != self.bot.user:
                             user = rep.author
-                            content = content.replace("é", "e")
-                            content = content.replace("è", "e")
-                            content = content.replace("ê", "e")
-                            content = content.replace("û", "u")
-                            content = content.replace("î", "i")
-                            content = rep.content.upper()
+                            content = self.normal(rep.content.lower())
+                            content = content.upper()
                             if user.id not in joueurs:
                                 joueurs[user.id] = {"TROUVE": [],
                                                     "SOMMEPLUS": 0,
