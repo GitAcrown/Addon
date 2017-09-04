@@ -196,40 +196,94 @@ class Mirage:
         else:
             await self.bot.say("...")
 
-    @commands.command(pass_context=True)
+    @commands.command(aliases=["bk"], pass_context=True, no_pm=True)
     async def compte(self, ctx, user: discord.Member = None):
         """Permet de voir le compte BitKhey d'un membre."""
         if user is None:
             user = ctx.message.author
+        menu = None
         acc = self.api.open(user)
-        em = discord.Embed(color=user.color)
-        em.set_author(name="BitKhey | {}".format("Votre compte" if user == ctx.message.author else user.name),
-                      icon_url=user.avatar_url)  # Cimer Lord pour le nom de la monnaie
-        em.add_field(name="Solde", value="**{}** BK".format(acc.solde))
-        em.add_field(name="Carte", value=self.api.limit(user)[0])
-        liste = []
-        for s in acc.success:
-            if acc.success[s]["UNLOCK"] is True:
-                liste.append([s, acc.success[s]["DESCR"], acc.success[s]["DATE_UNLOCK"]])
-        sh = sorted(liste, key=operator.itemgetter(2), reverse=True)
-        sh = sh[:3]
-        suc = ""
-        for s in sh:
-            suc += "**{}** *{}*\n".format(s[0], s[1])
-        met = acc.history[-5:]
-        if met != []:
-            msg = ""
-            met.reverse()
-            for e in met:
-                msg += "**{}{}** {}\n".format(e[0], e[1], e[2] if len(e[2]) < 40 else e[2][:39] + "...")
-        else:
-            msg = "Aucun historique"
-        em.add_field(name="Historique", value=msg, inline=False)
-        if suc != "":
-            em.add_field(name="Succès", value=suc)
-        stamp = time.strftime("Le %d/%m/%Y à %H:%M", time.localtime())
-        em.set_footer(text=stamp)
-        await self.bot.say(embed=em)
+        while True:
+            em = discord.Embed(color=user.color)
+            em.set_author(name="BitKhey | {}".format("Votre compte" if user == ctx.message.author else user.name),
+                          icon_url=user.avatar_url)  # Cimer Lord pour le nom de la monnaie
+            em.add_field(name="Solde", value="**{}** BK".format(acc.solde))
+            em.add_field(name="Carte", value=self.api.limit(user)[0])
+            liste = []
+            for s in acc.success:
+                if acc.success[s]["UNLOCK"] is True:
+                    liste.append([s, acc.success[s]["DESCR"], acc.success[s]["DATE_UNLOCK"]])
+            sh = sorted(liste, key=operator.itemgetter(2), reverse=True)
+            sh = sh[:3]
+            suc = ""
+            for s in sh:
+                suc += "**{}** *{}*\n".format(s[0], s[1])
+            met = acc.history[-5:]
+            if met != []:
+                msg = ""
+                met.reverse()
+                for e in met:
+                    msg += "**{}{}** {}\n".format(e[0], e[1], e[2] if len(e[2]) < 40 else e[2][:39] + "...")
+            else:
+                msg = "Aucun historique"
+            em.add_field(name="Historique", value=msg, inline=False)
+            if suc != "":
+                em.add_field(name="Succès", value=suc)
+            stamp = time.strftime("Le %d/%m/%Y à %H:%M", time.localtime())
+            em.set_footer(text=stamp)
+            if menu is None:
+                menu = await self.bot.say(embed=em)
+            else:
+                try:
+                    await self.bot.clear_reactions(menu)
+                except:
+                    pass
+                menu = await self.bot.edit_message(menu, embed=em)
+            await self.bot.add_reaction(menu, "🏆")
+            act = await self.bot.wait_for_reaction("🏆", message=menu, timeout=60,
+                                                   check=self.check)
+            if act is None:
+                em.set_footer(text="Session expirée")
+                await self.bot.edit_message(menu, embed=em)
+                try:
+                    await self.bot.clear_reactions(menu)
+                except:
+                    pass
+                return
+            elif act.reaction.emoji == "🏆":
+                liste = []
+                for s in acc.success:
+                    if acc.success[s]["UNLOCK"] is True:
+                        liste.append([s, acc.success[s]["DESCR"], acc.success[s]["DATE_UNLOCK"]])
+                sh = sorted(liste, key=operator.itemgetter(2), reverse=True)
+                sh = sh[:30]
+                suc = ""
+                for s in sh:
+                    suc += "**{}** *{}*\n".format(s[0], s[1])
+                em = discord.Embed(title="BitKhey | Succès", description=suc, color=user.color)
+                em.set_footer(text="Du plus récent au plus ancien | Utilisez la réaction ci-dessous pour revenir au "
+                                   "compte")
+                try:
+                    await self.bot.clear_reactions(menu)
+                except:
+                    pass
+                await self.bot.edit_message(menu, embed=em)
+                await self.bot.add_reaction(menu, "⏹")
+                retour = await self.bot.wait_for_reaction(["⏹"], message=menu, timeout=60, check=self.check)
+                if retour is None:
+                    em.set_footer(text="Session expirée")
+                    await self.bot.edit_message(menu, embed=em)
+                    return
+                elif retour.reaction.emoji == "⏹":
+                    continue
+                else:
+                    pass
+            else:
+                pass
+
+
+    def check(self, reaction: discord.Reaction, user: discord.Member):
+        return not user.bot
 
     @commands.command(aliases=["lb"], pass_context=True, no_pm=True)
     async def leaderboard(self, ctx, top:int = 10):
@@ -252,7 +306,7 @@ class Mirage:
             await self.bot.say("**Erreur** | Top trop elevé.")
             return
         em.add_field(name="Top {}".format(top), value=msg)
-        em.add_field(name="Votre place", value="{}e".format(place + 1)) # On ajoute 1 parce qu'il compte à partir de 0
+        em.add_field(name="Votre place", value="{}e".format(place + 1))  # On ajoute 1 parce qu'il compte à partir de 0
         await self.bot.say(embed=em)
 
     @commands.command(pass_context=True, no_pm=True)
