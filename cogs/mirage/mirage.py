@@ -30,7 +30,11 @@ class MirageAPI:
                 for p in self.bot.get_all_members():
                     if p.id in self.bank:
                         if p.status != discord.Status.offline:
-                            self.bank[p.id]["SOLDE"] += 2
+                            if self.bank[p.id]["SOLDE"] > 1500:
+                                self.bank[p.id]["SOLDE"] += 3
+                        else:
+                            if self.bank[p.id]["SOLDE"] > (self.bank[p.id]["MAX_SOLDE"] / 10):
+                                self.bank[p.id]["SOLDE"] -= 1
                 self.save()
                 await asyncio.sleep(3600)  # Toutes les 24h
         except asyncio.CancelledError:
@@ -51,10 +55,14 @@ class MirageAPI:
                                   "HISTORY": [],
                                   "TYPE": "Silver",
                                   "SUCCESS": {},
+                                  "MAX_SOLDE": 200,
                                   "PLUS": {}}
             self.save()
         if self.bank[user.id]["SUCCESS"] == []:
             self.bank[user.id]["SUCCESS"] = {}
+            self.save()
+        if "MAX_SOLDE" not in self.bank[user.id]:
+            self.bank[user.id]["MAX_SOLDE"] = self.bank[user.id]["SOLDE"]
             self.save()
         Bank = namedtuple('Bank', ['id', 'clef', "solde", "history", "type", "success", "plus"])
         id = user.id
@@ -103,11 +111,14 @@ class MirageAPI:
         sort = sort[:top]
         return [sort, place]
 
-    def _add(self, user, somme: int, raison=None):
+    def _add(self, user, somme: int, raison=None, maxmodif=True):
         """Ajoute du solde à un utilisateur"""
         acc = self.open(user)
         self.bank[user.id]["SOLDE"] += somme
         acc.history.append(["+", somme, raison])
+        if maxmodif:
+            if self.bank[user.id]["SOLDE"] > self.bank[user.id]["MAX_SOLDE"]:
+                self.bank[user.id]["MAX_SOLDE"] = self.bank[user.id]["SOLDE"]
         self.save()
         return True
 
@@ -122,12 +133,15 @@ class MirageAPI:
         else:
             return False
 
-    def _set(self, user, somme: int, raison=None):
+    def _set(self, user, somme: int, raison=None, maxmodif=False):
         """Règle le solde de l'utilisateur à une valeur précise"""
         acc = self.open(user)
         if somme >= (0 - self.limit(user)[1]):
             self.bank[user.id]["SOLDE"] = somme
             acc.history.append(["!", somme, raison])
+            if maxmodif:
+                if self.bank[user.id]["SOLDE"] > self.bank[user.id]["MAX_SOLDE"]:
+                    self.bank[user.id]["MAX_SOLDE"] = self.bank[user.id]["SOLDE"]
             self.save()
             return True
         else:
@@ -244,13 +258,16 @@ class Mirage:
     @commands.command(pass_context=True, no_pm=True)
     async def don(self, ctx, user: discord.Member, somme: int, *raison: str):
         """Permet de donner une certaine somme à un membre.
-        La valeur doit être entière et positive.
-        La raison est obligatoire."""
+        - La valeur doit être entière et positive.
+        - La raison est conseillée."""
         if somme < 1:
             await self.bot.say("**Erreur** | La somme transférée doit être entière et supérieure à 0")
             return
         author = ctx.message.author
         raison = " ".join(raison)
+        if not raison:
+            raison = "Aucune raison" \
+                     ""
         if self.api._sub(author, somme, "Don à {} ({})".format(user.name, raison)):
             self.api._add(user, somme, "[{}] {}".format(author.name, raison))
             await self.bot.say("**Transfert réalisé avec succès.**")
@@ -270,16 +287,16 @@ class Mirage:
         if raison is None:
             raison = "Edition par staff"
         if mode == "+":
-            self.api._add(user, somme, raison)
+            self.api._add(user, somme, raison, False)
             await self.bot.say("**Réalisé avec succès.**")
         elif mode == "-":
             if self.api._sub(user, somme, raison):
-                await self.bot.say("**Réalisé avec succès.**")
+                await self.bot.say("**Réalisé avec succès.**\nLe record du compte n'est pas affecté")
             else:
                 await self.bot.say("**Impossible**, c'est inférieur au seuil minimum de son compte (Découvert compris).")
         elif mode == "!":
-            if self.api._set(user, somme, raison):
-                await self.bot.say("**Réalisé avec succès.**")
+            if self.api._set(user, somme, raison, False):
+                await self.bot.say("**Réalisé avec succès.**\nLe record du compte n'est pas affecté.")
             else:
                 await self.bot.say("**Impossible**, c'est inférieur au seuil minimum de son compte (Découvert compris).")
         else:
