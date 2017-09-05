@@ -29,8 +29,8 @@ class MirageAPI:
             while True:
                 for p in self.bot.get_all_members():
                     if p.id in self.bank:
-                        if p.status != discord.Status.offline:
-                            if self.bank[p.id]["SOLDE"] > 1500:
+                        if not p.status.offline:
+                            if self.bank[p.id]["SOLDE"] < 1500:
                                 self.bank[p.id]["SOLDE"] += 3
                         else:
                             if self.bank[p.id]["SOLDE"] > (self.bank[p.id]["MAX_SOLDE"] / 10):
