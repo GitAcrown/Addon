@@ -202,6 +202,7 @@ class Trivia:
                             em.set_footer(text="Liste par {} | {}".format(param["AUTEUR"], param["DESCR"]))
                             menu = await self.bot.say(embed=em)
                             del self.trv[ch]
+                            await asyncio.sleep(3)
                         elif self.normal(rep.content.lower()) in [self.normal(r.lower()) for r in self.trv[
                             ch]["REPONSES"]]:
                             # On note l'auteur et on lui attribue un point
@@ -216,6 +217,7 @@ class Trivia:
                             else:
                                 joueurs[gagn.id]["POINTS"] += 1
                                 joueurs[gagn.id]["REPONSES"].append(rep.content)
+                            await asyncio.sleep(2)
                         else:
                             await self.bot.say("Problème WHILE /!\\")
                             pass
