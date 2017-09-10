@@ -210,7 +210,7 @@ class Trivia:
                             win = random.choice(["Bien joué **{}** !", "Bien évidemment **{}** !", "GG **{}** !", "C'est exact **{}** !",
                                                  "C'est ça **{}** !", "Ouais ouais ouais **{}** !"])
                             del self.trv[ch]
-                            await self.bot.say(win.format(gagn.name))
+                            await self.bot.say("{} C'était bien *{}* !".format(win.format(gagn.name), self.trv[ch]["REPONSES"][0].title()))
                             if gagn.id not in joueurs:
                                 joueurs[gagn.id] = {"POINTS" : 1,
                                                     "REPONSES" : [rep.content]}
