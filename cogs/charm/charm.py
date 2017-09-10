@@ -1,5 +1,4 @@
 import asyncio
-import asyncio
 import operator
 import os
 import random
@@ -601,7 +600,7 @@ class Charm:
                             liste = []
                             for s in self.stk["STICKERS"]:
                                 liste.append(s)
-                            img = self.similarite(stk, liste, 2)
+                            img = self.similarite(stk, liste, 1)
                             if stk not in [e.name for e in server.emojis]:
                                 return_img = [self.stk["STICKERS"][img]["URL"], self.stk["STICKERS"][img]["CHEMIN"],
                                               self.stk["STICKERS"][img]["FORMAT"]]
@@ -638,15 +637,13 @@ class Charm:
                         await self.bot.send_message(author, "**Ne spammez pas les stickers !**")
                         break
 
+
     @commands.command(pass_context=True, no_pm=True, hidden=True)
-    async def egotest(self, ctx):
-        """Test la connexion entre Charm et EGO"""
-        try:
-            ego = self.bot.get_cog('Ego').ego
-            card = ego.log(ctx.message.author)
-            await self.bot.say(str(card.born))
-        except:
-            await self.bot.say("Ego n'est pas connecté.")
+    async def stktest(self, ctx, sid: str):
+        """Liste des stickers du serveur"""
+        server = self.bot.get_server(sid)
+        l = [e.name for e in server.emojis]
+        await self.bot.whisper(", ".join(l))
 
     async def member_join(self, user :discord.Member):
         server = user.server
