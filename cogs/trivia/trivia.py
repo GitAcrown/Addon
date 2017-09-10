@@ -182,7 +182,7 @@ class Trivia:
                     param = self.data[nom]
                     fileIO("data/trivia/sys.json", "save", self.sys)
                     self.sys["INACTIF"] = time.time() + 90
-                    while self.top_gg(joueurs)[0][1] <= maxpts and time.time() <= self.sys["INACTIF"]:
+                    while self.top_gg(joueurs)[0][1] < maxpts and time.time() <= self.sys["INACTIF"]:
                         ch = random.choice([r for r in self.trv])
                         self.sys["NOMBRE"] = ch
                         msg = "**{}**".format(self.trv[ch]["QUESTION"])
@@ -196,7 +196,7 @@ class Trivia:
                                                  , "Aucune idée ? C'est", "Pas trouvé ? Tout le monde sait que c'est"
                                                  , "Décevant... C'était"])
                             aft = random.choice(["évidemment...", "!", "enfin !", "!!!1!", "..."])
-                            msg = "{} **{}** {}".format(bef, self.trv[ch]["REPONSES"][0].capitalize(), aft)
+                            msg = "{} **{}** {}".format(bef, self.trv[ch]["REPONSES"][0].title(), aft)
                             em = discord.Embed(title="TRIVIA | {}".format(param["NOM"].capitalize()), description=msg,
                                                color=0xe33838)
                             em.set_footer(text="Liste par {} | {}".format(param["AUTEUR"], param["DESCR"]))
@@ -219,7 +219,7 @@ class Trivia:
                         else:
                             await self.bot.say("Problème WHILE /!\\")
                             pass
-                    if self.top_gg(joueurs)[0][1] >= maxpts:
+                    if self.top_gg(joueurs)[0][1] == maxpts:
                         top = self.top_gg(joueurs)
                         msg = ""
                         for p in top:
@@ -227,6 +227,7 @@ class Trivia:
                         msg += "\n**Gagnant:** {}".format(server.get_member(top[0][0]).name)
                         em = discord.Embed(title="TRIVIA | TERMINÉ", description=msg, color=0x38e39a)
                         em.set_footer(text="Liste par {} | {}".format(param["AUTEUR"], param["DESCR"]))
+                        await self.bot.say(embed=em)
                         self.reset()
                         return
                     elif time.time() >= self.sys["INACTIF"]:
@@ -242,7 +243,10 @@ class Trivia:
             else:
                 await self.bot.say("Il semblerait qu'une partie soit déjà en cours")
         else:
-            await self.bot.say("Cette liste n'existe pas")
+            msg = "Cette liste n'existe pas\n\n__**Listes**__\n"
+            for l in os.listdir("data/trivia/listes"):
+                msg += "**{}**\n".format(l.replace(".txt", "").title())
+            await self.bot.say(msg)
 
 def check_folders():
     if not os.path.exists("data/trivia/"):
