@@ -9,6 +9,7 @@ import time
 import operator
 import random
 from .utils.dataIO import fileIO, dataIO
+import re
 
 
 class EgoAPI:
