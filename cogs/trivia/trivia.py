@@ -209,7 +209,6 @@ class Trivia:
                             gagn = rep.author
                             win = random.choice(["Bien joué **{}** !", "Bien évidemment **{}** !", "GG **{}** !", "C'est exact **{}** !",
                                                  "C'est ça **{}** !", "Ouais ouais ouais **{}** !"])
-                            del self.trv[ch]
                             await self.bot.say("{} C'était bien *{}* !".format(win.format(gagn.name), self.trv[ch]["REPONSES"][0].title()))
                             if gagn.id not in joueurs:
                                 joueurs[gagn.id] = {"POINTS" : 1,
@@ -217,6 +216,7 @@ class Trivia:
                             else:
                                 joueurs[gagn.id]["POINTS"] += 1
                                 joueurs[gagn.id]["REPONSES"].append(rep.content)
+                            del self.trv[ch]
                             await asyncio.sleep(2)
                         else:
                             await self.bot.say("Problème WHILE /!\\")
