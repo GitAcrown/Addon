@@ -172,7 +172,7 @@ class Just:
                                    " serveur...".format(save))
         else:
             if user.id in self.reg:
-                if self.reg[user.id]["FIN_PEINE"] != 0:
+                if self.reg[user.id]["FIN_PEINE"] != 0 or self.reg[user.id]["FIN_PEINE"] != None:
                     return
             await self.bot.remove_roles(user, apply)
             await self.bot.say("{} **est expulsé de la prison (Visite)**".format(user.mention))
