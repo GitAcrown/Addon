@@ -1021,7 +1021,16 @@ class Ego:
                         ego.stats["MENTIONS"][u.id] + 1 if u.id in ego.stats["MENTIONS"] else 1
         else:
             ego.stats["MENTIONS"] = {}
-
+        if ":" in message.content:
+            output = re.compile(':(.*?):', re.DOTALL | re.IGNORECASE).findall(message.content)
+            if output:
+                for stk in output:
+                    if stk in [e.name for e in server.emojis]:
+                        if "EMOJIS" in self.glb["DATES"][date]:
+                            self.glb["DATES"][date]["EMOJIS"][stk] = self.glb["DATES"][date]["EMOJIS"][stk] + 1 if \
+                                stk in self.glb["DATES"][date]["EMOJIS"] else 1
+                        else:
+                            self.glb["DATES"][date]["EMOJIS"] = {stk: 1}
         self.ego.save()
         fileIO("data/ego/glb.json", "save", self.glb)
         # TODO Avec Charm (en lié) > Stats des Emojis & Stickers
