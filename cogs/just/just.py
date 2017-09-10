@@ -146,6 +146,38 @@ class Just:
             else:
                 await self.bot.say("Le temps minimum est de 1m")
 
+    @commands.command(aliases=["v"], pass_context=True, no_pm=True)
+    async def visite(self, ctx, user: discord.Member):
+        """Attribue à un membre 10m pour visiter la prison"""
+        server = ctx.message.server
+        role = self.sys["ROLE_PRISON"]
+        apply = discord.utils.get(ctx.message.server.roles, name=role)
+        if role not in [r.name for r in user.roles]:
+            await self.bot.add_roles(user, apply)
+            await self.bot.say("{} **a été mis(e) en prison pendant *10m* par *{}* dans le cadre d'une visite**".format(
+                user.mention, ctx.message.author.name))
+            await self.bot.send_message(user, "**Visite de prison**\nVous sortirez automatiquement dans 10m")
+            finvisite = time.time() + 600
+            while time.time() < finvisite:
+                await asyncio.sleep(1)
+            if user in server.members:
+                if role in [r.name for r in user.roles]:
+                    await self.bot.remove_roles(user, apply)
+                    await self.bot.say("{} **arrête sa visite**".format(user.mention))
+                    self.save()
+                else:
+                    return
+            else:
+                await self.bot.say("{} ne peut être sorti de la visite de prison car il n'est plus sur le"
+                                   " serveur...".format(save))
+        else:
+            if user.id in self.reg:
+                if self.reg[user.id]["FIN_PEINE"] != 0:
+                    return
+            await self.bot.remove_roles(user, apply)
+            await self.bot.say("{} **est expulsé de la prison (Visite)**".format(user.mention))
+            self.save()
+
     async def renew(self, user):
         server = user.server
         chanp = self.bot.get_channel("204585334925819904")
