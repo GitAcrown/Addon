@@ -1149,7 +1149,7 @@ class Ego:
                         heure in ego.stats["CONNECT"] else 1
                 else:
                     ego.stats["CONNECT"] = {heure : 1}
-        elif avant.status.online:
+        elif avant.status.online or avant.status.idle or avant.status.dnd:
             if apres.status.offline or apres.status.invisible:
                 if "DECONNECT" in ego.stats:
                     ego.stats["DECONNECT"][heure] = ego.stats["DECONNECT"][heure] + 1 if \
