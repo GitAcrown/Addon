@@ -132,7 +132,7 @@ class Trivia:
         """Permet de supprimer une liste"""
         nomt = nom.upper()
         if nomt in self.data:
-            del self.data[nom]
+            del self.data[nomt]
         div = "data/trivia/listes/{}.txt".format(nom)
         if os.path.exists(div):
             os.remove(div)
