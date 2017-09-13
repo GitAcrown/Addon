@@ -102,6 +102,7 @@ class Trivia:
         self.sys["CHANNELID"] = None
         fileIO("data/trivia/trv.json", "save", self.trv)
         fileIO("data/trivia/sys.json", "save", self.sys)
+        fileIO("data/trivia/data.json", "save", self.data)
         return True
 
     def top_gg(self, joueurs):
@@ -125,6 +126,18 @@ class Trivia:
             await self.bot.say("Reset effectué")
         else:
             await self.bot.say("Impossible d'effectuer un reset, les fichiers sont corrompus...")
+
+    @commands.command(pass_context=True)
+    async def triviasup(self, ctx, nom):
+        """Permet de supprimer une liste"""
+        nomt = nom.upper()
+        if nomt in self.data:
+            del self.data[nom]
+        div = "data/trivia/listes/{}.txt".format(nom)
+        if os.path.exists(div):
+            os.remove(div)
+        await self.bot.say("Liste supprimée avec succès !")
+        fileIO("data/trivia/data.json", "save", self.data)
 
     @commands.command(pass_context=True, hidden=True)
     async def triviaadd(self, ctx, *descr: str):
