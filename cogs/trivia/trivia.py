@@ -253,9 +253,9 @@ class Trivia:
                         fin = await self.bot.say(embed=em)
                         await self.bot.add_reaction(fin, "👍")
                         await asyncio.sleep(1)
-                        timeout = time.time() + 20
-                        while time.time() <= timeout:
-                            like = await self.bot.wait_for_message("👍", channel=ctx.message.channel, timeout=20)
+                        to = time.time() + 20
+                        while time.time() <= to:
+                            like = await self.bot.wait_for_reaction("👍", channel=ctx.message.channel, timeout=20)
                             if like:
                                 if "LIKES" in self.data[nom]:
                                     self.data[nom]["LIKES"] += 1
