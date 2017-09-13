@@ -255,7 +255,7 @@ class Trivia:
                         await asyncio.sleep(1)
                         to = time.time() + 20
                         while time.time() <= to:
-                            like = await self.bot.wait_for_reaction("👍", channel=ctx.message.channel, timeout=20)
+                            like = await self.bot.wait_for_reaction("👍", message=fin, timeout=20)
                             if like:
                                 if "LIKES" in self.data[nom]:
                                     self.data[nom]["LIKES"] += 1
