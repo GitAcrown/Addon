@@ -4,11 +4,9 @@ from .utils.dataIO import dataIO, fileIO
 from .utils import checks
 import time
 import random
-import tabulate
 import os
 import aiohttp
 import asyncio
-import chardet
 import operator
 
 class Trivia:
@@ -111,6 +109,15 @@ class Trivia:
         sort = sorted(l, key=operator.itemgetter(1), reverse=True)
         return sort
 
+    def classlist(self):
+        md = []
+        for l in self.data:
+            if "LIKES" not in self.data[l]:
+                self.data[l]["LIKES"] = 0
+            md.append([l.capitalize(), self.data[l]["LIKES"]])
+        result = sorted(md, key=operator.itemgetter(1), reverse=True)
+        return result
+
     @commands.command(pass_context=True)
     async def triviareset(self, ctx):
         """Permet de reset le trivia en cas de problèmes"""
@@ -134,7 +141,7 @@ class Trivia:
             nom = filename.replace(".txt", "")
             auteur = ctx.message.author.name
         else:
-            await self.bot.say("Vous devez upload votre fichier dans un bon format.")
+            await self.bot.say("Uploadez le fichier en même temps que vous faîtes la commande.")
             return
         filepath = os.path.join("data/trivia/listes/", filename)
         if not ".txt" in filepath:
@@ -150,7 +157,8 @@ class Trivia:
             f.close()
         self.data[nom.upper()] = {"NOM": nom,
                                   "AUTEUR": auteur,
-                                  "DESCR": descr}
+                                  "DESCR": descr,
+                                  "LIKES": 0}
         fileIO("data/trivia/data.json", "save", self.data)
         await self.bot.say("Liste ajoutée avec succès !")
 
@@ -203,8 +211,8 @@ class Trivia:
                             menu = await self.bot.say(embed=em)
                             del self.trv[ch]
                             await asyncio.sleep(3)
-                        elif self.normal(rep.content.lower()) in [self.normal(r.lower()) for r in self.trv[
-                            ch]["REPONSES"]]:
+                        elif self.normal(rep.content.lower()) in [self.normal(r.lower()) for r in self.trv[ch][
+                            "REPONSES"]]:
                             # On note l'auteur et on lui attribue un point
                             gagn = rep.author
                             win = random.choice(["Bien joué **{}** !", "Bien évidemment **{}** !", "GG **{}** !", "C'est exact **{}** !",
@@ -227,9 +235,21 @@ class Trivia:
                         for p in top:
                             msg += "**{}** - *{}*\n".format(server.get_member(p[0]).name, p[1])
                         msg += "\n**Gagnant:** {}".format(server.get_member(top[0][0]).name)
-                        em = discord.Embed(title="TRIVIA | TERMINÉ", description=msg, color=0x38e39a)
-                        em.set_footer(text="Liste par {} | {}".format(param["AUTEUR"], param["DESCR"]))
-                        await self.bot.say(embed=em)
+                        em = discord.Embed(title="TRIVIA | TERMINÉ", description=msg, color=0x3b84b1)
+                        em.set_footer(text="Vous aimez cette liste ? Laissez un Like !")
+                        fin = await self.bot.say(embed=em)
+                        await self.bot.add_reaction(fin, "👍")
+                        await asyncio.sleep(1)
+                        timeout = time.time() + 20
+                        while time.time() <= timeout:
+                            like = await self.bot.wait_for_message("👍", channel=ctx.message.channel, timeout=20)
+                            if like:
+                                if "LIKES" in self.data[nom]:
+                                    self.data[nom]["LIKES"] += 1
+                                else:
+                                    self.data[nom]["LIKES"] = 1
+                        em.set_footer(text="Merci d'avoir participé à cette Beta !")
+                        await self.bot.edit_message(fin, embed=em)
                         self.reset()
                         return
                     elif time.time() >= self.sys["INACTIF"]:
@@ -245,10 +265,13 @@ class Trivia:
             else:
                 await self.bot.say("Il semblerait qu'une partie soit déjà en cours")
         else:
-            msg = "Cette liste n'existe pas\n\n__**Listes**__\n"
-            for l in os.listdir("data/trivia/listes"):
-                msg += "**{}**\n".format(l.replace(".txt", "").title())
-            await self.bot.say(msg)
+            msg = ""
+            l = self.classlist()
+            for r in l:
+                msg += "**{}** - {}\n".format(r[0], r[1])
+            em = discord.Embed(title="TRIVIA | LISTES", description=msg, color=0x202020)
+            em.set_footer(text="Classées par ordre de préférence")
+            await self.bot.say(embed=em)
 
 def check_folders():
     if not os.path.exists("data/trivia/"):
