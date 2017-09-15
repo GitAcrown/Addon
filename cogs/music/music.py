@@ -1760,10 +1760,10 @@ class Audio:
         """Ce n'est pas une commande, c'est un morceau de commande :smart:"""
         server = ctx.message.server
         if server.id not in self.queue:
-            await self.bot.say("Rien ne joue sur ce serveur.")
+            await self.bot.say("**Rien ne joue sur ce serveur**")
             return
         elif len(self.queue[server.id]["QUEUE"]) == 0:
-            await self.bot.say("Rien ne joue sur ce serveur.")
+            await self.bot.say("**Aucune musique sur liste d'attente**")
             return
 
         msg = ""
@@ -1776,7 +1776,7 @@ class Audio:
         queue_url_list = self._get_queue(server, 5)
         tempqueue_url_list = self._get_queue_tempqueue(server, 5)
 
-        await self.bot.say("*Recherche...*")
+        await self.bot.say("**Recherche...**")
 
         queue_song_list = await self._download_all(queue_url_list)
         tempqueue_song_list = await self._download_all(tempqueue_url_list)
