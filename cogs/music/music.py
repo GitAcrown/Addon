@@ -1599,7 +1599,7 @@ class Audio:
 
         em = discord.Embed(title="PLAYLIST | AJOUT TEMPORAIRE",
                            description="Morceau ajouté à la liste d'attente !",
-                           color=discord.Color.dark_blue())
+                           color=discord.Color.gold())
         em.set_footer(text="Ce morceau disparaitra de cette playlist dès lors qu'il sera passé.")
         await self.bot.say(embed=em)
 
@@ -1627,7 +1627,7 @@ class Audio:
         self._delete_playlist(server, name)
         em = discord.Embed(title="PLAYLIST | {}".format(name),
                            description="Playlist retirée avec succès.",
-                           color=discord.Color.dark_blue())
+                           color=discord.Color.gold())
         await self.bot.say(embed=em)
 
     @commands.command(pass_context=True, no_pm=True, name="dispo")
@@ -1689,7 +1689,7 @@ class Audio:
 
             self._play_playlist(server, playlist)
             em = discord.Embed(title="PLAYLIST | {}".format(playlist.name), description="Playlist ajoutée à la liste d'attente !",
-                               color=discord.Color.dark_blue())
+                               color=discord.Color.gold())
             await self.bot.say(embed=em)
         else:
             await self.bot.say("Playlist inexistante.")
@@ -1753,7 +1753,7 @@ class Audio:
         em = discord.Embed(title="LISTE D'ATTENTE "
                                  "| AJOUT",
                            description="Morceau ajouté à la liste d'attente !",
-                           color=discord.Color.dark_blue())
+                           color=discord.Color.gold())
         await self.bot.say(embed=em)
 
     async def _queue_list(self, ctx):
@@ -1776,7 +1776,10 @@ class Audio:
         queue_url_list = self._get_queue(server, 5)
         tempqueue_url_list = self._get_queue_tempqueue(server, 5)
 
-        await self.bot.say("**Recherche...**")
+        em = discord.Embed(title="LISTE D'ATTENTE",
+                           color=discord.Color.gold())
+        em.set_footer(text="Patientez durant la récupération des informations...")
+        ff = await self.bot.say(embed=em)
 
         queue_song_list = await self._download_all(queue_url_list)
         tempqueue_song_list = await self._download_all(tempqueue_url_list)
@@ -1799,8 +1802,8 @@ class Audio:
 
         em = discord.Embed(title="LISTE D'ATTENTE",
                            description=msg,
-                           color=discord.Color.dark_blue())
-        await self.bot.say(embed=em)
+                           color=discord.Color.gold())
+        await self.bot.edit_message(ff, embed=em)
 
     @commands.group(pass_context=True, no_pm=True)
     async def repeat(self, ctx):
@@ -1849,9 +1852,9 @@ class Audio:
         elif not voice_client.audio_player.is_done() and \
                 not voice_client.audio_player.is_playing():
             voice_client.audio_player.resume()
-            await self.bot.say("**Relance**")
+            await self.bot.say("**Relancé**")
         else:
-            await self.bot.say("Rien n'est en pause...")
+            await self.bot.say("**Rien n'est en pause donc il y a rien à relancer...**")
 
     @commands.command(pass_context=True, no_pm=True, name="shuffle")
     async def _shuffle(self, ctx):
@@ -1904,7 +1907,7 @@ class Audio:
                         await self.bot.say("Vote threshold met. Skipping...")
                         return
                     else:
-                        reply += " Votes: %d/%d" % (num_votes, num_members)
+                        reply += " **Votes: %d/%d**" % (num_votes, num_members)
                         reply += " (%d%% sur %d%% nécéssaire)" % (vote, thresh)
                     await self.bot.reply(reply)
             else:
@@ -1957,13 +1960,13 @@ class Audio:
                     dur = "{0}:{1:0>2}".format(m, s)
             else:
                 dur = None
-            em = discord.Embed(title=song.title, description=song.creator, color=discord.Color.dark_blue(), url=song.url)
+            em = discord.Embed(title=song.title, description=song.creator, color=discord.Color.gold(), url=song.url)
             em.add_field(name="Publiée par", value=song.uploader)
             em.add_field(name="Vues", value=str(song.view_count))
             em.add_field(name="Durée", value=str(dur))
             await self.bot.say(embed=em)
         else:
-            await self.bot.say("Darude - Sandstorm.")
+            await self.bot.say("**Darude - Sandstorm**")
 
     @commands.command(pass_context=True, no_pm=True)
     async def stop(self, ctx):
@@ -1972,7 +1975,7 @@ class Audio:
         if self.is_playing(server):
             if ctx.message.author.voice_channel == server.me.voice_channel:
                 if self.can_instaskip(ctx.message.author):
-                    await self.bot.say('Arrêt...')
+                    await self.bot.say('**Arrêt...**')
                     self._stop(server)
                 else:
                     await self.bot.say("Impossible d'arrêter la musique si d'autres personnes sont sur le canal. "
