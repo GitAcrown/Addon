@@ -669,7 +669,7 @@ class Audio:
         except asyncio.futures.TimeoutError as e:
             log.exception(e)
             self.connect_timers[server.id] = time.time() + 300
-            raise ConnectTimeout("Impossible de se connecter. Réessayez dans 10 minutes.")
+            raise ConnectTimeout("Impossible de se connecter. Réessayez dans 2 minutes.")
 
     def _list_local_playlists(self):
         ret = []
@@ -1375,7 +1375,7 @@ class Audio:
             voice_client.audio_player.pause()
             await self.bot.say("**Pause**\n*Utilisez {}resume pour rejouer*".format(ctx.prefix))
         else:
-            await self.bot.say("Rien ne joue.")
+            await self.bot.say("Rien ne joue !")
 
     @commands.command(pass_context=True, no_pm=True)
     async def play(self, ctx, *, url_or_search_terms):
@@ -1471,9 +1471,9 @@ class Audio:
 
             self.voice_client(server).audio_player.stop()
 
-            await self.bot.say("**RETOUR EN ARRIEEEEEERE**")
+            await self.bot.say("**ROLLBACK**")
         else:
-            await self.bot.say("Je ne joue rien.")
+            await self.bot.say("Je ne joue rien !")
 
     @commands.group(pass_context=True, no_pm=True)
     async def playlist(self, ctx):
@@ -1597,7 +1597,11 @@ class Audio:
         # We have a queue to modify
         self._add_to_queue(server, url)
 
-        await self.bot.say("**Ajouté**")
+        em = discord.Embed(title="PLAYLIST | AJOUT TEMPORAIRE",
+                           description="Morceau ajouté à la liste d'attente !",
+                           color=discord.Color.dark_blue())
+        em.set_footer(text="Ce morceau disparaitra de cette playlist dès lors qu'il sera passé.")
+        await self.bot.say(embed=em)
 
     @playlist.command(pass_context=True, no_pm=True, name="remove")
     async def playlist_remove(self, ctx, name):
@@ -1621,7 +1625,10 @@ class Audio:
             return
 
         self._delete_playlist(server, name)
-        await self.bot.say("Playlist supprimée avec succès.")
+        em = discord.Embed(title="PLAYLIST | {}".format(name),
+                           description="Playlist retirée avec succès.",
+                           color=discord.Color.dark_blue())
+        await self.bot.say(embed=em)
 
     @commands.command(pass_context=True, no_pm=True, name="dispo")
     async def tick_restant(self, ctx):
@@ -1681,7 +1688,9 @@ class Audio:
                 shuffle(playlist.playlist)
 
             self._play_playlist(server, playlist)
-            await self.bot.say("Playlist ajoutée à la liste d'attente.")
+            em = discord.Embed(title="PLAYLIST | {}".format(playlist.name), description="Playlist ajoutée à la liste d'attente !",
+                               color=discord.Color.dark_blue())
+            await self.bot.say(embed=em)
         else:
             await self.bot.say("Playlist inexistante.")
 
@@ -1741,7 +1750,11 @@ class Audio:
             log.debug("queueing to the actual queue for sid {}".format(
                 server.id))
             self._add_to_queue(server, url)
-        await self.bot.say("**Ajouté**")
+        em = discord.Embed(title="LISTE D'ATTENTE "
+                                 "| AJOUT",
+                           description="Morceau ajouté à la liste d'attente !",
+                           color=discord.Color.dark_blue())
+        await self.bot.say(embed=em)
 
     async def _queue_list(self, ctx):
         """Ce n'est pas une commande, c'est un morceau de commande :smart:"""
@@ -1758,7 +1771,7 @@ class Audio:
         now_playing = self._get_queue_nowplaying(server)
 
         if now_playing is not None:
-            msg += "\n***En ce moment:***\n{}\n".format(now_playing.title)
+            msg += "\n***Maintenant:***\n{}\n".format(now_playing.title)
 
         queue_url_list = self._get_queue(server, 5)
         tempqueue_url_list = self._get_queue_tempqueue(server, 5)
@@ -1782,9 +1795,12 @@ class Audio:
                 song_info.append("{}. {.title}".format(num, song))
             except AttributeError:
                 song_info.append("{}. {.webpage_url}".format(num, song))
-        msg += "\n***Prochainement:***\n" + "\n".join(song_info)
+        msg += "\n***Ensuite:***\n" + "\n".join(song_info)
 
-        await self.bot.say(msg)
+        em = discord.Embed(title="LISTE D'ATTENTE",
+                           description=msg,
+                           color=discord.Color.dark_blue())
+        await self.bot.say(embed=em)
 
     @commands.group(pass_context=True, no_pm=True)
     async def repeat(self, ctx):
@@ -1916,20 +1932,12 @@ class Audio:
 
         return is_owner or is_server_owner or is_admin or is_mod or alone
 
-    @commands.command(pass_context=True, no_pm=True, hidden=True)
-    async def sing(self, ctx):
-        """Faîtes chanter le bot"""
-        ids = ("zGTkAVsrfg8", "cGMWL8cOeAU", "vFrjMq4aL-g", "WROI5WYBU_A",
-               "41tIUr_ex3g", "f9O2Rjn1azc")
-        url = "https://www.youtube.com/watch?v={}".format(choice(ids))
-        await ctx.invoke(self.play, url_or_search_terms=url)
-
     @commands.command(pass_context=True, no_pm=True)
     async def song(self, ctx):
         """Affiche des informations sur le morceau en cours."""
         server = ctx.message.server
         if not self.is_playing(server):
-            await self.bot.say("Je ne joue rien en ce moment.")
+            await self.bot.say("Je ne joue rien en ce moment...Duh...")
             return
 
         song = self._get_queue_nowplaying(server)
@@ -1949,11 +1957,10 @@ class Audio:
                     dur = "{0}:{1:0>2}".format(m, s)
             else:
                 dur = None
-            em = discord.Embed(title=song.title, description= song.creator,color=user.color)
-            em.add_field(name="Uploadé par", value=song.uploader)
+            em = discord.Embed(title=song.title, description=song.creator, color=discord.Color.dark_blue(), url=song.url)
+            em.add_field(name="Publiée par", value=song.uploader)
             em.add_field(name="Vues", value=str(song.view_count))
             em.add_field(name="Durée", value=str(dur))
-            em.set_footer(text=song.webpage_url)
             await self.bot.say(embed=em)
         else:
             await self.bot.say("Darude - Sandstorm.")
@@ -1968,7 +1975,8 @@ class Audio:
                     await self.bot.say('Arrêt...')
                     self._stop(server)
                 else:
-                    await self.bot.say("Impossible d'arrêter la musique si d'autres personnes sont sur le canal. Utilisez plutôt 'skip'")
+                    await self.bot.say("Impossible d'arrêter la musique si d'autres personnes sont sur le canal. "
+                                       "Utilisez plutôt 'skip'")
             else:
                 await self.bot.say("Vous avez besoin d'être sur le salon pour arrêter la musique.")
         else:
@@ -1976,8 +1984,8 @@ class Audio:
 
     @commands.command(name="yt", pass_context=True, no_pm=True)
     async def yt_search(self, ctx, *, search_terms: str):
-        """Cherche et joue une musique depuis Youtube"""
-        await self.bot.say("*Recherche...*")
+        """Cherche et joue une musique depuis Youtube (Redirigé automatique vers &queue)"""
+        await self.bot.say("**Recherche...**")
         await ctx.invoke(self.play, url_or_search_terms=search_terms)
 
     async def reload_tickets(self):
