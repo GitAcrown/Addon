@@ -91,15 +91,19 @@ class Trivia:
             return False
         self.sys["INACTIF"] = time.time() + 60
         ch = self.sys["NOMBRE"]
-        if self.normal(msg.content.lower()) in [self.normal(r.lower()) for r in self.trv[ch]["REPONSES"]]:
-            return True
-        else:
-            return False
+        for n in [self.normal(r.lower()) for r in self.trv[ch]["REPONSES"]]:
+            if not self.normal(msg.content.lower()).isdigit():
+                if n in self.normal(msg.content.lower()):
+                    return True
+            elif n == self.normal(msg.content.lower()):
+                return True
+        return False
 
     def reset(self):
         self.trv = {}
         self.sys["ON"] = False
         self.sys["CHANNELID"] = None
+        self.sys["INACTIF"] = 0
         fileIO("data/trivia/trv.json", "save", self.trv)
         fileIO("data/trivia/sys.json", "save", self.sys)
         fileIO("data/trivia/data.json", "save", self.data)
@@ -115,7 +119,7 @@ class Trivia:
         for l in self.data:
             if "LIKES" not in self.data[l]:
                 self.data[l]["LIKES"] = 0
-            md.append([l.capitalize(), self.data[l]["LIKES"]])
+            md.append([l.capitalize(), self.data[l]["LIKES"], self.data[l]["AUTEUR"]])
         result = sorted(md, key=operator.itemgetter(1), reverse=True)
         return result
 
@@ -206,7 +210,7 @@ class Trivia:
                     while self.top_gg(joueurs)[0][1] < maxpts and time.time() <= self.sys["INACTIF"]:
                         ch = random.choice([r for r in self.trv])
                         self.sys["NOMBRE"] = ch
-                        msg = "**{}**".format(self.trv[ch]["QUESTION"])
+                        msg = "**#{}** ***{}***".format(ch, self.trv[ch]["QUESTION"])
                         em = discord.Embed(title="TRIVIA | {}".format(param["NOM"].capitalize()), description=msg, color=0x38e39a)
                         em.set_footer(text="Liste par {} | {}".format(param["AUTEUR"], param["DESCR"]))
                         menu = await self.bot.say(embed=em)
@@ -217,31 +221,36 @@ class Trivia:
                                                  , "Aucune idée ? C'est", "Pas trouvé ? Tout le monde sait que c'est"
                                                  , "Décevant... C'était"])
                             aft = random.choice(["évidemment...", "!", "enfin !", "!!!1!", "..."])
-                            msg = "{} **{}** {}".format(bef, self.trv[ch]["REPONSES"][0].title(), aft)
+                            msg = "{} **{}** {}".format(bef, self.trv[ch]["REPONSES"][0].capitalize(), aft)
                             em = discord.Embed(title="TRIVIA | {}".format(param["NOM"].capitalize()), description=msg,
                                                color=0xe33838)
                             em.set_footer(text="Liste par {} | {}".format(param["AUTEUR"], param["DESCR"]))
                             menu = await self.bot.say(embed=em)
+                            await asyncio.sleep(2.5)
                             del self.trv[ch]
-                            await asyncio.sleep(3)
-                        elif self.normal(rep.content.lower()) in [self.normal(r.lower()) for r in self.trv[ch][
-                            "REPONSES"]]:
-                            # On note l'auteur et on lui attribue un point
-                            gagn = rep.author
-                            win = random.choice(["Bien joué **{}** !", "Bien évidemment **{}** !", "GG **{}** !", "C'est exact **{}** !",
-                                                 "C'est ça **{}** !", "Ouais ouais ouais **{}** !"])
-                            await self.bot.say("{} C'était bien *{}* !".format(win.format(gagn.name), self.trv[ch]["REPONSES"][0].title()))
-                            if gagn.id not in joueurs:
-                                joueurs[gagn.id] = {"POINTS" : 1,
-                                                    "REPONSES" : [rep.content]}
-                            else:
-                                joueurs[gagn.id]["POINTS"] += 1
-                                joueurs[gagn.id]["REPONSES"].append(rep.content)
-                            del self.trv[ch]
-                            await asyncio.sleep(2)
+                            fileIO("data/trivia/trv.json", "save", self.trv)
                         else:
-                            await self.bot.say("Problème WHILE /!\\")
-                            pass
+                            verific = False
+                            for n in [self.normal(r.lower()) for r in self.trv[ch]["REPONSES"]]:
+                                if n in self.normal(rep.content.lower()) or n == self.normal(rep.content.lower()):
+                                    verific = True
+                            if verific:
+                                # On note l'auteur et on lui attribue un point
+                                gagn = rep.author
+                                win = random.choice(["Bien joué **{}** !", "Bien évidemment **{}** !", "GG **{}** !",
+                                                     "C'est exact **{}** !",
+                                                     "C'est ça **{}** !", "Ouais ouais ouais **{}** !"])
+                                await self.bot.say("{} C'était bien **\"{}\"** !".format(win.format(gagn.name), self.trv[
+                                    ch]["REPONSES"][0].capitalize()))
+                                if gagn.id not in joueurs:
+                                    joueurs[gagn.id] = {"POINTS": 1,
+                                                        "REPONSES": [rep.content]}
+                                else:
+                                    joueurs[gagn.id]["POINTS"] += 1
+                                    joueurs[gagn.id]["REPONSES"].append(rep.content)
+                                await asyncio.sleep(2)
+                                del self.trv[ch]
+                                fileIO("data/trivia/trv.json", "save", self.trv)
                     if self.top_gg(joueurs)[0][1] == maxpts:
                         top = self.top_gg(joueurs)
                         msg = ""
@@ -281,7 +290,7 @@ class Trivia:
             msg = ""
             l = self.classlist()
             for r in l:
-                msg += "**{}** - {}\n".format(r[0], r[1])
+                msg += "**{}** par *{}*\n".format(r[0], r[2])
             em = discord.Embed(title="TRIVIA | LISTES", description=msg, color=0x202020)
             em.set_footer(text="Classées par ordre de préférence")
             await self.bot.say(embed=em)
