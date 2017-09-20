@@ -278,8 +278,12 @@ class Trivia:
                                     self.data[nom]["LIKES"] += 1
                                 else:
                                     self.data[nom]["LIKES"] = 1
-                        em.set_footer(text=self.bye)
+                        em.set_footer(text="{}".format(self.bye()))
                         await self.bot.edit_message(fin, embed=em)
+                        try:
+                            await self.bot.clear_reations(fin)
+                        except:
+                            pass
                         self.reset()
                         return
                     elif time.time() >= self.sys["INACTIF"]:
