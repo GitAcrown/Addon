@@ -179,19 +179,27 @@ class Trivia:
         fileIO("data/trivia/data.json", "save", self.data)
         await self.bot.say("Liste ajoutée avec succès !")
 
+    def bye(self):
+        heure = int(time.strftime("%H", time.localtime()))
+        if 6 <= heure <= 12:
+            return "Bonne matinée !"
+        elif 13 <= heure <= 17:
+            return "Bonne après-midi !"
+        elif 18 <= heure <= 22:
+            return "Bonne soirée !"
+        else:
+            return "Bonne nuit !"
+
     @commands.command(pass_context=True, no_pm=True)
     async def trivia(self, ctx, liste: str = None, maxpts: int = 5):
         """Démarre un trivia avec la liste spécifiée"""
         server = ctx.message.server
         bit = self.bot.get_cog('Mirage').api
-        if server.id != "328632789836496897":
-            await self.bot.say("**JEU EN BETA** | Vous ne pouvez y jouer que sur le serveur AlphaTest ! (MP Acrown pour y accéder)")
-            return
         if self.list_exist(liste):
             nom = liste.upper()
             if not self.trv and self.sys["ON"] is False:
                 if 5 <= maxpts <= 30:
-                    gain = True if server.id == "328632789836496897" else False
+                    gain = True if server.id == "204585334925819904" else False
                     if gain is False:
                         await self.bot.say("**Vous êtes sur AlphaTest, vous n'êtes donc pas éligible aux gains**")
                         await asyncio.sleep(1)
@@ -270,7 +278,7 @@ class Trivia:
                                     self.data[nom]["LIKES"] += 1
                                 else:
                                     self.data[nom]["LIKES"] = 1
-                        em.set_footer(text="Merci d'avoir participé à cette Beta !")
+                        em.set_footer(text=self.bye)
                         await self.bot.edit_message(fin, embed=em)
                         self.reset()
                         return
